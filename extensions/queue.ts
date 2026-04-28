@@ -273,6 +273,53 @@ export async function readDeadLetterQueue(path: string): Promise<RetainJob[]> {
   return readRetainQueue(resolveDeadLetterQueuePath(path));
 }
 
+export interface RetainQueueFileSummary {
+  path: string;
+  valid: number;
+  malformed: number;
+  error: string | null;
+}
+
+export interface RetainQueueSummary {
+  active: RetainQueueFileSummary;
+  deadLetter: RetainQueueFileSummary;
+}
+
+async function summarizeQueueFile(path: string): Promise<RetainQueueFileSummary> {
+  try {
+    const text = await readFile(path, "utf8");
+    let valid = 0;
+    let malformed = 0;
+    for (const line of text.split("\n").filter(Boolean)) {
+      try {
+        JSON.parse(line) as RetainJob;
+        valid += 1;
+      } catch {
+        malformed += 1;
+      }
+    }
+    return { path, valid, malformed, error: null };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { path, valid: 0, malformed: 0, error: null };
+    }
+    return {
+      path,
+      valid: 0,
+      malformed: 0,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function summarizeRetainQueue(path: string): Promise<RetainQueueSummary> {
+  const [active, deadLetter] = await Promise.all([
+    summarizeQueueFile(path),
+    summarizeQueueFile(resolveDeadLetterQueuePath(path)),
+  ]);
+  return { active, deadLetter };
+}
+
 export async function writeRetainQueue(path: string, jobs: RetainJob[]): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.tmp`;

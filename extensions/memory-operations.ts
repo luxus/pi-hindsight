@@ -1,7 +1,7 @@
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "./types.js";
 import { checkHindsight } from "./client.js";
-import { readRetainQueue, flushRetainQueue, resolveQueuePath } from "./queue.js";
+import { flushRetainQueue, resolveQueuePath, summarizeRetainQueue } from "./queue.js";
 import { formatDebugReport, observationScopeDiagnostics, safeConfig } from "./diagnostics.js";
 import {
   buildProjectConfigPatch,
@@ -177,29 +177,33 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
 
     async status(cwd: string) {
       const config = deps.getConfig();
+      const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
       const [queue, manifest] = await Promise.all([
-        readRetainQueue(resolveQueuePath(cwd, config.retain.queuePath)),
+        summarizeRetainQueue(queuePath),
         readImportManifest(resolveImportManifestPath(cwd, config.import.manifestPath)),
       ]);
       return {
         config,
         bankId: deps.getProjectBankId(),
-        queueLength: queue.length,
+        queueLength: queue.active.valid,
+        queue,
         imports: importManifestSummary(manifest),
       };
     },
 
     async doctor(cwd: string) {
       const config = deps.getConfig();
+      const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
       const [health, queue, manifest] = await Promise.all([
         checkHindsight(deps.getClient(), deps.getProjectBankId()),
-        readRetainQueue(resolveQueuePath(cwd, config.retain.queuePath)),
+        summarizeRetainQueue(queuePath),
         readImportManifest(resolveImportManifestPath(cwd, config.import.manifestPath)),
       ]);
       return {
         health,
         ...(deps.getCapabilities?.() ? { capabilities: deps.getCapabilities() } : {}),
-        queueLength: queue.length,
+        queueLength: queue.active.valid,
+        queue,
         imports: importManifestSummary(manifest),
         observations: observationScopeDiagnostics({
           cwd,
@@ -215,8 +219,9 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
 
     async debug(ctx: ExtensionCommandContext) {
       const config = deps.getConfig();
+      const queuePath = resolveQueuePath(ctx.cwd, config.retain.queuePath);
       const [queue, health] = await Promise.all([
-        readRetainQueue(resolveQueuePath(ctx.cwd, config.retain.queuePath)),
+        summarizeRetainQueue(queuePath),
         checkHindsight(deps.getClient(), deps.getProjectBankId()),
       ]);
       const manifestPath = resolveImportManifestPath(ctx.cwd, config.import.manifestPath);
@@ -231,7 +236,12 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
           ...(sessionFile ? { sessionFile } : {}),
           projectBankId: deps.getProjectBankId(),
           config,
-          queueLength: queue.length,
+          queueLength: queue.active.valid,
+          queuePath: queue.active.path,
+          queueMalformedLines: queue.active.malformed,
+          deadLetterPath: queue.deadLetter.path,
+          deadLetterLength: queue.deadLetter.valid,
+          deadLetterMalformedLines: queue.deadLetter.malformed,
           importManifestPath: manifestPath,
           importCount: imports.count,
           ...(imports.latest ? { latestImport: imports.latest } : {}),

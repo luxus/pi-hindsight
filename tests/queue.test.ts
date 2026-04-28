@@ -19,6 +19,7 @@ import {
   RETAIN_QUEUE_LOCK,
   resolveDeadLetterQueuePath,
   resolveQueuePath,
+  summarizeRetainQueue,
 } from "../extensions/queue.js";
 import type { RetainJob } from "../extensions/types.js";
 
@@ -91,6 +92,27 @@ describe("retain queue", () => {
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('"id":"1"');
     await expect(readRetainQueue(path)).rejects.toThrow();
+  });
+
+  it("summarizes active and dead-letter queues without throwing on malformed lines", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    writeFileSync(path, `{not json}\n${JSON.stringify(job)}\n`, "utf8");
+    writeFileSync(
+      resolveDeadLetterQueuePath(path),
+      `{bad}\n${JSON.stringify({ ...job, id: "dead" })}\n`,
+      "utf8",
+    );
+
+    await expect(readRetainQueue(path)).rejects.toThrow();
+    const summary = await summarizeRetainQueue(path);
+
+    expect(summary.active).toMatchObject({ path, valid: 1, malformed: 1, error: null });
+    expect(summary.deadLetter).toMatchObject({
+      path: resolveDeadLetterQueuePath(path),
+      valid: 1,
+      malformed: 1,
+      error: null,
+    });
   });
 
   it("forwards queued observation scopes to retain", async () => {

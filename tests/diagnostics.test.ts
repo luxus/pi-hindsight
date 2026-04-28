@@ -50,6 +50,15 @@ describe("diagnostics", () => {
     expect(report.projectBankId).toBe("bank");
     expect(report.health).toBe("reachable");
     expect(report.queueLength).toBe(2);
+    expect(report.queue).toEqual({
+      path: DEFAULT_CONFIG.retain.queuePath,
+      active: 2,
+      malformedLines: 0,
+      deadLetterPath: null,
+      deadLetter: 0,
+      deadLetterMalformedLines: 0,
+      action: null,
+    });
     expect(report.capabilities).toMatchObject({
       appendUpdateMode: "not checked",
       appendFallback: "error",
@@ -146,5 +155,32 @@ describe("diagnostics", () => {
       probeDocumentId: "pi-hindsight-capability:append:bank",
       action: "Upgrade Hindsight or set retain.appendFallback to per-turn-documents.",
     });
+  });
+
+  it("formats queue remediation when malformed lines or dead letters exist", () => {
+    const report = JSON.parse(
+      formatDebugReport({
+        cwd: process.cwd(),
+        projectBankId: "bank",
+        config: DEFAULT_CONFIG,
+        queueLength: 1,
+        queuePath: "/tmp/q.jsonl",
+        queueMalformedLines: 2,
+        deadLetterPath: "/tmp/q.jsonl.dead.jsonl",
+        deadLetterLength: 3,
+        deadLetterMalformedLines: 1,
+      }),
+    ) as Record<string, any>;
+
+    expect(report.queue).toMatchObject({
+      path: "/tmp/q.jsonl",
+      active: 1,
+      malformedLines: 2,
+      deadLetterPath: "/tmp/q.jsonl.dead.jsonl",
+      deadLetter: 3,
+      deadLetterMalformedLines: 1,
+    });
+    expect(report.queue.action).toContain("Inspect queue files");
+    expect(report.queue.action).toContain("/hindsight:flush");
   });
 });
