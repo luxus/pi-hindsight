@@ -72,21 +72,21 @@ export async function runHindsightSetupTui(
     const projectBankId = deps.getProjectBankId();
     const choice = await ctx.ui.select("Hindsight setup", [
       ...statusLines(config, projectBankId).map((line) => `· ${line}`),
-      "Choose deployment profile",
-      "Set project bank ID",
+      "Choose Hindsight deployment",
+      "Set project memory bank ID",
       "Set Hindsight base URL",
       "Set API key env reference",
       "Set timeout (ms)",
       config.enabled ? "Disable extension" : "Enable extension",
-      "Set memory profile",
+      "Choose memory scope profile",
       config.banks.global.enabled ? "Disable global bank" : "Enable global bank",
       "Set global bank ID",
       config.recall.enabled ? "Disable recall" : "Enable recall",
       "Set recall budget",
-      "Set recall max tokens",
+      "Set recall token budget",
       config.retain.enabled ? "Disable retain" : "Enable retain",
       config.retain.async ? "Use sync retain flush" : "Use async retain mode",
-      "Set retain queue path",
+      "Set durable retain queue path",
       "Set import branch mode",
       "Set import manifest path",
       "Set status style",
@@ -104,8 +104,8 @@ export async function runHindsightSetupTui(
     if (choice.startsWith("· ")) continue;
 
     try {
-      if (choice === "Choose deployment profile") {
-        const value = await ctx.ui.select("Deployment profile", [
+      if (choice === "Choose Hindsight deployment") {
+        const value = await ctx.ui.select("Hindsight deployment", [
           "Hindsight Cloud",
           "Existing local/external API",
           "Local hindsight-embed guidance",
@@ -130,8 +130,8 @@ export async function runHindsightSetupTui(
           if (useDefault === "Yes")
             await writeAndReload(ctx, deps, { baseUrl: "http://localhost:8888" });
         }
-      } else if (choice === "Set project bank ID") {
-        const value = await ctx.ui.input("Project bank ID", projectBankId);
+      } else if (choice === "Set project memory bank ID") {
+        const value = await ctx.ui.input("Project memory bank ID", projectBankId);
         if (value) await writeAndReload(ctx, deps, { projectBankId: value.trim() });
       } else if (choice === "Set Hindsight base URL") {
         const value = await ctx.ui.input("Hindsight base URL", config.hindsight.baseUrl);
@@ -148,8 +148,8 @@ export async function runHindsightSetupTui(
         if (timeoutMs !== undefined) await writeAndReload(ctx, deps, { timeoutMs });
       } else if (choice === "Disable extension" || choice === "Enable extension") {
         await writeAndReload(ctx, deps, { enabled: choice === "Enable extension" });
-      } else if (choice === "Set memory profile") {
-        const value = await ctx.ui.select("Memory profile", [
+      } else if (choice === "Choose memory scope profile") {
+        const value = await ctx.ui.select("Memory scope profile", [
           "project-only",
           "project+global",
           "global-only",
@@ -172,7 +172,7 @@ export async function runHindsightSetupTui(
         const value = await ctx.ui.select("Recall budget", ["low", "mid", "high", CANCEL]);
         if (value && value !== CANCEL)
           await writeAndReload(ctx, deps, { recallBudget: value as "low" | "mid" | "high" });
-      } else if (choice === "Set recall max tokens") {
+      } else if (choice === "Set recall token budget") {
         const value = await ctx.ui.input("Recall max tokens", String(config.recall.maxTokens));
         const recallMaxTokens = parsePositiveInt(value, "recallMaxTokens");
         if (recallMaxTokens !== undefined) await writeAndReload(ctx, deps, { recallMaxTokens });
@@ -180,7 +180,7 @@ export async function runHindsightSetupTui(
         await writeAndReload(ctx, deps, { retainEnabled: choice === "Enable retain" });
       } else if (choice === "Use sync retain flush" || choice === "Use async retain mode") {
         await writeAndReload(ctx, deps, { retainAsync: choice === "Use async retain mode" });
-      } else if (choice === "Set retain queue path") {
+      } else if (choice === "Set durable retain queue path") {
         const value = await ctx.ui.input("Retain queue path", config.retain.queuePath);
         if (value) await writeAndReload(ctx, deps, { queuePath: value.trim() });
       } else if (choice === "Set import branch mode") {

@@ -100,13 +100,49 @@ Defaults can be overridden by:
 
 Config is normalized after merging. Unknown fields are ignored, invalid enum values fall back to defaults, and removed/reserved MVP fields do not affect behavior.
 
+### Minimal configuration path
+
+Start with the smallest project-local config that points Pi at your Hindsight server. The default memory profile is `project-only`, which keeps automatic recall and retain scoped to a project bank.
+
+```json
+{
+  "hindsight": {
+    "baseUrl": "http://localhost:8888"
+  }
+}
+```
+
+If you want a stable human-chosen project bank instead of the derived repo bank, add only the bank ID:
+
+```json
+{
+  "hindsight": {
+    "baseUrl": "http://localhost:8888"
+  },
+  "banks": {
+    "project": {
+      "derive": "manual",
+      "bankId": "pi-project-my-repo"
+    }
+  }
+}
+```
+
+Most users should choose one memory scope profile and leave the advanced fields alone:
+
+- `project-only` is the safest default. Project memories stay in the project bank, and automatic retain writes there.
+- `project+global` is useful for personal coding. Project facts stay project-scoped, while durable preferences and cross-project habits can also be recalled from a global bank.
+- `global-only` is intentionally broad. It disables the project bank and automatic retain because there is no project-scoped write route.
+
+Use `/hindsight:setup` for guided configuration, or `/hindsight:init` for a quick project config with the currently selected project bank.
+
 Inside Pi, open the interactive configuration TUI:
 
 ```text
 /hindsight:setup
 ```
 
-The setup TUI lets you choose a deployment profile, edit the memory profile, project bank ID, Hindsight base URL, API key env reference, timeout, global bank, recall budget, token budget, retain settings, queue path, import branch mode, statusline display, and Pi window notifications. Deployment profile choices cover Hindsight Cloud, an existing local/external API, and local `hindsight-embed` guidance. The local `hindsight-embed` profile gives commands to run yourself and can set the base URL to `http://localhost:8888`; it does not manage daemons. It writes `.pi/hindsight.json` and reloads the extension config after each change. Active import config covers branch mode, replace-vs-append behavior, manifest path, checkpoint path, and resume behavior.
+The setup TUI is organized around user intent: choose the Hindsight deployment, choose the memory scope profile, set the project memory bank ID, and then adjust advanced settings only when needed. Deployment choices cover Hindsight Cloud, an existing local/external API, and local `hindsight-embed` guidance. The local `hindsight-embed` profile gives commands to run yourself and can set the base URL to `http://localhost:8888`; it does not manage daemons. It writes `.pi/hindsight.json` and reloads the extension config after each change. Active import config covers branch mode, replace-vs-append behavior, manifest path, checkpoint path, and resume behavior.
 
 Memory profiles make global memory explicit. Choose the narrowest route that fits the repo:
 
@@ -143,7 +179,7 @@ export PI_HINDSIGHT_PROJECT_BANK_ID=pi-project-my-repo
 export PI_HINDSIGHT_GLOBAL_BANK_ID=pi-global
 ```
 
-Example project config:
+Advanced project config example:
 
 ```json
 {
