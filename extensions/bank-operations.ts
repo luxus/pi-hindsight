@@ -1,16 +1,16 @@
 import type { HindsightLikeClient } from "./types.js";
 
 const DEFAULT_PROJECT_REFLECT_MISSION =
-  "Help a Pi coding agent recall project-specific engineering decisions, conventions, tasks, and debugging lessons.";
+  "Help a Pi coding agent recall project-specific architecture, engineering decisions, conventions, tasks, bugs, fixes, constraints, and continuity.";
 
 const DEFAULT_PROJECT_RETAIN_MISSION =
-  "Extract durable project facts, user preferences, decisions, bugs, and lessons from raw Pi coding sessions. Ignore transient chatter and secrets.";
+  "Extract durable project memory from raw Pi coding sessions: architecture decisions, constraints, bugs, fixes, TODOs, repo conventions, and project-local user preferences. Ignore transient chatter, secrets, and resurfaced recalled memories unless they add a new correction or decision.";
 
 const DEFAULT_GLOBAL_REFLECT_MISSION =
-  "Help a Pi coding agent recall durable cross-project user preferences, workflows, habits, and assistant behavior guidance.";
+  "Help a Pi coding agent recall durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior guidance.";
 
 const DEFAULT_GLOBAL_RETAIN_MISSION =
-  "Extract durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior from raw Pi sessions. Ignore project-local implementation details unless they generalize.";
+  "Extract durable cross-project memory from raw Pi sessions: user preferences, recurring workflows, coding habits, and stable assistant behavior. Do not retain repo-specific code facts, file paths, project-local bugs, or transcript dumps unless they generalize across projects.";
 
 export interface BankMissionConfig {
   mission?: string;

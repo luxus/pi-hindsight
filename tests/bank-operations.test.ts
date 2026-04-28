@@ -59,8 +59,23 @@ describe("bank operations", () => {
     expect(createBank).toHaveBeenCalledWith(
       "project-bank",
       expect.objectContaining({
-        reflectMission: expect.stringContaining("Pi coding agent"),
-        retainMission: expect.stringContaining("durable project facts"),
+        reflectMission: expect.stringContaining("project-specific architecture"),
+        retainMission: expect.stringContaining("durable project memory"),
+      }),
+    );
+  });
+
+  it("keeps global default mission focused on cross-project memory", async () => {
+    const createBank = vi.fn(async () => undefined);
+    await ensureGlobalBank(client(createBank), "global-bank");
+
+    expect(createBank).toHaveBeenCalledWith(
+      "global-bank",
+      expect.objectContaining({
+        reflectMission: expect.stringContaining("cross-project user preferences"),
+        retainMission: expect.stringContaining("Do not retain repo-specific code facts"),
+        retainExtractionMode: "concise",
+        enableObservations: true,
       }),
     );
   });

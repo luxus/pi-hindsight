@@ -183,7 +183,7 @@ describe("resolveConfig", () => {
     const config = resolveConfig(cwd);
     expect(config.recall.budget).toBe("mid");
     expect(config.recall.maxTokens).toBe(800);
-    expect(config.recall.types).toEqual(["world", "experience", "observation"]);
+    expect(config.recall.types).toEqual(["observation"]);
     expect(config.observations.enabled).toBe(true);
     expect(config.observations.scopes).toEqual([["harness:pi"], ["repo:{repoKey}"]]);
     expect(config.recall.contextTurns).toBe(2);

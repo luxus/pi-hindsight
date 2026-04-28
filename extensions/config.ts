@@ -13,7 +13,7 @@ const DEFAULT_CONFIG: ResolvedConfig = {
     enabled: true,
     budget: "mid",
     maxTokens: 800,
-    types: ["world", "experience", "observation"],
+    types: ["observation"],
     contextTurns: 2,
     roles: ["user", "assistant"],
     maxQueryChars: 800,

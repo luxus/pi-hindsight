@@ -254,7 +254,7 @@ describe("extension hooks", () => {
     expect(mocked.client.recall.mock.calls[0]?.[1]).toContain("user: What do I know?");
     expect(mocked.client.recall.mock.calls[0]?.[2]).toMatchObject({
       maxTokens: 800,
-      types: ["world", "experience", "observation"],
+      types: ["observation"],
       tags: [expect.stringMatching(/^repo:/)],
       tagsMatch: "any_strict",
     });
