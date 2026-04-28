@@ -1,5 +1,7 @@
 # Next Changes Plan: Hindsight Depth and Pi Memory Governance
 
+> **Historical note:** This file records an earlier implementation-phase plan. Most items in this checklist have since been implemented. Use [`docs/pr-roadmap.md`](pr-roadmap.md) as the current source of truth for remaining PR order, acceptance criteria, and LLM handoff rules.
+
 ## Purpose
 
 This plan converts the latest architecture review into a practical implementation roadmap for `luxus/pi-hindsight`.

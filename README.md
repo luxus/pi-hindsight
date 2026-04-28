@@ -6,7 +6,9 @@ This package adds a Pi extension that can recall relevant project memory before 
 
 ## Current status
 
-This is an early MVP scaffold. It includes:
+This is a working MVP and still pre-release. The core memory path is implemented; the remaining work is mostly documentation alignment, regression-test hardening, operational polish, and release readiness. See [`docs/pr-roadmap.md`](docs/pr-roadmap.md) for the current PR-by-PR implementation guide.
+
+Implemented:
 
 - Pi package metadata in `package.json`
 - extension entrypoint at `extensions/index.ts`
@@ -42,6 +44,27 @@ This is an early MVP scaffold. It includes:
   - `/hindsight:retain`
   - `/hindsight:tag`
 - tests for config, bank derivation, stable document IDs, sanitization, recall formatting, retain payloads, diagnostics, client request shapes, extension hook placement, historical import, import manifests, and queue replay
+
+Planned before a stable release:
+
+- reset roadmap/docs so they match the implementation that already exists
+- add a focused Hindsight best-practice regression test pack
+- simplify the documented configuration path around memory profiles
+- harden and document outage, dead-letter, queue-lock, and append-compatibility behavior
+- review bank mission and observation-scope defaults for memory quality
+- make historical import examples and dry-run output easier to follow
+- verify packaging, changelog, smoke-test, and release workflow
+
+Intentionally deferred:
+
+- persisted recall messages in Pi transcript history
+- linked hosts or multi-Hindsight-server routing
+- cached recall context
+- hashtag-based controls such as `#nomem`
+- generic memory-backend abstractions
+- automatic mental-model management
+- bank administration UI beyond setup guidance
+- OpenClaw-style multitenant dynamic routing
 
 Historical import supports importing the current Pi session, an explicit JSONL path, or all Pi session JSONL files in the current session directory that belong to the current repo/cwd. Imports write deterministic document IDs and update an import manifest so `/hindsight:debug` can show imported document count and latest import provenance. Use `/hindsight:import --dry-run`, `/hindsight:import-project-sessions --dry-run`, or `hindsight_import` with `dryRun: true` to preview documents, message counts, content sizes, tags, update mode, and target bank without writing Hindsight memory or mutating the manifest. Add `--all-leaves` or `allLeaves: true` to preview/import every branch leaf instead of only the current branch. Project session discovery intentionally avoids broad history imports: it scans only the current session file's directory and keeps only `.jsonl` session files whose parsed `cwd` exactly matches the current repo/cwd. Imports maintain `.pi/hindsight/import-checkpoint.json` by default and resume completed documents without re-retaining them when `import.resume` is enabled.
 
