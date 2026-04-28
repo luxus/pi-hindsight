@@ -45,15 +45,15 @@ Implemented:
   - `/hindsight:tag`
 - tests for config, bank derivation, stable document IDs, sanitization, recall formatting, retain payloads, diagnostics, client request shapes, extension hook placement, historical import, import manifests, and queue replay
 
-Planned before a stable release:
+Recently completed release-hardening work:
 
-- reset roadmap/docs so they match the implementation that already exists
-- add a focused Hindsight best-practice regression test pack
-- simplify the documented configuration path around memory profiles
-- harden and document outage, dead-letter, queue-lock, and append-compatibility behavior
-- review bank mission and observation-scope defaults for memory quality
-- make historical import examples and dry-run output easier to follow
-- verify packaging, changelog, smoke-test, and release workflow
+- roadmap/docs now match the implementation that already exists
+- focused Hindsight best-practice regression tests cover core memory invariants
+- documented configuration starts with memory profiles and minimal project config
+- outage, dead-letter, queue-lock, and append-compatibility behavior is documented and tested
+- bank mission and observation-scope defaults are tuned for memory quality
+- historical import previews show document counts, update modes, checkpoint paths, and manifest behavior
+- packaging and live smoke-test paths are verified for release readiness
 
 Intentionally deferred:
 

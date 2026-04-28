@@ -73,7 +73,7 @@ Implemented and expected to stay:
 
 ### PR 1: Documentation reset and roadmap alignment
 
-**Status:** next.
+**Status:** completed.
 
 **Purpose:** Make README and docs match the implementation that already exists.
 
@@ -105,7 +105,7 @@ npm run format
 
 ### PR 2: Best-practice regression test pack
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Lock Hindsight best practices into tests so future feature work cannot regress memory correctness.
 
@@ -146,7 +146,7 @@ npm run typecheck:tsc
 
 ### PR 3: Minimal configuration pass
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Keep the public mental model small while preserving advanced config.
 
@@ -180,7 +180,7 @@ npm run typecheck:tsc
 
 ### PR 4: Operational failure-mode hardening
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Make outages and incompatible Hindsight servers boring and diagnosable.
 
@@ -216,7 +216,7 @@ npm run typecheck:tsc
 
 ### PR 5: Memory quality defaults
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Improve extracted memory quality without increasing everyday config complexity.
 
@@ -252,7 +252,7 @@ npm run smoke:hindsight # when a configured server is available
 
 ### PR 6: Historical import UX final pass
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Make old-session import safe enough for real use.
 
@@ -287,7 +287,7 @@ npm run typecheck:tsc
 
 ### PR 7: Release readiness
 
-**Status:** planned.
+**Status:** completed.
 
 **Purpose:** Prepare a small public release without adding features.
 

@@ -23,6 +23,7 @@
 - improve recall query construction ([9109da6](https://github.com/luxus/pi-hindsight/commit/9109da6f21ad413025afda8f7eb3a8d5002b7196))
 - pass retain observation scopes ([30c20fa](https://github.com/luxus/pi-hindsight/commit/30c20fa34503c4aea33c92df9424d1869907ba88))
 - support bank missions ([de41cba](https://github.com/luxus/pi-hindsight/commit/de41cba3e76408b12849526e73d928a04e958d4d))
+- tune memory quality defaults ([37fb16f](https://github.com/luxus/pi-hindsight/commit/37fb16f146ef375a51b5f76dc0fc7e0f7d3c36e9))
 
 ### Bug Fixes
 
@@ -50,6 +51,7 @@
 - preserve recall query overrides ([dc6cb4e](https://github.com/luxus/pi-hindsight/commit/dc6cb4eb01231915f7298d052e857166da5d9e83))
 - preserve session retain opt-out ([0528690](https://github.com/luxus/pi-hindsight/commit/0528690559b1f756b5586d2da1a7acf2876e84b1))
 - queue explicit retain writes ([505160a](https://github.com/luxus/pi-hindsight/commit/505160ab94e45cf2d9be758088368ad8751a9989))
+- report retain queue diagnostics ([b4843fc](https://github.com/luxus/pi-hindsight/commit/b4843fccf72fe01cdb8b8c8a76b8ca3d415e2e47))
 - skip empty recall query turns ([c38d23c](https://github.com/luxus/pi-hindsight/commit/c38d23c7a93bba89090a4e046790af572a02eeea))
 - validate api key ref strings ([f564784](https://github.com/luxus/pi-hindsight/commit/f5647842a4760ddda521c9b4b50b9a9f585c432e))
 
@@ -66,16 +68,23 @@
 - add follow-up maintainer feedback ([0a6bc96](https://github.com/luxus/pi-hindsight/commit/0a6bc965683784377c30d508cf3017a9632033e0))
 - add maintainer feedback to roadmap ([3deb058](https://github.com/luxus/pi-hindsight/commit/3deb058ecfa8d1f49e217de8102300ee25f2a526))
 - add next changes plan ([f2c1b70](https://github.com/luxus/pi-hindsight/commit/f2c1b70223d2a556cd966944d220f853d90b3040))
+- add PR roadmap ([bde4820](https://github.com/luxus/pi-hindsight/commit/bde4820dac2f3c41f3f0f0defdab1968961fff9b))
+- clarify import previews ([04cf139](https://github.com/luxus/pi-hindsight/commit/04cf13957504eb21b5a9effbc8894b121f7d256e))
 - clarify memory profile routing ([0698d03](https://github.com/luxus/pi-hindsight/commit/0698d03d11b1c5d0323b0f8c7a8512028ca70730))
 - clarify release verification ([4f2de2c](https://github.com/luxus/pi-hindsight/commit/4f2de2c3821a59e17fa3600ab79f02fc4f991e63))
 - generate changelog ([433e90c](https://github.com/luxus/pi-hindsight/commit/433e90ce1dfa757c0cf24a7e988f43ee892ea468))
 - record upstream retain issue ([c3de5aa](https://github.com/luxus/pi-hindsight/commit/c3de5aaa07c82ff7ef16f6f7c26ac221aadefa31))
 - refresh roadmap status ([14986ac](https://github.com/luxus/pi-hindsight/commit/14986ac14bda9ec2d42eb5b92db13a81dff30c44))
+- simplify configuration path ([6f3bb1d](https://github.com/luxus/pi-hindsight/commit/6f3bb1d174a9fbf1b7f02052443825b36da68b6b))
 - update changelog ([c728926](https://github.com/luxus/pi-hindsight/commit/c72892649ba9b6116ef3f716b8bd0f10d001ffbc))
 - update changelog ([1fb69fb](https://github.com/luxus/pi-hindsight/commit/1fb69fb08c4f50318389a9a20eaf7c641e093385))
 - update changelog ([156a603](https://github.com/luxus/pi-hindsight/commit/156a603c54c61fb89a0d533a7702f7a32cde27ff))
 - update changelog ([1acb50d](https://github.com/luxus/pi-hindsight/commit/1acb50df6a9739221d9fb86b444c3dad92bcacdb))
 - update changelog ([5c35c36](https://github.com/luxus/pi-hindsight/commit/5c35c36cbec4fea1b4139c371db52a5cbf80d384))
+
+### Tests
+
+- cover Hindsight memory invariants ([2c548c8](https://github.com/luxus/pi-hindsight/commit/2c548c8a731dad21a6e25165864a9d51beed7379))
 
 ### CI
 
@@ -85,3 +94,4 @@
 ### Chores
 
 - ignore local agent skill files ([fd4d30e](https://github.com/luxus/pi-hindsight/commit/fd4d30eeaea7224cd8ce3c9e2213c7d7b9502833))
+- prepare package release metadata ([7b7deea](https://github.com/luxus/pi-hindsight/commit/7b7deea8075502940e2523426042bafce0de98cc))
