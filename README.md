@@ -68,6 +68,27 @@ Intentionally deferred:
 
 Historical import supports importing the current Pi session, an explicit JSONL path, or all Pi session JSONL files in the current session directory that belong to the current repo/cwd. Imports write deterministic document IDs and update an import manifest so `/hindsight:debug` can show imported document count and latest import provenance. Use `/hindsight:import --dry-run`, `/hindsight:import-project-sessions --dry-run`, or `hindsight_import` with `dryRun: true` to preview documents, message counts, content sizes, tags, update mode, and target bank without writing Hindsight memory or mutating the manifest. Add `--all-leaves` or `allLeaves: true` to preview/import every branch leaf instead of only the current branch. Project session discovery intentionally avoids broad history imports: it scans only the current session file's directory and keeps only `.jsonl` session files whose parsed `cwd` exactly matches the current repo/cwd. Imports maintain `.pi/hindsight/import-checkpoint.json` by default and resume completed documents without re-retaining them when `import.resume` is enabled.
 
+Historical import examples:
+
+```text
+# Preview the current session; writes nothing and leaves the manifest unchanged.
+/hindsight:import-current --dry-run
+
+# Import the current session's current branch only, using deterministic replace documents.
+/hindsight:import-current
+
+# Preview every fork leaf in an explicit session file.
+/hindsight:import-file /path/to/session.jsonl --dry-run --all-leaves
+
+# Preview all sessions in the active session directory whose parsed cwd equals this repo.
+/hindsight:import-project-sessions --dry-run
+
+# Import those repo-scoped sessions after reviewing the preview.
+/hindsight:import-project-sessions
+```
+
+Preview output includes message count, document count, update mode, status, checkpoint path, and the unchanged manifest path. Import output reports the same document summary plus the first document ID and manifest path. Use `--all-leaves` only when you explicitly want every fork leaf; the default imports only the current branch.
+
 ## Install for local development
 
 ```bash

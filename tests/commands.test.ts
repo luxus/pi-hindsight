@@ -182,4 +182,53 @@ describe("hindsight commands", () => {
       "info",
     );
   });
+
+  it("shows dry-run import details without retaining", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    mkdirSync(join(cwd, ".git"));
+    const sessionFile = join(cwd, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-import", cwd }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
+      ].join("\n"),
+    );
+    const retain = vi.fn(async () => undefined);
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => ({ retain, recall: async () => [], reflect: async () => ({}) }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd,
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    await commands.get("hindsight:import-current")?.handler(["--dry-run"], ctx);
+
+    expect(retain).not.toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Import preview: current session; messages=1; documents=1; update=replace; status=pending; write=no",
+      ),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("manifest unchanged="),
+      "info",
+    );
+  });
 });

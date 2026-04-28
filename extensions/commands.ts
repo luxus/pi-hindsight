@@ -48,6 +48,12 @@ function importOptions(args: unknown): {
   };
 }
 
+function importDocumentSummary(result: { documents: { updateMode: string; status: string }[] }) {
+  const modes = [...new Set(result.documents.map((document) => document.updateMode))].join(",");
+  const statuses = [...new Set(result.documents.map((document) => document.status))].join(",");
+  return `documents=${result.documents.length}; update=${modes || "n/a"}; status=${statuses || "n/a"}`;
+}
+
 export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
   const operations = createMemoryOperations(deps);
 
@@ -143,8 +149,8 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       });
       ctx.ui.notify(
         result.dryRun
-          ? `Import preview: ${result.messageCount} messages across ${result.documents.length} document${result.documents.length === 1 ? "" : "s"}; first ${result.documentId}; manifest unchanged ${result.manifestPath}`
-          : `Imported ${result.messageCount} messages as ${result.documentId}; manifest ${result.manifestPath}`,
+          ? `Import preview: messages=${result.messageCount}; ${importDocumentSummary(result)}; write=no; checkpoint=${result.checkpointPath}; manifest unchanged=${result.manifestPath}`
+          : `Imported messages=${result.messageCount}; ${importDocumentSummary(result)}; first=${result.documentId}; manifest=${result.manifestPath}`,
         "info",
       );
     },
@@ -164,8 +170,8 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       });
       ctx.ui.notify(
         result.dryRun
-          ? `Import preview: current session ${result.messageCount} messages across ${result.documents.length} document${result.documents.length === 1 ? "" : "s"}`
-          : `Imported current session ${result.messageCount} messages as ${result.documentId}`,
+          ? `Import preview: current session; messages=${result.messageCount}; ${importDocumentSummary(result)}; write=no; checkpoint=${result.checkpointPath}; manifest unchanged=${result.manifestPath}`
+          : `Imported current session; messages=${result.messageCount}; ${importDocumentSummary(result)}; first=${result.documentId}`,
         "info",
       );
     },
@@ -182,8 +188,8 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       const result = await operations.importSession({ sessionFile: file, ...importOptions(args) });
       ctx.ui.notify(
         result.dryRun
-          ? `Import preview: ${result.messageCount} messages from ${file} across ${result.documents.length} document${result.documents.length === 1 ? "" : "s"}`
-          : `Imported ${result.messageCount} messages from ${file} as ${result.documentId}`,
+          ? `Import preview: file=${file}; messages=${result.messageCount}; ${importDocumentSummary(result)}; write=no; checkpoint=${result.checkpointPath}; manifest unchanged=${result.manifestPath}`
+          : `Imported file=${file}; messages=${result.messageCount}; ${importDocumentSummary(result)}; first=${result.documentId}`,
         "info",
       );
     },
@@ -200,8 +206,8 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       });
       ctx.ui.notify(
         result.dryRun
-          ? `Project import preview: ${result.documentCount} documents from ${result.sessionFiles.length}/${result.scanned} scoped sessions; ${result.messageCount} messages`
-          : `Imported ${result.documentCount} documents from ${result.sessionFiles.length}/${result.scanned} scoped sessions; ${result.messageCount} messages`,
+          ? `Project import preview: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}; write=no`
+          : `Imported project sessions: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}`,
         "info",
       );
     },
