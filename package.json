@@ -21,7 +21,9 @@
     "extensions",
     "README.md",
     "CHANGELOG.md",
-    "docs/adr"
+    "docs/adr",
+    "docs/hindsight-core-functions.md",
+    "docs/pr-roadmap.md"
   ],
   "type": "module",
   "publishConfig": {

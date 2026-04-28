@@ -4,6 +4,87 @@ Persistent memory for Pi, backed by Hindsight.
 
 This package adds a Pi extension that can recall relevant project memory before model calls, retain structured session deltas after completed agent runs, and expose explicit tools for direct memory operations.
 
+## Hindsight mental model
+
+**Hindsight is a memory system that separates storage, retrieval, and reasoning.**
+
+```text
+Retain  = store memory
+Recall  = retrieve memory candidates
+Reflect = analyze memory
+```
+
+Everything happens inside a **memory bank**, an isolated namespace that decides which memories belong together. Banks prevent leakage, simplify governance, and make memory easier to inspect.
+
+```mermaid
+flowchart LR
+  Bank[(Memory Bank)] --> Retain[Retain\nstore raw experience]
+  Bank --> Recall[Recall\nretrieve candidates]
+  Bank --> Reflect[Reflect\nad-hoc analysis]
+  Retain --> Observations[Observations\nfacts learned from repetition]
+  Observations --> Models[Mental Models\nanswers built from facts]
+  Recall --> Answer[Answer with context]
+  Reflect --> Answer
+  Models --> Answer
+```
+
+Core functions:
+
+| Function      | Role                                 | Sharp rule                                     |
+| ------------- | ------------------------------------ | ---------------------------------------------- |
+| Memory Bank   | isolated memory namespace            | keeps unrelated memory apart                   |
+| Retain        | store raw contextual source material | store raw data so the system can extract truth |
+| Recall        | retrieve relevant memory candidates  | recall returns candidates, not answers         |
+| Reflect       | ad-hoc agentic analysis over memory  | use for one-off why/how/pattern questions      |
+| Observations  | auto-generated beliefs from evidence | facts learned from repetition                  |
+| Mental Models | reusable stable syntheses            | answers built from remembered facts            |
+
+```mermaid
+flowchart TD
+  A[Conversation happens] --> B[Retain raw structured content]
+  B --> C[Extract facts, entities, events, relationships]
+  C --> D[Observations consolidate repeated evidence]
+  D --> E[Mental models provide reusable understanding]
+  F[Future prompt arrives] --> G[Recall retrieves memory candidates]
+  G --> H{Need deeper reasoning?}
+  H -- Yes --> I[Reflect analyzes memory]
+  H -- No --> J[Answer with retrieved context]
+  I --> K[Answer with retrieved + synthesized context]
+```
+
+Do:
+
+- store raw, contextual data
+- use consistent `document_id`s
+- set useful `context`
+- tag aggressively
+- separate unrelated memory into banks
+- use recall before answer generation
+- use reflect for deeper ad-hoc analysis
+- use mental models for recurring stable context
+
+Don't:
+
+- summarize before retain when raw data exists
+- use random document IDs for the same source
+- mix unrelated projects in one memory bank
+- store recalled memory back into memory
+- use metadata as the main filter
+- rely on recall alone for complex analysis
+- treat observations and mental models as the same thing
+
+Common failure modes:
+
+| Failure          | Result                                          | Fix                                                                       |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
+| Bad retain       | missing context → weak extraction → weak recall | retain raw structured data, add clear `context`, use stable `document_id` |
+| No tags          | wrong memories retrieved                        | tag by project, user, source; use strict filtering when scope matters     |
+| No reflect       | shallow answers for complex questions           | use recall for candidates and reflect for analysis                        |
+| Too many banks   | fragmented knowledge                            | separate only meaningful scopes; use tags inside banks when enough        |
+| Too much summary | lost evidence                                   | retain raw source when possible                                           |
+
+See [`docs/hindsight-core-functions.md`](docs/hindsight-core-functions.md) for fuller infographic copy and a prompt you can give ChatGPT to generate a visual explainer.
+
 ## Current status
 
 This is a working MVP and still pre-release. The core memory path is implemented; the remaining work is mostly documentation alignment, regression-test hardening, operational polish, and release readiness. See [`docs/pr-roadmap.md`](docs/pr-roadmap.md) for the current PR-by-PR implementation guide.
