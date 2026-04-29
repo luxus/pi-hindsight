@@ -23,7 +23,8 @@
     "CHANGELOG.md",
     "docs/adr",
     "docs/hindsight-core-functions.md",
-    "docs/pr-roadmap.md"
+    "docs/pr-roadmap.md",
+    "docs/post-mvp-roadmap.md"
   ],
   "type": "module",
   "publishConfig": {

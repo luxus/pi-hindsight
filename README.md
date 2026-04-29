@@ -87,7 +87,7 @@ See [`docs/hindsight-core-functions.md`](docs/hindsight-core-functions.md) for f
 
 ## Current status
 
-This is a working MVP and still pre-release. The core memory path is implemented; the remaining work is mostly documentation alignment, regression-test hardening, operational polish, and release readiness. See [`docs/pr-roadmap.md`](docs/pr-roadmap.md) for the current PR-by-PR implementation guide.
+This is a working MVP and still pre-release. The core memory path is implemented; the first hardening roadmap is complete. See [`docs/pr-roadmap.md`](docs/pr-roadmap.md) for the completed MVP hardening plan and [`docs/post-mvp-roadmap.md`](docs/post-mvp-roadmap.md) for the next roadmap.
 
 Implemented:
 
