@@ -9,8 +9,8 @@ import type {
 import {
   enqueueRetainJobWithStats,
   flushRetainQueue,
-  readRetainQueue,
   resolveQueuePath,
+  summarizeRetainQueue,
 } from "./queue.js";
 import { redactSecrets } from "./sanitize.js";
 import { resolveRetainDocumentTarget } from "./capabilities.js";
@@ -76,8 +76,13 @@ export async function retainDurably(args: RetainDurablyArgs): Promise<RetainDura
   const queuePath = resolveQueuePath(args.cwd, args.config.retain.queuePath);
   const enqueueResult = await enqueueRetainJobWithStats(queuePath, buildDurableRetainJob(args));
   if (enqueueResult.previousLength > 0) {
-    const remaining = (await readRetainQueue(queuePath)).length;
-    return { enqueued: true, sent: 0, remaining, deadLettered: 0 };
+    const summary = await summarizeRetainQueue(queuePath);
+    return {
+      enqueued: true,
+      sent: 0,
+      remaining: summary.active.valid + summary.active.malformed,
+      deadLettered: 0,
+    };
   }
   const result = await flushRetainQueue(queuePath, args.client, { maxJobs: 1 });
   return { enqueued: true, ...result };

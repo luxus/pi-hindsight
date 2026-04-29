@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { createMemoryOperations } from "../extensions/memory-operations.js";
 import {
@@ -140,6 +140,27 @@ describe("durable explicit retain", () => {
     expect(queued[0]?.retries).toBe(1);
     expect(queued.slice(1).every((queuedJob) => queuedJob.retries === 0)).toBe(true);
     expect(await readDeadLetterQueue(queuePath)).toHaveLength(0);
+  });
+
+  it("keeps explicit retain queued when existing backlog contains malformed lines", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-retain-"));
+    const config = testConfig();
+    const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
+    mkdirSync(dirname(queuePath), { recursive: true });
+    writeFileSync(queuePath, "{bad json}\n", "utf8");
+    const operations = createMemoryOperations({
+      getClient: () => client(async () => undefined),
+      getConfig: () => config,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const result = await operations.retainExplicit({
+      cwd,
+      content: "Decision with malformed backlog",
+      context: "unit test explicit retain",
+    });
+
+    expect(result).toMatchObject({ enqueued: true, sent: 0, remaining: 2, deadLettered: 0 });
   });
 
   it("does not burn retries when explicit retains race during an outage", async () => {

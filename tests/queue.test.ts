@@ -18,6 +18,7 @@ import {
   readRetainQueue,
   RETAIN_QUEUE_LOCK,
   resolveDeadLetterQueuePath,
+  resolveMalformedQueuePath,
   resolveQueuePath,
   summarizeRetainQueue,
 } from "../extensions/queue.js";
@@ -113,6 +114,28 @@ describe("retain queue", () => {
       malformed: 1,
       error: null,
     });
+  });
+
+  it("quarantines malformed active lines and flushes valid queued jobs", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    writeFileSync(path, `{not json}\nnull\n{"id":"wrong-shape"}\n${JSON.stringify(job)}\n`, "utf8");
+    const calls: unknown[] = [];
+
+    const result = await flushRetainQueue(path, {
+      retain: async (...args: unknown[]) => {
+        calls.push(args);
+      },
+      recall: async () => [],
+      reflect: async () => ({}),
+    });
+
+    expect(result).toMatchObject({ sent: 1, remaining: 0, deadLettered: 0, malformed: 3 });
+    expect(calls).toHaveLength(1);
+    expect(await readRetainQueue(path)).toHaveLength(0);
+    const malformed = readFileSync(resolveMalformedQueuePath(path), "utf8");
+    expect(malformed).toContain("{not json}");
+    expect(malformed).toContain("null");
+    expect(malformed).toContain("wrong-shape");
   });
 
   it("forwards queued observation scopes to retain", async () => {

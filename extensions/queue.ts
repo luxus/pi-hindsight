@@ -214,6 +214,10 @@ export function resolveDeadLetterQueuePath(path: string): string {
   return `${path}.dead.jsonl`;
 }
 
+export function resolveMalformedQueuePath(path: string): string {
+  return `${path}.malformed.jsonl`;
+}
+
 export interface EnqueueRetainJobResult {
   previousLength: number;
   currentLength: number;
@@ -341,6 +345,72 @@ export interface FlushRetainQueueResult {
   sent: number;
   remaining: number;
   deadLettered: number;
+  malformed: number;
+}
+
+interface ParsedQueueFile {
+  jobs: RetainJob[];
+  malformedLines: string[];
+}
+
+function isRetainJob(value: unknown): value is RetainJob {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  const item = record.item as Record<string, unknown> | undefined;
+  return (
+    typeof record.id === "string" &&
+    typeof record.bankId === "string" &&
+    typeof record.documentId === "string" &&
+    (record.updateMode === "append" || record.updateMode === "replace") &&
+    typeof record.retries === "number" &&
+    !!item &&
+    typeof item === "object" &&
+    typeof item.content === "string" &&
+    typeof item.context === "string"
+  );
+}
+
+async function readRetainQueueTolerant(path: string): Promise<ParsedQueueFile> {
+  try {
+    const text = await readFile(path, "utf8");
+    const jobs: RetainJob[] = [];
+    const malformedLines: string[] = [];
+    for (const line of text.split("\n").filter(Boolean)) {
+      try {
+        const parsed = JSON.parse(line) as unknown;
+        if (isRetainJob(parsed)) jobs.push(parsed);
+        else malformedLines.push(line);
+      } catch {
+        malformedLines.push(line);
+      }
+    }
+    return { jobs, malformedLines };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { jobs: [], malformedLines: [] };
+    }
+    throw error;
+  }
+}
+
+async function appendMalformedQueueLines(path: string, lines: string[]): Promise<void> {
+  if (lines.length === 0) return;
+  const malformedPath = resolveMalformedQueuePath(path);
+  await mkdir(dirname(malformedPath), { recursive: true });
+  const quarantinedAt = new Date().toISOString();
+  await appendFile(
+    malformedPath,
+    lines
+      .map((line) =>
+        JSON.stringify({
+          quarantinedAt,
+          sourceQueue: path,
+          line,
+        }),
+      )
+      .join("\n") + "\n",
+    "utf8",
+  );
 }
 
 export async function flushRetainQueue(
@@ -354,7 +424,8 @@ export async function flushRetainQueue(
     const maxJobs = resolvedOptions.maxJobs ?? Number.POSITIVE_INFINITY;
     const maxElapsedMs = resolvedOptions.maxElapsedMs ?? Number.POSITIVE_INFINITY;
     const started = Date.now();
-    const jobs = await readRetainQueue(path);
+    const parsed = await readRetainQueueTolerant(path);
+    const jobs = parsed.jobs;
     const remaining: RetainJob[] = [];
     const deadLetteredJobs: RetainJob[] = [];
     let sent = 0;
@@ -398,8 +469,14 @@ export async function flushRetainQueue(
         }
       }
     }
+    await appendMalformedQueueLines(path, parsed.malformedLines);
     await appendDeadLetterJobs(path, deadLetteredJobs);
     await writeRetainQueue(path, remaining);
-    return { sent, remaining: remaining.length, deadLettered: deadLetteredJobs.length };
+    return {
+      sent,
+      remaining: remaining.length,
+      deadLettered: deadLetteredJobs.length,
+      malformed: parsed.malformedLines.length,
+    };
   });
 }
