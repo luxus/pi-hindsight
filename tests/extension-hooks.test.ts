@@ -8,6 +8,7 @@ import {
   readSessionMemoryMeta,
   setNextSessionRetainMode,
   setSessionMemoryMode,
+  setSessionRetainEnabled,
 } from "../extensions/session-memory-meta.js";
 import type { RetainJob } from "../extensions/types.js";
 
@@ -163,6 +164,40 @@ describe("extension hooks", () => {
     expect(retainedContent).not.toContain("Skipped answer");
     expect(retainedContent).toContain("Retain this later");
     expect(retainedContent).toContain("Retained answer");
+  });
+
+  it("still recalls while next opt-out is pending", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+
+    const recall = await handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "q", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(mocked.client.recall).toHaveBeenCalled();
+    expect(recall.messages[0].content).toContain("<hindsight-memory>");
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
   });
 
   it("writes opt-in last recall snapshot to sidecar", async () => {
@@ -721,6 +756,41 @@ describe("extension hooks", () => {
     expect(retainCalls[0]?.[1]).not.toContain("private");
   });
 
+  it("keeps read-only stronger than next opt-out", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setSessionMemoryMode(cwd, sessionFile, "read-only");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    mocked.client.retain.mockClear();
+
+    await handlers.agent_end?.[0]?.(
+      { messages: [{ role: "user", content: "read-only private", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(mocked.client.retain).not.toHaveBeenCalled();
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("normal");
+  });
+
   it("honors session ignored mode", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
@@ -755,6 +825,80 @@ describe("extension hooks", () => {
       ctx,
     );
     expect(mocked.client.retain).not.toHaveBeenCalled();
+  });
+
+  it("keeps ignored mode stronger than next opt-out", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setSessionMemoryMode(cwd, sessionFile, "ignored");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    mocked.client.retain.mockClear();
+    const recall = await handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "q", timestamp: 1 }] },
+      ctx,
+    );
+    await handlers.agent_end?.[0]?.(
+      { messages: [{ role: "user", content: "ignored private", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(recall).toBeUndefined();
+    expect(mocked.client.retain).not.toHaveBeenCalled();
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("normal");
+  });
+
+  it("keeps retain off stronger than next opt-out", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setSessionRetainEnabled(cwd, sessionFile, false);
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    mocked.client.retain.mockClear();
+
+    await handlers.agent_end?.[0]?.(
+      { messages: [{ role: "user", content: "retain off private", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(mocked.client.retain).not.toHaveBeenCalled();
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("normal");
   });
 
   it("does not auto-retain when project bank is disabled", async () => {

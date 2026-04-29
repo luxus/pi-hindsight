@@ -136,10 +136,11 @@ Additional coverage added after implementation:
 - explicit `hindsight_retain` still queues normally while next opt-out is pending
 - historical import ignores next opt-out state
 
-Remaining useful regression coverage:
+Additional coverage added after fail-closed hardening:
 
 - recall still runs while next retain is off
 - ignored/read-only/retain-off modes remain stronger than next opt-out
+- next opt-out remains pending if retain cursor marking fails
 
 ## Out of scope
 
