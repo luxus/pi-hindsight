@@ -84,6 +84,7 @@ describe("Hindsight client adapter integration", () => {
       updateMode: "append",
       async: true,
       metadata: { source: "test" },
+      entities: [{ text: "Alice", type: "person" }],
     });
     await client.retain("test-bank", "scoped content", {
       context: "scoped ctx",
@@ -97,8 +98,12 @@ describe("Hindsight client adapter integration", () => {
       tagsMatch: "any_strict",
       maxTokens: 123,
       budget: "low",
+      queryTimestamp: "2024-01-01T00:00:00Z",
     });
-    const reflection = await client.reflect("test-bank", "query", { budget: "low" });
+    const reflection = await client.reflect("test-bank", "query", {
+      budget: "low",
+      responseSchema: { type: "object", properties: { answer: { type: "string" } } },
+    });
 
     expect(recall).toEqual({ results: [{ text: "remembered fact" }] });
     expect(reflection).toEqual({ text: "reflection" });
@@ -120,6 +125,7 @@ describe("Hindsight client adapter integration", () => {
           update_mode: "append",
           tags: ["source:pi"],
           metadata: { source: "test" },
+          entities: [{ text: "Alice", type: "person" }],
         },
       ],
       async: true,
@@ -142,8 +148,14 @@ describe("Hindsight client adapter integration", () => {
       query: "query",
       max_tokens: 123,
       budget: "low",
+      query_timestamp: "2024-01-01T00:00:00Z",
       tags: ["source:pi"],
       tags_match: "any_strict",
+    });
+    expect(requests[4]?.body).toMatchObject({
+      query: "query",
+      budget: "low",
+      response_schema: { type: "object", properties: { answer: { type: "string" } } },
     });
   });
 });

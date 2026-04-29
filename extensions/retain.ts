@@ -55,6 +55,7 @@ export function buildRetainJob(args: {
       context: contextLabel(args.cwd, args.sessionFile),
       timestamp: new Date().toISOString(),
       async: args.config.retain.async,
+      ...(args.config.retain.entities.length ? { entities: args.config.retain.entities } : {}),
       tags: [...new Set([...baseTags(args.cwd, sessionId), ...(args.extraTags ?? [])])],
       metadata: {
         cwd: args.cwd,

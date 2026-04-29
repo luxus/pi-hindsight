@@ -125,6 +125,31 @@ describe("resolveConfig", () => {
     expect(config.recall.includeRepoHintsInQuery).toBe(false);
   });
 
+  it("reads JSONC config and release API knobs", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.jsonc"),
+      `{
+        // comments are allowed in JSONC config
+        "recall": {
+          "queryTimestamp": "2024-05-01T00:00:00Z",
+          "queryPreamble": "literal comma, } stays",
+        },
+        "retain": {
+          "flushIntervalMs": 30000,
+          "entities": [{ "text": "Pi", "type": "project" }],
+        },
+      }`,
+    );
+
+    const config = resolveConfig(cwd);
+    expect(config.recall.queryTimestamp).toBe("2024-05-01T00:00:00Z");
+    expect(config.recall.queryPreamble).toBe("literal comma, } stays");
+    expect(config.retain.flushIntervalMs).toBe(30_000);
+    expect(config.retain.entities).toEqual([{ text: "Pi", type: "project" }]);
+  });
+
   it("maps generic query preamble to bank-specific preambles when specific fields are absent", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));
@@ -161,10 +186,13 @@ describe("resolveConfig", () => {
           topK: -1,
           timeoutMs: 0,
           injectionPosition: "middle",
+          queryTimestamp: 42,
         },
         observations: { enabled: true, scopes: [["repo:{repoKey}"], []] },
         retain: {
           queuePath: "",
+          flushIntervalMs: -1,
+          entities: [{ text: "ok" }, { text: 42 }],
           shutdownFlushMaxJobs: -1,
           shutdownFlushTimeoutMs: 0,
           toolFilter: { toolCall: { include: [42] }, toolResult: { exclude: "read" } },
@@ -202,12 +230,15 @@ describe("resolveConfig", () => {
     expect(config.recall.topK).toBe(8);
     expect(config.recall.timeoutMs).toBe(10_000);
     expect(config.recall.injectionPosition).toBe("append");
+    expect(config.recall.queryTimestamp).toBeUndefined();
     expect(config.retain.content.toolResult).toEqual(["error"]);
     expect(config.retain.toolFilter.toolCall.exclude).toContain("hindsight_retain");
     expect(config.retain.toolFilter.toolResult.exclude).toContain("hindsight_recall");
     expect(config.retain.toolFilter.toolResult.exclude).toContain("read");
     expect(config.retain.strip.message).toContain("usage");
     expect(config.retain.queuePath).toBe(".pi/hindsight/retain-queue.jsonl");
+    expect(config.retain.flushIntervalMs).toBe(0);
+    expect(config.retain.entities).toEqual([]);
     expect(config.retain.shutdownFlushMaxJobs).toBe(10);
     expect(config.retain.shutdownFlushTimeoutMs).toBe(2_000);
     expect(config.import.includeBranches).toBe("current-only");

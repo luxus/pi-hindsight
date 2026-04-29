@@ -61,7 +61,13 @@ function diagnosticHealthBankId(config: ResolvedConfig, projectBankId: string): 
 
 export function createMemoryOperations(deps: MemoryOperationsDeps) {
   return {
-    async recall(cwd: string, query: string, bank?: string, sessionFile?: string) {
+    async recall(
+      cwd: string,
+      query: string,
+      bank?: string,
+      sessionFile?: string,
+      queryTimestamp?: string,
+    ) {
       const meta = await readSessionMemoryMeta(cwd, sessionFile);
       if (!getEffectiveSessionMemoryMode(meta).recall)
         throw new Error("Hindsight recall is disabled for this session");
@@ -70,6 +76,9 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
       const result = await deps.getClient().recall(bankId, query, {
         budget: config.recall.budget,
         maxTokens: config.recall.maxTokens,
+        ...(queryTimestamp || config.recall.queryTimestamp
+          ? { queryTimestamp: queryTimestamp ?? config.recall.queryTimestamp }
+          : {}),
         tags: recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId),
         tagsMatch: "any_strict",
       });
@@ -83,6 +92,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
       context: string;
       bank?: string;
       tags?: string[];
+      entities?: ResolvedConfig["retain"]["entities"];
     }) {
       const meta = await readSessionMemoryMeta(args.cwd, args.sessionFile);
       if (!getEffectiveSessionMemoryMode(meta).retain)
@@ -117,6 +127,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
         },
         source: "tool",
         ...(observationScopes.length ? { observationScopes } : {}),
+        ...(args.entities?.length ? { entities: args.entities } : {}),
         ...(capabilities ? { capabilities } : {}),
       });
       return { bankId, tags, ...result, queued: result.enqueued };
@@ -172,12 +183,19 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
       return { bankId, ...result };
     },
 
-    async reflect(cwd: string, query: string, context?: string, bank?: string) {
+    async reflect(
+      cwd: string,
+      query: string,
+      context?: string,
+      bank?: string,
+      responseSchema?: Record<string, unknown>,
+    ) {
       const config = deps.getConfig();
       const bankId = bank || deps.getProjectBankId();
       const result = await deps.getClient().reflect(bankId, query, {
         ...(context ? { context } : {}),
         budget: config.recall.budget,
+        ...(responseSchema ? { responseSchema } : {}),
         tags: recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId),
         tagsMatch: "any_strict",
       });

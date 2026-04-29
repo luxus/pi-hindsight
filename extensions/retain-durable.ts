@@ -31,6 +31,7 @@ export interface RetainDurablyArgs {
   source: DurableRetainSource;
   timestamp?: string;
   observationScopes?: string[][];
+  entities?: RetainJob["item"]["entities"];
   capabilities?: HindsightCapabilities;
 }
 
@@ -60,6 +61,9 @@ export function buildDurableRetainJob(args: Omit<RetainDurablyArgs, "client">): 
       context: args.context,
       timestamp: args.timestamp ?? new Date().toISOString(),
       async: args.config.retain.async,
+      ...((args.entities?.length ?? args.config.retain.entities.length)
+        ? { entities: [...args.config.retain.entities, ...(args.entities ?? [])] }
+        : {}),
       tags: args.tags,
       metadata: {
         source: "pi-hindsight",

@@ -9,6 +9,11 @@ export type StatusDetail = "minimal" | "project" | "activity" | "verbose";
 export type RecallRole = "user" | "assistant" | "tool" | "system";
 export type RecallInjectionPosition = "prepend" | "append";
 
+export interface HindsightEntityInput {
+  text: string;
+  type?: string;
+}
+
 export interface ResolvedConfig {
   enabled: boolean;
   hindsight: { baseUrl: string; apiKey?: string; apiKeyRef?: string; timeoutMs: number };
@@ -41,6 +46,7 @@ export interface ResolvedConfig {
     injectionMode: "context";
     injectionPosition: RecallInjectionPosition;
     includeFactsInDebug: boolean;
+    queryTimestamp?: string;
   };
   observations: {
     enabled: boolean;
@@ -64,7 +70,9 @@ export interface ResolvedConfig {
       topLevel: string[];
     };
     redactSecrets: boolean;
+    entities: HindsightEntityInput[];
     queuePath: string;
+    flushIntervalMs: number;
     shutdownFlushMaxJobs: number;
     shutdownFlushTimeoutMs: number;
   };
@@ -125,6 +133,7 @@ export interface RetainJob {
     tags?: string[];
     metadata?: Record<string, string>;
     observationScopes?: string[][];
+    entities?: HindsightEntityInput[];
   };
   retries: number;
   lastError?: string;
@@ -149,6 +158,7 @@ export interface HindsightLikeClient {
       metadata?: Record<string, string>;
       documentId?: string;
       async?: boolean;
+      entities?: HindsightEntityInput[];
       tags?: string[];
       updateMode?: UpdateMode;
       observationScopes?: string[][];
@@ -176,6 +186,7 @@ export interface HindsightLikeClient {
       types?: string[];
       maxTokens?: number;
       budget?: Budget;
+      queryTimestamp?: string;
       tags?: string[];
       tagsMatch?: TagsMatch;
     },
@@ -186,6 +197,7 @@ export interface HindsightLikeClient {
     options?: {
       context?: string;
       budget?: Budget;
+      responseSchema?: Record<string, unknown>;
       tags?: string[];
       tagsMatch?: TagsMatch;
     },

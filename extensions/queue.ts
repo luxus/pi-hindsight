@@ -480,6 +480,7 @@ export async function flushRetainQueue(
           ...(job.item.timestamp ? { timestamp: job.item.timestamp } : {}),
           ...(job.item.metadata ? { metadata: job.item.metadata } : {}),
           ...(job.item.async !== undefined ? { async: job.item.async } : {}),
+          ...(job.item.entities?.length ? { entities: job.item.entities } : {}),
           ...(job.item.tags ? { tags: job.item.tags } : {}),
           ...(job.item.observationScopes ? { observationScopes: job.item.observationScopes } : {}),
           documentId: job.documentId,

@@ -79,6 +79,10 @@
 - update changelog ([5c35c36](https://github.com/luxus/pi-hindsight/commit/5c35c36cbec4fea1b4139c371db52a5cbf80d384))
 - generate changelog ([433e90c](https://github.com/luxus/pi-hindsight/commit/433e90ce1dfa757c0cf24a7e988f43ee892ea468))
 
+### Tests
+
+- cover changelog generator ([48769c4](https://github.com/luxus/pi-hindsight/commit/48769c4457c6ab74c4a75952f112cb6f0a4b84af))
+
 ### CI
 
 - update workflow actions to v6 ([0803e43](https://github.com/luxus/pi-hindsight/commit/0803e4334966aa477b928e5bdd5ad583d62d474a))

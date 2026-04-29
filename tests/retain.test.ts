@@ -5,8 +5,9 @@ import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
 
 describe("buildRetainJob", () => {
   it("stores structured JSON with append mode and context", () => {
+    const timestamp = Date.UTC(2024, 0, 2, 3, 4, 5);
     const messages = [
-      { role: "user", content: "API_KEY=secret", timestamp: Date.now() },
+      { role: "user", content: "API_KEY=secret", timestamp },
     ] as unknown as AgentEndEvent["messages"];
     const job = buildRetainJob({
       config: DEFAULT_CONFIG,
@@ -20,7 +21,26 @@ describe("buildRetainJob", () => {
     expect(job?.item.context).toContain("Pi coding session");
     expect(job?.item.async).toBe(true);
     expect(job?.item.content).not.toContain("API_KEY=secret");
-    expect(JSON.parse(job?.item.content ?? "[]")[0].role).toBe("user");
+    const retained = JSON.parse(job?.item.content ?? "[]") as Array<Record<string, unknown>>;
+    expect(retained[0]?.role).toBe("user");
+    expect(retained[0]?.timestamp).toBe("2024-01-02T03:04:05.000Z");
+  });
+
+  it("adds configured entities to automatic retain jobs", () => {
+    const messages = [
+      { role: "user", content: "remember Pi", timestamp: Date.now() },
+    ] as unknown as AgentEndEvent["messages"];
+    const job = buildRetainJob({
+      config: {
+        ...DEFAULT_CONFIG,
+        retain: { ...DEFAULT_CONFIG.retain, entities: [{ text: "Pi", type: "project" }] },
+      },
+      cwd: "/repo",
+      bankId: "bank",
+      messages,
+    });
+
+    expect(job?.item.entities).toEqual([{ text: "Pi", type: "project" }]);
   });
 
   it("expands observation scopes into retain jobs", () => {

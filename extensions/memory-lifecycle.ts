@@ -80,13 +80,42 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
   let client: HindsightLikeClient = createHindsightClient(config);
   let projectBankId = deriveProjectBankId(initialCwd, config);
   let capabilities: HindsightCapabilities | undefined;
+  let periodicFlush: NodeJS.Timeout | undefined;
+  let periodicFlushActive = false;
   const retainedBySession = new Map<string, Set<string>>();
 
+  const stopPeriodicFlush = () => {
+    if (!periodicFlush) return;
+    clearInterval(periodicFlush);
+    periodicFlush = undefined;
+  };
+
   const reloadConfig = (cwd: string) => {
+    stopPeriodicFlush();
     config = resolveConfig(cwd);
     client = createHindsightClient(config);
     projectBankId = deriveProjectBankId(cwd, config);
     capabilities = undefined;
+  };
+
+  const startPeriodicFlush = (runtime: RuntimeSnapshot) => {
+    stopPeriodicFlush();
+    if (!config.enabled || !config.retain.enabled || config.retain.flushIntervalMs <= 0) return;
+    const queuePath = resolveQueuePath(runtime.cwd, config.retain.queuePath);
+    periodicFlush = setInterval(() => {
+      if (periodicFlushActive) return;
+      periodicFlushActive = true;
+      void flushRetainQueue(queuePath, client, {
+        stopOnFirstFailure: true,
+        maxJobs: config.retain.shutdownFlushMaxJobs,
+        maxElapsedMs: config.retain.shutdownFlushTimeoutMs,
+      })
+        .catch(() => undefined)
+        .finally(() => {
+          periodicFlushActive = false;
+        });
+    }, config.retain.flushIntervalMs);
+    periodicFlush.unref?.();
   };
 
   const setMemoryStatus = (
@@ -198,6 +227,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           notify(runtime, `Hindsight capability check failed: ${redactError(error)}`, "warning");
         }
       }
+      startPeriodicFlush(runtime);
       setMemoryStatus(runtime, "idle");
       if (config.notifications.startup)
         notify(runtime, bankSelectionMessage(projectBankId, config), "info");
@@ -347,6 +377,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
     },
 
     async shutdown(ctx: RuntimeCtx): Promise<void> {
+      stopPeriodicFlush();
       if (!config.enabled || !config.retain.enabled) return;
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return;

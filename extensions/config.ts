@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ResolvedConfig } from "./types.js";
+import type { HindsightEntityInput, ResolvedConfig } from "./types.js";
 
 const DEFAULT_CONFIG: ResolvedConfig = {
   enabled: true,
@@ -62,7 +62,9 @@ const DEFAULT_CONFIG: ResolvedConfig = {
     },
     strip: { message: ["usage", "cost", "responseId"], topLevel: ["id", "parentId"] },
     redactSecrets: true,
+    entities: [],
     queuePath: ".pi/hindsight/retain-queue.jsonl",
+    flushIntervalMs: 0,
     shutdownFlushMaxJobs: 10,
     shutdownFlushTimeoutMs: 2_000,
   },
@@ -99,9 +101,88 @@ function merge<T>(base: T, patch: unknown): T {
   return out as T;
 }
 
+function stripJsonComments(text: string): string {
+  let out = "";
+  let inString = false;
+  let quote = "";
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (inString) {
+      out += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) inString = false;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      inString = true;
+      quote = char;
+      out += char;
+      continue;
+    }
+    if (char === "/" && next === "/") {
+      while (index < text.length && text[index] !== "\n") index += 1;
+      out += "\n";
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      index += 2;
+      while (index < text.length && !(text[index] === "*" && text[index + 1] === "/")) {
+        if (text[index] === "\n") out += "\n";
+        index += 1;
+      }
+      index += 1;
+      continue;
+    }
+    out += char;
+  }
+  return out;
+}
+
+function stripTrailingCommas(text: string): string {
+  let out = "";
+  let inString = false;
+  let quote = "";
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (inString) {
+      out += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) inString = false;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      inString = true;
+      quote = char;
+      out += char;
+      continue;
+    }
+    if (char === ",") {
+      let nextIndex = index + 1;
+      while (/\s/.test(text[nextIndex] ?? "")) nextIndex += 1;
+      if (text[nextIndex] === "}" || text[nextIndex] === "]") continue;
+    }
+    out += char;
+  }
+  return out;
+}
+
+function parseJsonWithComments(text: string): unknown {
+  return JSON.parse(stripTrailingCommas(stripJsonComments(text))) as unknown;
+}
+
 function readJson(path: string): unknown {
   if (!existsSync(path)) return undefined;
-  return JSON.parse(readFileSync(path, "utf8")) as unknown;
+  return parseJsonWithComments(readFileSync(path, "utf8"));
+}
+
+function readConfigFile(basePath: string): unknown {
+  const json = readJson(`${basePath}.json`);
+  return json === undefined ? readJson(`${basePath}.jsonc`) : json;
 }
 
 function envBool(env: NodeJS.ProcessEnv, name: string): boolean | undefined {
@@ -184,6 +265,21 @@ function optionalStringArray(value: unknown): string[] | undefined {
   return Array.isArray(value) && value.every((item) => typeof item === "string")
     ? value
     : undefined;
+}
+
+function entityArray(value: unknown, fallback: HindsightEntityInput[]): HindsightEntityInput[] {
+  if (!Array.isArray(value)) return fallback;
+  const entities = value
+    .map((item) => {
+      if (!isRecord(item) || typeof item.text !== "string" || item.text.length === 0)
+        return undefined;
+      return {
+        text: item.text,
+        ...(typeof item.type === "string" && item.type.length > 0 ? { type: item.type } : {}),
+      } satisfies HindsightEntityInput;
+    })
+    .filter((item): item is HindsightEntityInput => Boolean(item));
+  return entities.length === value.length ? entities : fallback;
 }
 
 function toolNameFilter(
@@ -322,6 +418,14 @@ export function normalizeConfig(
         config.recall?.includeFactsInDebug,
         DEFAULT_CONFIG.recall.includeFactsInDebug,
       ),
+      ...(optionalString(config.recall?.queryTimestamp, DEFAULT_CONFIG.recall.queryTimestamp)
+        ? {
+            queryTimestamp: stringValue(
+              config.recall?.queryTimestamp,
+              DEFAULT_CONFIG.recall.queryTimestamp ?? "",
+            ),
+          }
+        : {}),
     },
     retain: {
       enabled: bool(config.retain?.enabled, DEFAULT_CONFIG.retain.enabled),
@@ -359,7 +463,15 @@ export function normalizeConfig(
         topLevel: stringArray(config.retain?.strip?.topLevel, DEFAULT_CONFIG.retain.strip.topLevel),
       },
       redactSecrets: bool(config.retain?.redactSecrets, DEFAULT_CONFIG.retain.redactSecrets),
+      entities: entityArray(config.retain?.entities, DEFAULT_CONFIG.retain.entities),
       queuePath: stringValue(config.retain?.queuePath, DEFAULT_CONFIG.retain.queuePath),
+      flushIntervalMs: Math.max(
+        0,
+        typeof config.retain?.flushIntervalMs === "number" &&
+          Number.isInteger(config.retain.flushIntervalMs)
+          ? config.retain.flushIntervalMs
+          : DEFAULT_CONFIG.retain.flushIntervalMs,
+      ),
       shutdownFlushMaxJobs: positiveInt(
         config.retain?.shutdownFlushMaxJobs,
         DEFAULT_CONFIG.retain.shutdownFlushMaxJobs,
@@ -412,10 +524,10 @@ export function resolveConfig(cwd: string, env: NodeJS.ProcessEnv = process.env)
   let rawConfig: Record<string, unknown> = {};
   let config = DEFAULT_CONFIG;
   const home = env.HOME;
-  const homeConfig = home ? readJson(join(home, ".pi", "agent", "hindsight.json")) : undefined;
+  const homeConfig = home ? readConfigFile(join(home, ".pi", "agent", "hindsight")) : undefined;
   rawConfig = merge(rawConfig, homeConfig);
   config = merge(config, homeConfig);
-  const projectConfig = readJson(join(cwd, ".pi", "hindsight.json"));
+  const projectConfig = readConfigFile(join(cwd, ".pi", "hindsight"));
   rawConfig = merge(rawConfig, projectConfig);
   config = merge(config, projectConfig);
 

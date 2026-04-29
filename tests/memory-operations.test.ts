@@ -81,4 +81,52 @@ describe("memory operations", () => {
 
     expect(checkedBanks).toEqual(["global-bank", "global-bank"]);
   });
+
+  it("passes query timestamps, explicit entities, and reflect response schemas", async () => {
+    const calls: Array<{ method: string; options?: unknown }> = [];
+    const operations = createMemoryOperations({
+      getClient: () => ({
+        retain: async (_bank, _content, options) => {
+          calls.push({ method: "retain", options });
+        },
+        recall: async (_bank, _query, options) => {
+          calls.push({ method: "recall", options });
+          return [];
+        },
+        reflect: async (_bank, _query, options) => {
+          calls.push({ method: "reflect", options });
+          return {};
+        },
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        recall: { ...DEFAULT_CONFIG.recall, queryTimestamp: "2024-01-01T00:00:00Z" },
+        retain: { ...DEFAULT_CONFIG.retain, async: false },
+      }),
+      getProjectBankId: () => "project-bank",
+    });
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ops-"));
+
+    await operations.recall(cwd, "query", undefined, undefined, "2024-02-01T00:00:00Z");
+    await operations.retainExplicit({
+      cwd,
+      content: "content",
+      context: "context",
+      entities: [{ text: "Alice", type: "person" }],
+    });
+    await operations.reflect(cwd, "query", undefined, undefined, {
+      type: "object",
+      properties: { answer: { type: "string" } },
+    });
+
+    expect(calls.find((call) => call.method === "recall")?.options).toMatchObject({
+      queryTimestamp: "2024-02-01T00:00:00Z",
+    });
+    expect(calls.find((call) => call.method === "retain")?.options).toMatchObject({
+      entities: [{ text: "Alice", type: "person" }],
+    });
+    expect(calls.find((call) => call.method === "reflect")?.options).toMatchObject({
+      responseSchema: { type: "object", properties: { answer: { type: "string" } } },
+    });
+  });
 });

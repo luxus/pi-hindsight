@@ -189,10 +189,16 @@ Run Pi with the local package or extension:
 pi -e ./extensions/index.ts
 ```
 
-Or install the package path:
+Or install the published package:
 
 ```bash
-pi install /Users/luxus/projects/pi-hindsight
+pi install @luxus/pi-hindsight
+```
+
+For local development, install a checkout path instead:
+
+```bash
+pi install /path/to/pi-hindsight
 ```
 
 Published package name: `@luxus/pi-hindsight`.
@@ -201,11 +207,11 @@ Published package name: `@luxus/pi-hindsight`.
 
 Defaults can be overridden by:
 
-1. `~/.pi/agent/hindsight.json`
-2. `.pi/hindsight.json` in the current repo
+1. `~/.pi/agent/hindsight.json` or `~/.pi/agent/hindsight.jsonc`
+2. `.pi/hindsight.json` or `.pi/hindsight.jsonc` in the current repo
 3. environment variables
 
-Config is normalized after merging. Unknown fields are ignored, and invalid values fall back to defaults.
+If both `.json` and `.jsonc` exist at the same scope, `.json` wins. Config is normalized after merging. Unknown fields are ignored, and invalid values fall back to defaults.
 
 ### Minimal configuration path
 
@@ -313,6 +319,7 @@ Advanced project config example:
     "globalQueryPreamble": "Global memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
     "includeDateInQuery": false,
     "includeRepoHintsInQuery": true,
+    "queryTimestamp": "2024-05-01T00:00:00Z",
     "storeLastRecall": false,
     "lastRecallPath": ".pi/hindsight/last-recall.json",
     "topK": 8,
@@ -325,7 +332,9 @@ Advanced project config example:
   },
   "retain": {
     "queuePath": ".pi/hindsight/retain-queue.jsonl",
+    "flushIntervalMs": 30000,
     "updateMode": "append",
+    "entities": [{ "text": "Pi", "type": "project" }],
     "content": {
       "user": ["text"],
       "assistant": ["text", "toolCall"],
@@ -372,11 +381,13 @@ Advanced project config example:
 
 ## Memory behavior
 
-Automatic recall runs in the `context` hook and injects an ephemeral `<hindsight-memory>` message into the provider context. Project bank recall is scoped by the current repo tag. If a global bank is enabled, global recall uses an explicit non-repo `source:pi` scope so cross-project memories can be found without requiring the current repo tag. The `project+global` profile queries both banks and labels recalled blocks by source; `global-only` queries only the global bank. Recall defaults to `recall.types: ["observation"]` because observations are Hindsight's consolidated, deduplicated memory layer; set `recall.types` to include `world` or `experience`, or to an empty list, only when you explicitly want lower-level raw memory types. Recall query composition is deterministic and bank-aware: selected messages are role-labeled, bounded by `recall.roles`, `recall.contextTurns`, and `recall.maxQueryChars`, and can include `recall.projectQueryPreamble` / `recall.globalQueryPreamble`, optional `recall.includeDateInQuery`, and repo hints controlled by `recall.includeRepoHintsInQuery`. Slow recalls are bounded by `recall.timeoutMs`. `recall.topK` limits injected results per bank. Recall visibility is sidecar-only and opt-in: set `recall.storeLastRecall: true` to write the latest recall snapshot to `recall.lastRecallPath`, then inspect it with `/hindsight:last-recall` or `/hindsight:last-recall --json`. The default snapshot path is ignored by this repository; custom paths should be added to your own ignore rules. Snapshots contain recalled memory and query excerpts, so enable this only when local disk visibility is acceptable. Snapshots are not inserted into provider context or automatic retain by this extension. `/hindsight:recall-cleanup` scans the current Pi session transcript for accidentally persisted `<hindsight-memory>` blocks and reports matching line numbers. Pruning requires an explicit offline file path: `/hindsight:recall-cleanup <session.jsonl> --prune` removes matching injected-memory JSONL lines after writing a unique `.hindsight-recall-prune.*.bak` backup next to the session file. The default recall budget is `mid`, and the default injection position is `append`: recall is inserted near the end of provider context, before the current user message when present, so fresh memory does not change the beginning of the provider prompt and break prompt caching. `prepend` remains configurable for users who explicitly prefer memory before the transcript, but it can reduce prompt-cache hits because every recalled block changes the prompt prefix. The injected memory block is not written to the Pi transcript by this extension.
+Automatic recall runs in the `context` hook and injects an ephemeral `<hindsight-memory>` message into the provider context. Project bank recall is scoped by the current repo tag. If a global bank is enabled, global recall uses an explicit non-repo `source:pi` scope so cross-project memories can be found without requiring the current repo tag. The `project+global` profile queries both banks and labels recalled blocks by source; `global-only` queries only the global bank. Recall defaults to `recall.types: ["observation"]` because observations are Hindsight's consolidated, deduplicated memory layer; set `recall.types` to include `world` or `experience`, or to an empty list, only when you explicitly want lower-level raw memory types. Set `recall.queryTimestamp` only when recall should be anchored to a specific point in time; otherwise omit it so Hindsight uses the current request time. Recall query composition is deterministic and bank-aware: selected messages are role-labeled, bounded by `recall.roles`, `recall.contextTurns`, and `recall.maxQueryChars`, and can include `recall.projectQueryPreamble` / `recall.globalQueryPreamble`, optional `recall.includeDateInQuery`, and repo hints controlled by `recall.includeRepoHintsInQuery`. Slow recalls are bounded by `recall.timeoutMs`. `recall.topK` limits injected results per bank. Recall visibility is sidecar-only and opt-in: set `recall.storeLastRecall: true` to write the latest recall snapshot to `recall.lastRecallPath`, then inspect it with `/hindsight:last-recall` or `/hindsight:last-recall --json`. The default snapshot path is ignored by this repository; custom paths should be added to your own ignore rules. Snapshots contain recalled memory and query excerpts, so enable this only when local disk visibility is acceptable. Snapshots are not inserted into provider context or automatic retain by this extension. `/hindsight:recall-cleanup` scans the current Pi session transcript for accidentally persisted `<hindsight-memory>` blocks and reports matching line numbers. Pruning requires an explicit offline file path: `/hindsight:recall-cleanup <session.jsonl> --prune` removes matching injected-memory JSONL lines after writing a unique `.hindsight-recall-prune.*.bak` backup next to the session file. The default recall budget is `mid`, and the default injection position is `append`: recall is inserted near the end of provider context, before the current user message when present, so fresh memory does not change the beginning of the provider prompt and break prompt caching. `prepend` remains configurable for users who explicitly prefer memory before the transcript, but it can reduce prompt-cache hits because every recalled block changes the prompt prefix. The injected memory block is not written to the Pi transcript by this extension.
 
-Automatic retain runs in the `agent_end` hook. It stores a structured JSON projection of new messages, not a summary. The retain projection is controlled by `retain.content`, `retain.toolFilter`, and `retain.strip`; defaults keep user/assistant text, assistant tool calls, and tool result errors while excluding recursive Hindsight tool output and noisy read/search results. Live sessions use stable `documentId` values and `updateMode: "append"`. When retain is enabled and either project auto-retain or a configured global-only explicit retain route is available, startup probes append support with a deterministic `pi-hindsight-capability:append:<bank>` document tagged `test:capability` and `feature:append-probe`. If append is known unsupported, retain fails clearly because append support is required for live sessions. A persisted retain cursor under `.pi/hindsight/retain-cursors.json` prevents duplicate appends when Pi provides overlapping transcripts, including after extension restart. Explicit retain tool tags are merged with the base `source:pi`, repo, and session tags so manually retained memories remain visible to default project recall. Per-session governance is stored outside provider-visible messages under `.pi/hindsight/session-meta/`. `/hindsight:mode normal|read-only|ignored` controls whether a session recalls and/or retains memory, `/hindsight:retain on|off` toggles retain for the session, and `/hindsight:tag add|remove <tag>` merges manual tags into automatic retain jobs.
+Automatic retain runs in the `agent_end` hook. It stores a structured JSON projection of new messages, not a summary. The retain projection is controlled by `retain.content`, `retain.toolFilter`, and `retain.strip`; defaults keep user/assistant text, assistant tool calls, tool result errors, and per-message timestamps while excluding recursive Hindsight tool output and noisy read/search results. Live sessions use stable `documentId` values and `updateMode: "append"`. When retain is enabled and either project auto-retain or a configured global-only explicit retain route is available, startup probes append support with a deterministic `pi-hindsight-capability:append:<bank>` document tagged `test:capability` and `feature:append-probe`. If append is known unsupported, retain fails clearly because append support is required for live sessions. A persisted retain cursor under `.pi/hindsight/retain-cursors.json` prevents duplicate appends when Pi provides overlapping transcripts, including after extension restart. Explicit retain tool tags are merged with the base `source:pi`, repo, and session tags so manually retained memories remain visible to default project recall. Configure `retain.entities` to attach known entity hints to automatic retain jobs, or pass `entities` to the explicit `hindsight_retain` tool for one-off memories. Per-session governance is stored outside provider-visible messages under `.pi/hindsight/session-meta/`. `/hindsight:mode normal|read-only|ignored` controls whether a session recalls and/or retains memory, `/hindsight:retain on|off` toggles retain for the session, and `/hindsight:tag add|remove <tag>` merges manual tags into automatic retain jobs.
 
 Retain jobs are written to a JSONL queue before sending. If Hindsight is down, jobs remain on disk for later flushing. This queue-first behavior applies to both automatic retain and the explicit `hindsight_retain` tool, so manual memories are not lost during Hindsight outages. Queue operations use an in-process mutex plus a lock directory next to the queue file so multiple Pi processes do not rewrite the active queue concurrently. Stale queue locks are judged from the lock owner's `acquiredAt` timestamp, not from the waiting process age. Jobs that exceed the retry limit are moved to a sibling dead-letter file (`<queue>.dead.jsonl`) instead of retrying forever. Debug diagnostics summarize active queue jobs, malformed JSONL lines, queue read errors, dead-letter jobs, and the dead-letter path without printing raw retained content; if malformed, unreadable, or dead-lettered entries exist, inspect the queue files offline, repair permissions or malformed lines deliberately, then run `/hindsight:flush` after Hindsight is reachable.
+
+Set `retain.flushIntervalMs` to a positive interval to flush queued jobs periodically while Pi is running. The default `0` disables periodic flushing, so retain still flushes on new retain attempts, manual `/hindsight:flush`, and shutdown.
 
 Shutdown queue flushing is intentionally bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdownFlushTimeoutMs`. The timeout is a soft bound checked between queued jobs so shutdown does not leave a background flush holding the queue lock. If jobs remain after shutdown, they stay on disk and are visible through `/hindsight:debug` queue length for later flushing.
 
@@ -390,6 +401,8 @@ The footer status is configurable with two independent knobs:
 - `status.detail`: `minimal`, `project`, `activity`, or `verbose`
 
 Emoji mode uses `🧠` when Hindsight is connected and `🤯` after failed recall/retain/bank access. `status.detail: "minimal"` hides all text after the icon. `status.detail: "project"` shows the bank ID, `"activity"` shows bank ID plus recall/retain activity, and `"verbose"` shows project, bank ID, and activity. `status.maxLength` caps displayed text, and `status.showActivity` controls whether recall/retain activity replaces the idle text.
+
+Explicit tools expose advanced Hindsight fields conservatively. `hindsight_recall` accepts `queryTimestamp`, `hindsight_retain` accepts `entities`, and `hindsight_reflect` accepts `responseSchema` for structured reflection output.
 
 Pi window notifications are configurable under `notifications`. Startup bank selection messages are on by default. Recall and retain activity notifications are off by default and can be enabled with `notifications.recall` and `notifications.retain`. Activity notifications report counts and target banks, not raw recalled memory or retained content.
 

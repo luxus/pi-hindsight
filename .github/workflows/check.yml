@@ -41,6 +41,9 @@ jobs:
       - name: Run TypeScript compiler fallback
         run: npm run typecheck:tsc
 
+      - name: Verify package contents
+        run: npm pack --dry-run
+
   smoke-configured-server:
     runs-on: ubuntu-latest
     needs: [check]

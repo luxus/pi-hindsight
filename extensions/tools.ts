@@ -15,6 +15,9 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       bank: Type.Optional(
         Type.String({ description: "Optional bank id. Defaults to project bank." }),
       ),
+      queryTimestamp: Type.Optional(
+        Type.String({ description: "Optional ISO timestamp for time-scoped recall." }),
+      ),
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       const sessionFile = ctx.sessionManager.getSessionFile?.();
@@ -23,6 +26,7 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         params.query,
         params.bank,
         sessionFile,
+        params.queryTimestamp,
       );
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -44,6 +48,14 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         Type.String({ description: "Optional bank id. Defaults to project bank." }),
       ),
       tags: Type.Optional(Type.Array(Type.String())),
+      entities: Type.Optional(
+        Type.Array(
+          Type.Object({
+            text: Type.String(),
+            type: Type.Optional(Type.String()),
+          }),
+        ),
+      ),
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       const sessionFile = ctx.sessionManager.getSessionFile?.();
@@ -54,6 +66,7 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         ...(sessionFile ? { sessionFile } : {}),
         ...(params.bank ? { bank: params.bank } : {}),
         ...(params.tags ? { tags: params.tags } : {}),
+        ...(params.entities ? { entities: params.entities } : {}),
       });
       const deadLetterStatus = result.deadLettered
         ? ` ${result.deadLettered} job${result.deadLettered === 1 ? "" : "s"} moved to dead-letter queue; run /hindsight:debug to inspect.`
@@ -162,6 +175,7 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       query: Type.String(),
       context: Type.Optional(Type.String()),
       bank: Type.Optional(Type.String()),
+      responseSchema: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     }),
     async execute(_id, params, _signal, _onUpdate, ctx) {
       const { bankId, result } = await operations.reflect(
@@ -169,6 +183,7 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         params.query,
         params.context,
         params.bank,
+        params.responseSchema,
       );
       return {
         content: [

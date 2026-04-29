@@ -178,6 +178,9 @@ export async function recallForContext(args: {
           budget: args.config.recall.budget,
           maxTokens: args.config.recall.maxTokens,
           types: args.config.recall.types,
+          ...(args.config.recall.queryTimestamp
+            ? { queryTimestamp: args.config.recall.queryTimestamp }
+            : {}),
           ...(scope.tags ? { tags: scope.tags } : {}),
           ...(scope.tagsMatch ? { tagsMatch: scope.tagsMatch } : {}),
         }),

@@ -12,6 +12,14 @@ import {
 } from "../extensions/session-memory-meta.js";
 import type { RetainJob } from "../extensions/types.js";
 
+async function waitForCondition(predicate: () => boolean, timeoutMs = 500): Promise<void> {
+  const started = Date.now();
+  while (!predicate()) {
+    if (Date.now() - started > timeoutMs) throw new Error("timed out waiting for condition");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 const mocked = vi.hoisted(() => ({
   client: {
     retain: vi.fn(async (..._args: unknown[]) => undefined),
@@ -39,6 +47,7 @@ vi.mock("../extensions/bank-operations.js", () => ({
 
 describe("extension hooks", () => {
   beforeEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
     mocked.client.recall.mockImplementation(async (..._args: unknown[]) => ({
       results: [{ text: "repo-specific remembered fact" }],
@@ -107,6 +116,59 @@ describe("extension hooks", () => {
     expect(retainedContent).toContain("Decision still stands.");
     expect(retainedContent).not.toContain("<hindsight-memory>");
     expect(retainedContent).not.toContain("repo-specific remembered fact");
+  });
+
+  it("flushes queued retain jobs on the configured interval", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        hindsight: { baseUrl: "http://unused.test" },
+        retain: { flushIntervalMs: 10 },
+      }),
+    );
+    const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
+    await enqueueRetainJob(queuePath, {
+      id: "queued",
+      bankId: "bank",
+      createdAt: new Date().toISOString(),
+      documentId: "doc",
+      updateMode: "append",
+      item: { content: "content", context: "context" },
+      retries: 0,
+    });
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    try {
+      const { default: hindsightExtension } = await import("../extensions/index.js");
+      hindsightExtension(pi as any);
+      await handlers.session_start?.[0]?.({}, ctx);
+      mocked.client.retain.mockClear();
+      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0);
+
+      expect(mocked.client.retain).toHaveBeenCalledWith(
+        "bank",
+        "content",
+        expect.objectContaining({ documentId: "doc", updateMode: "append" }),
+      );
+      expect(await readRetainQueue(queuePath)).toEqual([]);
+    } finally {
+      await handlers.session_shutdown?.[0]?.({}, ctx);
+    }
   });
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
