@@ -353,15 +353,25 @@ export async function writeRetainQueue(path: string, jobs: RetainJob[]): Promise
   await rename(tmp, path);
 }
 
-async function appendDeadLetterJobs(path: string, jobs: RetainJob[]): Promise<void> {
-  if (jobs.length === 0) return;
+async function appendDeadLetterJobs(path: string, jobs: RetainJob[]): Promise<number> {
+  if (jobs.length === 0) return 0;
   const deadLetterPath = resolveDeadLetterQueuePath(path);
+  const existing = await readRetainQueueTolerant(deadLetterPath);
+  const existingIds = new Set(existing.jobs.map((job) => job.id));
+  const seen = new Set<string>();
+  const newJobs = jobs.filter((job) => {
+    if (existingIds.has(job.id) || seen.has(job.id)) return false;
+    seen.add(job.id);
+    return true;
+  });
+  if (newJobs.length === 0) return 0;
   await mkdir(dirname(deadLetterPath), { recursive: true });
   await appendFile(
     deadLetterPath,
-    jobs.map((job) => JSON.stringify(job)).join("\n") + "\n",
+    newJobs.map((job) => JSON.stringify(job)).join("\n") + "\n",
     "utf8",
   );
+  return newJobs.length;
 }
 
 export type FlushRetainQueueOptions = {
@@ -501,12 +511,12 @@ export async function flushRetainQueue(
       }
     }
     await appendMalformedQueueLines(path, parsed.malformedLines);
-    await appendDeadLetterJobs(path, deadLetteredJobs);
+    const appendedDeadLetterJobs = await appendDeadLetterJobs(path, deadLetteredJobs);
     await writeRetainQueue(path, remaining);
     return {
       sent,
       remaining: remaining.length,
-      deadLettered: deadLetteredJobs.length,
+      deadLettered: appendedDeadLetterJobs,
       malformed: parsed.malformedLines.length,
     };
   });

@@ -21,6 +21,7 @@ import {
   resolveMalformedQueuePath,
   resolveQueuePath,
   summarizeRetainQueue,
+  writeRetainQueue,
 } from "../extensions/queue.js";
 import type { RetainJob } from "../extensions/types.js";
 
@@ -200,6 +201,37 @@ describe("retain queue", () => {
     expect(dead[0]?.retries).toBe(1);
     expect(dead[0]?.lastError).toContain("moved to dead-letter queue");
     expect(dead[0]?.deadLetteredAt).toBeDefined();
+  });
+
+  it("does not duplicate dead-letter jobs by id", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    await enqueueRetainJob(path, job);
+    await writeRetainQueue(resolveDeadLetterQueuePath(path), [
+      {
+        ...job,
+        retries: 1,
+        lastError: "previous dead-letter append before crash",
+        deadLetteredAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+
+    const result = await flushRetainQueue(
+      path,
+      {
+        retain: async () => {
+          throw new Error("down again");
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+      { maxRetries: 1 },
+    );
+
+    expect(result).toMatchObject({ sent: 0, remaining: 0, deadLettered: 0 });
+    expect(await readRetainQueue(path)).toHaveLength(0);
+    const dead = await readDeadLetterQueue(path);
+    expect(dead).toHaveLength(1);
+    expect(dead[0]?.lastError).toBe("previous dead-letter append before crash");
   });
 
   it("redacts secrets from persisted queue errors", async () => {
