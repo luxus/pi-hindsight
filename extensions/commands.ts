@@ -54,6 +54,34 @@ function importDocumentSummary(result: { documents: { updateMode: string; status
   return `documents=${result.documents.length}; update=${modes || "n/a"}; status=${statuses || "n/a"}`;
 }
 
+function queueIssueSummary(queue?: {
+  active?: { error?: string | null; malformed?: number };
+  deadLetter?: { error?: string | null; valid?: number; malformed?: number };
+}): string {
+  if (!queue) return "";
+  const issues = [
+    queue.active?.error ? `queue unreadable: ${queue.active.error}` : "",
+    queue.deadLetter?.error ? `dead-letter unreadable: ${queue.deadLetter.error}` : "",
+    queue.active?.malformed ? `queue malformed=${queue.active.malformed}` : "",
+    queue.deadLetter?.valid ? `dead-letter=${queue.deadLetter.valid}` : "",
+    queue.deadLetter?.malformed ? `dead-letter malformed=${queue.deadLetter.malformed}` : "",
+  ].filter(Boolean);
+  return issues.length ? `; ${issues.join("; ")}` : "";
+}
+
+function hasQueueIssue(queue?: {
+  active?: { error?: string | null; malformed?: number };
+  deadLetter?: { error?: string | null; valid?: number; malformed?: number };
+}): boolean {
+  return Boolean(
+    queue?.active?.error ||
+    queue?.deadLetter?.error ||
+    queue?.active?.malformed ||
+    queue?.deadLetter?.valid ||
+    queue?.deadLetter?.malformed,
+  );
+}
+
 export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
   const operations = createMemoryOperations(deps);
 
@@ -69,9 +97,10 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
           ? "project+global"
           : "project-only"
         : "global-only";
+      const queueIssue = queueIssueSummary(status.queue);
       ctx.ui.notify(
-        `Hindsight ${status.config.enabled ? "on" : "off"}; profile ${profile}; bank ${bank}; queue ${status.queueLength}; imports ${status.imports.count}`,
-        "info",
+        `Hindsight ${status.config.enabled ? "on" : "off"}; profile ${profile}; bank ${bank}; queue ${status.queueLength}; imports ${status.imports.count}${queueIssue}`,
+        hasQueueIssue(status.queue) ? "warning" : "info",
       );
     },
   });
@@ -88,11 +117,13 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       const observation = doctor.observations.error
         ? `; observations invalid: ${doctor.observations.error}`
         : "";
+      const queueIssue = queueIssueSummary(doctor.queue);
       ctx.ui.notify(
-        `Hindsight ${doctor.health.ok ? "reachable" : `unreachable: ${doctor.health.error}`}; ${append}; queue ${doctor.queueLength}; imports ${doctor.imports.count}${observation}`,
+        `Hindsight ${doctor.health.ok ? "reachable" : `unreachable: ${doctor.health.error}`}; ${append}; queue ${doctor.queueLength}; imports ${doctor.imports.count}${observation}${queueIssue}`,
         doctor.health.ok &&
           doctor.capabilities?.appendUpdateMode !== false &&
-          !doctor.observations.error
+          !doctor.observations.error &&
+          !hasQueueIssue(doctor.queue)
           ? "info"
           : "warning",
       );

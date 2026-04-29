@@ -231,4 +231,69 @@ describe("hindsight commands", () => {
       "info",
     );
   });
+
+  it("warns when status cannot read the retain queue", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    writeFileSync(join(cwd, "not-a-dir"), "file blocks queue directory");
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => ({
+          ...DEFAULT_CONFIG,
+          retain: { ...DEFAULT_CONFIG.retain, queuePath: "not-a-dir/retain-queue.jsonl" },
+        }),
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:status")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("queue unreadable:"),
+      "warning",
+    );
+  });
+
+  it("warns when doctor cannot read the retain queue", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    writeFileSync(join(cwd, "not-a-dir"), "file blocks queue directory");
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => ({
+          ...DEFAULT_CONFIG,
+          retain: { ...DEFAULT_CONFIG.retain, queuePath: "not-a-dir/retain-queue.jsonl" },
+        }),
+        getProjectBankId: () => "bank",
+        getCapabilities: () => ({ appendUpdateMode: true, checkedAt: new Date().toISOString() }),
+      },
+    );
+    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:doctor")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("queue unreadable:"),
+      "warning",
+    );
+  });
 });
