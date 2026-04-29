@@ -24,7 +24,8 @@
     "docs/adr",
     "docs/hindsight-core-functions.md",
     "docs/pr-roadmap.md",
-    "docs/post-mvp-roadmap.md"
+    "docs/post-mvp-roadmap.md",
+    "docs/risky-memory-modes.md"
   ],
   "type": "module",
   "publishConfig": {

@@ -21,7 +21,7 @@ explicit tools and commands
 
 ### PR 8: Document risky memory modes
 
-**Status:** next.
+**Status:** completed.
 
 **Purpose:** Explain why several tempting features are deferred and what safe alternatives already exist.
 
@@ -52,7 +52,7 @@ npm run format
 
 ### PR 9: Improve last-recall inspection UX
 
-**Status:** planned.
+**Status:** next.
 
 **Purpose:** Make cached recall useful for inspection without reusing stale recall as provider context.
 
