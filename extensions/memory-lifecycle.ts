@@ -21,6 +21,7 @@ import {
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "./types.js";
 import { getEffectiveSessionMemoryMode, readSessionMemoryMeta } from "./session-memory-meta.js";
 import { writeLastRecallSnapshot } from "./recall-visibility.js";
+import { redactError } from "./sanitize.js";
 
 export type RuntimeCtx = {
   cwd: string;
@@ -166,11 +167,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           });
         } catch (error) {
           setMemoryStatus(runtime, "recall-failed");
-          notify(
-            runtime,
-            `Hindsight project bank ensure failed: ${error instanceof Error ? error.message : String(error)}`,
-            "warning",
-          );
+          notify(runtime, `Hindsight project bank ensure failed: ${redactError(error)}`, "warning");
         }
       }
       if (config.banks.global.enabled && config.banks.global.bankId) {
@@ -181,11 +178,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           });
         } catch (error) {
           setMemoryStatus(runtime, "recall-failed");
-          notify(
-            runtime,
-            `Hindsight global bank ensure failed: ${error instanceof Error ? error.message : String(error)}`,
-            "warning",
-          );
+          notify(runtime, `Hindsight global bank ensure failed: ${redactError(error)}`, "warning");
         }
       }
       const capabilityProbeBankId = config.banks.project.enabled
@@ -198,11 +191,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           capabilities = await detectAppendCapability(client, capabilityProbeBankId);
         } catch (error) {
           setMemoryStatus(runtime, "recall-failed");
-          notify(
-            runtime,
-            `Hindsight capability check failed: ${error instanceof Error ? error.message : String(error)}`,
-            "warning",
-          );
+          notify(runtime, `Hindsight capability check failed: ${redactError(error)}`, "warning");
         }
       }
       setMemoryStatus(runtime, "idle");
@@ -343,11 +332,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         return result;
       } catch (error) {
         setMemoryStatus(runtime, "retain-failed");
-        notify(
-          runtime,
-          `Hindsight retain queue failed: ${error instanceof Error ? error.message : String(error)}`,
-          "warning",
-        );
+        notify(runtime, `Hindsight retain queue failed: ${redactError(error)}`, "warning");
         return { queued: false, sent: 0, remaining: 0 };
       }
     },

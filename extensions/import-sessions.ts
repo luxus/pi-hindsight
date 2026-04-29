@@ -18,6 +18,7 @@ import {
   upsertImportManifestEntries,
 } from "./import-manifest.js";
 import { previewImportBranch, retainImportBranch } from "./import-retain.js";
+import { redactError } from "./sanitize.js";
 
 export { parseImportSessionJsonl, parsePiSessionJsonl } from "./import-parser.js";
 export { selectImportBranches } from "./import-branches.js";
@@ -214,7 +215,7 @@ export async function importPiSession(args: {
       });
     } catch (error) {
       const failedAt = new Date().toISOString();
-      const message = error instanceof Error ? error.message : String(error);
+      const message = redactError(error);
       checkpoint.documents[preview.document.documentId] = {
         documentId: preview.document.documentId,
         leafId: preview.document.leafId,

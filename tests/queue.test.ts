@@ -202,6 +202,35 @@ describe("retain queue", () => {
     expect(dead[0]?.deadLetteredAt).toBeDefined();
   });
 
+  it("redacts secrets from persisted queue errors", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    await enqueueRetainJob(path, job);
+
+    await flushRetainQueue(
+      path,
+      {
+        retain: async () => {
+          throw new Error(
+            'failed Cookie: sid=secret123456\npassword: hunter2\n{"token":"jsonsecret123456"}\nhttps://example.com/callback?ok=1&access_token=querysecret123456',
+          );
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+      { maxRetries: 2 },
+    );
+
+    const [queued] = await readRetainQueue(path);
+    expect(queued?.lastError).toContain("Cookie: [REDACTED]");
+    expect(queued?.lastError).toContain("password: [REDACTED]");
+    expect(queued?.lastError).toContain('"token":"[REDACTED]"');
+    expect(queued?.lastError).toContain("access_token=[REDACTED]");
+    expect(queued?.lastError).not.toContain("secret123456");
+    expect(queued?.lastError).not.toContain("hunter2");
+    expect(queued?.lastError).not.toContain("jsonsecret");
+    expect(queued?.lastError).not.toContain("querysecret");
+  });
+
   it("keeps exhausted jobs active when dead-letter append fails", async () => {
     const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
     await enqueueRetainJob(path, job);

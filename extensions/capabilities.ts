@@ -1,3 +1,4 @@
+import { redactError } from "./sanitize.js";
 import type {
   HindsightCapabilities,
   HindsightLikeClient,
@@ -51,7 +52,7 @@ export async function detectAppendCapability(
     });
     return { appendUpdateMode: true, checkedAt, probeDocumentId: documentId };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactError(error);
     const appendUnsupported = isAppendUnsupportedError(error);
     return {
       appendUpdateMode: !appendUnsupported,

@@ -1,4 +1,5 @@
 import { HindsightClient } from "@vectorize-io/hindsight-client";
+import { redactError } from "./sanitize.js";
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
 
 async function withTimeout<T>(
@@ -73,6 +74,6 @@ export async function checkHindsight(
     else await client.recall(bankId, "health check", { maxTokens: 1, budget: "low" });
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    return { ok: false, error: redactError(error) };
   }
 }
