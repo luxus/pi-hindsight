@@ -596,7 +596,7 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
     const sessionFile = join(cwd, "session.jsonl");
-    await setSessionMemoryMode(cwd, sessionFile, "read-only");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
     await addSessionMemoryTag(cwd, sessionFile, "domain:test");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -640,13 +640,13 @@ describe("extension hooks", () => {
     expect(retainCalls[0]?.[2]).toMatchObject({ tags: expect.arrayContaining(["domain:test"]) });
   });
 
-  it("does not reject when skipped-message cursor update fails", async () => {
+  it("keeps next opt-out pending when skipped-message cursor update fails", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
     writeFileSync(join(cwd, ".pi", "hindsight", "retain-cursors.json"), "not json");
     const sessionFile = join(cwd, "session.jsonl");
-    await setSessionMemoryMode(cwd, sessionFile, "read-only");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
       on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
@@ -674,6 +674,11 @@ describe("extension hooks", () => {
       expect.stringContaining("Hindsight retain cursor update failed"),
       "warning",
     );
+    expect(ctx.ui.notify).not.toHaveBeenCalledWith(
+      "Hindsight skipped retain for this run due to next-opt-out.",
+      "info",
+    );
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
   });
 
   it("does not later retain overlapping messages skipped while read-only", async () => {

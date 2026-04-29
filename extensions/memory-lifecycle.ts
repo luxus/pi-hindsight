@@ -20,7 +20,7 @@ import {
 } from "./retain-cursor.js";
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "./types.js";
 import {
-  consumeNextSessionRetainMode,
+  clearNextSessionRetainMode,
   getEffectiveSessionMemoryMode,
   readSessionMemoryMeta,
 } from "./session-memory-meta.js";
@@ -288,10 +288,8 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         return { queued: false, sent: 0, remaining: 0 };
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return { queued: false, sent: 0, remaining: 0 };
-      const { meta: sessionMeta, consumed: nextRetainMode } = await consumeNextSessionRetainMode(
-        runtime.cwd,
-        runtime.sessionFile,
-      );
+      const sessionMeta = await readSessionMemoryMeta(runtime.cwd, runtime.sessionFile);
+      const nextRetainMode = sessionMeta.nextRetainMode;
       const sessionMemory = getEffectiveSessionMemoryMode(sessionMeta);
       if (!sessionMemory.retain || nextRetainMode === "off") {
         try {
@@ -303,8 +301,10 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
             `Hindsight retain cursor update failed: ${(error as Error).message}`,
             "warning",
           );
+          return { queued: false, sent: 0, remaining: 0 };
         }
         if (nextRetainMode === "off") {
+          await clearNextSessionRetainMode(runtime.cwd, runtime.sessionFile);
           notify(runtime, "Hindsight skipped retain for this run due to next-opt-out.", "info");
         }
         return { queued: false, sent: 0, remaining: 0 };

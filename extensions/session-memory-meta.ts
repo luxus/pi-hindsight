@@ -210,18 +210,16 @@ export async function setNextSessionRetainMode(
   return writeSessionMemoryMeta(cwd, sessionFile, { ...meta, nextRetainMode });
 }
 
-export async function consumeNextSessionRetainMode(
+export async function clearNextSessionRetainMode(
   cwd: string,
   sessionFile: string | undefined,
-): Promise<{ meta: HindsightSessionMeta; consumed: NextRetainMode }> {
+): Promise<HindsightSessionMeta> {
   const meta = await readSessionMemoryMeta(cwd, sessionFile);
-  const consumed = meta.nextRetainMode;
-  if (consumed === "normal") return { meta, consumed };
-  const next = await writeSessionMemoryMeta(cwd, sessionFile, {
+  if (meta.nextRetainMode === "normal") return meta;
+  return writeSessionMemoryMeta(cwd, sessionFile, {
     ...meta,
     nextRetainMode: "normal",
   });
-  return { meta: next, consumed };
 }
 
 export async function addSessionMemoryTag(

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   addSessionMemoryTag,
-  consumeNextSessionRetainMode,
+  clearNextSessionRetainMode,
   getEffectiveSessionMemoryMode,
   readSessionMemoryMeta,
   removeSessionMemoryTag,
@@ -124,15 +124,14 @@ describe("session memory metadata", () => {
     });
   });
 
-  it("persists and consumes one-turn retain opt-out", async () => {
+  it("persists and clears one-turn retain opt-out", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-meta-"));
 
     await setNextSessionRetainMode(cwd, "/tmp/session.jsonl", "off");
     expect((await readSessionMemoryMeta(cwd, "/tmp/session.jsonl")).nextRetainMode).toBe("off");
 
-    const consumed = await consumeNextSessionRetainMode(cwd, "/tmp/session.jsonl");
-    expect(consumed.consumed).toBe("off");
-    expect(consumed.meta.nextRetainMode).toBe("normal");
+    const cleared = await clearNextSessionRetainMode(cwd, "/tmp/session.jsonl");
+    expect(cleared.nextRetainMode).toBe("normal");
     expect((await readSessionMemoryMeta(cwd, "/tmp/session.jsonl")).nextRetainMode).toBe("normal");
   });
 
