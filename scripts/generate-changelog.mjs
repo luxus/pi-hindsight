@@ -1,34 +1,56 @@
 #!/usr/bin/env node
-import { writeFile } from "node:fs/promises";
-import { ConventionalChangelog } from "conventional-changelog";
+import { execFile } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { promisify } from "node:util";
 
-const types = [
-  { type: "feat", section: "Features" },
-  { type: "fix", section: "Bug Fixes" },
-  { type: "perf", section: "Performance" },
-  { type: "refactor", section: "Refactoring" },
-  { type: "docs", section: "Documentation" },
-  { type: "test", section: "Tests" },
-  { type: "build", section: "Build System" },
-  { type: "ci", section: "CI" },
-  { type: "style", section: "Style" },
-  { type: "chore", section: "Chores" },
-  { type: "revert", section: "Reverts" },
+const execFileAsync = promisify(execFile);
+
+const sections = [
+  ["feat", "Features"],
+  ["fix", "Bug Fixes"],
+  ["perf", "Performance"],
+  ["refactor", "Refactoring"],
+  ["docs", "Documentation"],
+  ["test", "Tests"],
+  ["build", "Build System"],
+  ["ci", "CI"],
+  ["style", "Style"],
+  ["chore", "Chores"],
+  ["revert", "Reverts"],
 ];
 
-const chunks = [];
-const generator = new ConventionalChangelog(process.cwd())
-  .readPackage()
-  .loadPreset({ name: "conventionalcommits", types })
-  .config({
-    options: { releaseCount: 0 },
-  });
+const sectionByType = new Map(sections);
+const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+const repoUrl = String(packageJson.repository?.url ?? "")
+  .replace(/^git\+/, "")
+  .replace(/\.git$/, "");
+const { stdout: latestCommitDate } = await execFileAsync("git", ["log", "-1", "--format=%cs"]);
+const releaseDate = latestCommitDate.trim();
+const { stdout } = await execFileAsync("git", ["log", "--no-merges", "--format=%H%x00%s"]);
+const groups = new Map(sections.map(([, section]) => [section, []]));
+groups.set("Other Changes", []);
 
-for await (const chunk of generator.write()) {
-  chunks.push(Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk));
+function parseSubject(subject) {
+  const match = /^(\w+)(?:\([^)]*\))?!?:\s+(.+)$/.exec(subject);
+  if (!match) return { section: "Other Changes", title: subject };
+  const [, type, title] = match;
+  return { section: sectionByType.get(type) ?? "Other Changes", title };
 }
 
-const body = chunks.join("").trim();
-const fallback = "# Changelog\n\nNo Conventional Commits entries yet.\n";
-const changelog = body ? `# Changelog\n\n${body}\n` : fallback;
-await writeFile("CHANGELOG.md", changelog, "utf8");
+for (const line of stdout.split("\n").filter(Boolean)) {
+  const [hash, subject] = line.split("\0");
+  if (!hash || !subject) continue;
+  const { section, title } = parseSubject(subject);
+  const short = hash.slice(0, 7);
+  const link = repoUrl ? `([${short}](${repoUrl}/commit/${hash}))` : `(${short})`;
+  groups.get(section)?.push(`- ${title} ${link}`);
+}
+
+const lines = ["# Changelog", "", `## ${packageJson.version} (${releaseDate})`, ""];
+for (const [, section] of [...sections, ["other", "Other Changes"]]) {
+  const entries = groups.get(section) ?? [];
+  if (!entries.length) continue;
+  lines.push(`### ${section}`, "", ...entries, "");
+}
+
+await writeFile("CHANGELOG.md", `${lines.join("\n").trim()}\n`, "utf8");
