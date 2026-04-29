@@ -96,7 +96,7 @@ Preferred command shape:
 /hindsight:next-opt-out
 ```
 
-Possible aliases or future variants:
+Possible future variants, not currently implemented:
 
 ```text
 /hindsight:next-retain off
@@ -111,15 +111,15 @@ Reason for a dedicated command:
 - It is explicit in the command history.
 - It can have precise behavior and tests.
 
-Open design questions:
+Resolved design decisions:
 
-- Should the next turn disable retain only, recall only, or both?
-- Should the command apply to the next user prompt, the next agent run, or the next completed retain delta?
-- How should it interact with `/hindsight:mode read-only|ignored`?
-- Should the setting survive process restart, or be in-memory only?
-- Should it affect historical imports? Default answer should be no.
+- The command disables automatic retain only.
+- It applies to the next completed agent run.
+- Session-wide modes such as `read-only`, `ignored`, and `/hindsight:retain off` remain stronger than this one-turn flag.
+- The flag is persisted in session metadata until consumed.
+- It does not affect historical imports.
 
-Initial recommendation:
+Implemented command:
 
 ```text
 /hindsight:next-opt-out
@@ -136,15 +136,22 @@ Behavior:
 
 **Scope:**
 
-- Write the design and test plan first.
-- Implement only after the exact behavior is accepted.
+- Document the design and test plan first.
+- Implement the exact accepted behavior only.
 - Do not implement hashtag parsing.
 
-**Acceptance criteria for design PR:**
+**Acceptance criteria:**
 
 - The command name and one-turn semantics are documented.
 - Import/cursor/session-mode interactions are specified.
 - The out-of-scope list explicitly rejects prompt hashtags for now.
+
+**Implemented outcome:**
+
+- PR #55 added `/hindsight:next-opt-out`.
+- The command sets `nextRetainMode=off` in non-provider-visible session metadata.
+- The next `agent_end` skips automatic retain, marks skipped messages in the retain cursor, clears the flag, and leaves recall, import, and explicit retain unchanged.
+- `/hindsight:session` reports `nextRetain`.
 
 **Checks:**
 
@@ -236,7 +243,7 @@ Why deferred:
 
 Safe alternative:
 
-- Use explicit commands such as `/hindsight:mode`, `/hindsight:retain`, and a future `/hindsight:next-opt-out`.
+- Use explicit commands such as `/hindsight:mode`, `/hindsight:retain`, and `/hindsight:next-opt-out`.
 
 ### Linked hosts / multi-Hindsight-server routing
 

@@ -14,6 +14,8 @@ Examples:
 
 ## Decision
 
+Implemented in PR #55.
+
 Use an explicit command:
 
 ```text
@@ -34,7 +36,7 @@ A command is better than prompt parsing because it is:
 - less likely to be copied by agents into generated content
 - easier to reason about during import and cursor handling
 
-## Initial semantics
+## Current semantics
 
 `/hindsight:next-opt-out` applies once to the next completed agent run in the current session.
 
@@ -76,7 +78,7 @@ Recall remains enabled unless another session mode disables it. This keeps the c
 
 A future command could add recall control explicitly, but it should not be overloaded into this first command.
 
-## Proposed user-facing behavior
+## User-facing behavior
 
 Command:
 
@@ -87,7 +89,7 @@ Command:
 Success message:
 
 ```text
-Hindsight will skip automatic retain for the next agent run in this session.
+Hindsight will skip automatic retain for the next agent run in this session. nextRetain=off
 ```
 
 Session status should show pending one-turn opt-out:
@@ -96,7 +98,7 @@ Session status should show pending one-turn opt-out:
 Hindsight session mode=normal; recall=true; retain=true; nextRetain=off; tags=none
 ```
 
-When consumed, optional activity notification could say:
+When consumed, the activity notification says:
 
 ```text
 Hindsight skipped retain for this run due to next-opt-out.
@@ -112,24 +114,28 @@ Extend session memory metadata with a non-provider-visible field:
 }
 ```
 
-The default is no field or `"normal"`.
+The default is `"normal"`.
 
-Only persist fields that are active. Clearing the one-turn opt-out should remove or normalize the field.
+Clearing the one-turn opt-out normalizes the field back to `"normal"`.
 
-## Tests required before implementation
+## Implemented tests
 
-Good tests should assert external behavior, not internal helper details.
+Tests assert external behavior, not internal helper details.
 
-Cover:
+Covered:
 
-- command sets a pending one-turn retain opt-out
-- `/hindsight:session` reports pending opt-out
+- session metadata persists and consumes a one-turn retain opt-out
 - next `agent_end` skips automatic retain
 - skipped messages are added to retain cursor so they are not retained later
 - opt-out clears after one completed agent run
+
+Remaining useful regression coverage:
+
+- command handler sets a pending one-turn retain opt-out
+- `/hindsight:session` reports pending opt-out
 - recall still runs while next retain is off
 - ignored/read-only/retain-off modes remain stronger than next opt-out
-- explicit `hindsight_retain` still queues normally
+- explicit `hindsight_retain` still queues normally while next opt-out is pending
 - historical import ignores next opt-out state
 
 ## Out of scope
