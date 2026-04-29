@@ -9,7 +9,7 @@ import {
   findRepoRoot,
   recallScopeTags,
 } from "../extensions/banking.js";
-import { liveDocumentId } from "../extensions/session.js";
+import { liveDocumentId, stableSessionId } from "../extensions/session.js";
 
 describe("banking/session identity", () => {
   it("derives stable project bank from repo root", () => {
@@ -29,5 +29,13 @@ describe("banking/session identity", () => {
     );
     expect(baseTags("/repo", "s1")).toContain("session:s1");
     expect(recallScopeTags("/repo")).toEqual([expect.stringMatching(/^repo:/)]);
+  });
+
+  it("separates missing-session-file identities from cwd-only repo identity", () => {
+    const first = stableSessionId(undefined, "/repo");
+    const second = stableSessionId(undefined, "/repo");
+
+    expect(first).toBe(second);
+    expect(first).not.toBe(stableSessionId("ephemeral:/repo", "/repo"));
   });
 });

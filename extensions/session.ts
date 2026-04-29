@@ -1,8 +1,10 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 
+const EPHEMERAL_PROCESS_SESSION_ID = randomUUID();
+
 export function stableSessionId(sessionFile: string | undefined, cwd: string): string {
-  const basis = sessionFile || `ephemeral:${cwd}`;
+  const basis = sessionFile || `ephemeral:${cwd}:${EPHEMERAL_PROCESS_SESSION_ID}`;
   return createHash("sha256").update(basis).digest("hex").slice(0, 16);
 }
 
