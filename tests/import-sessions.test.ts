@@ -13,6 +13,7 @@ import {
 } from "../extensions/import-sessions.js";
 import { readImportCheckpoint } from "../extensions/import-checkpoint.js";
 import { readImportManifest } from "../extensions/import-manifest.js";
+import { stableSessionId } from "../extensions/session.js";
 
 describe("Pi session import", () => {
   it("parses message entries from Pi JSONL", () => {
@@ -38,10 +39,18 @@ describe("Pi session import", () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
     mkdirSync(join(dir, ".git"));
     const sessionFile = join(dir, "session.jsonl");
+    const parentSessionFile = join(dir, "parent-session.jsonl");
+    const parentSessionId = stableSessionId(parentSessionFile, dir);
     writeFileSync(
       sessionFile,
       [
-        JSON.stringify({ type: "session", id: "session-1", cwd: dir, timestamp: "s-t" }),
+        JSON.stringify({
+          type: "session",
+          id: "session-1",
+          cwd: dir,
+          timestamp: "s-t",
+          parentSession: parentSessionFile,
+        }),
         JSON.stringify({
           type: "message",
           id: "root",
@@ -110,6 +119,8 @@ describe("Pi session import", () => {
     expect(calls[0]?.[0]).toBe("bank");
     expect(calls[0]?.[1]).not.toContain("TOKEN=secret");
     expect(calls[0]?.[1]).not.toContain("old branch");
+    expect(calls[0]?.[1]).toContain(parentSessionId);
+    expect(calls[0]?.[1]).toContain(parentSessionFile);
     expect(calls[0]?.[2]).toMatchObject({
       updateMode: "replace",
       documentId: result.documentId,
@@ -121,6 +132,7 @@ describe("Pi session import", () => {
         "imported:true",
         "session:session-1",
         "branch:current",
+        `parent:${parentSessionId}`,
         expect.stringMatching(/^repo:/),
         "forked:true",
       ]),
@@ -128,6 +140,8 @@ describe("Pi session import", () => {
         pi_session_file: sessionFile,
         cwd: dir,
         session_id: "session-1",
+        parent_session_id: parentSessionId,
+        parent_session_file: parentSessionFile,
         branch_leaf_id: "current",
         session_timestamp: "s-t",
       }),

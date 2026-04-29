@@ -1,5 +1,5 @@
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
-import { importDocumentId } from "./session.js";
+import { importDocumentId, stableSessionId } from "./session.js";
 import { baseTags } from "./banking.js";
 import { redactSecrets } from "./sanitize.js";
 import { hashImportContent, type ImportManifestEntry } from "./import-manifest.js";
@@ -45,8 +45,16 @@ interface ImportBranchBuildResult extends ImportRetainResult {
   observationScopes: string[][];
 }
 
+function resolvedParentSessionId(parsed: ParsedSession, cwd: string): string | undefined {
+  return (
+    parsed.parentSessionId ??
+    (parsed.parentSessionFile ? stableSessionId(parsed.parentSessionFile, cwd) : undefined)
+  );
+}
+
 function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranchBuildResult {
   const leafId = args.branch.leafId;
+  const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
   const branchMessages = args.branch.messages;
   const documentId = importDocumentId(args.sessionId, leafId);
   const updateMode = args.config.import.replaceExistingImportedDocs ? "replace" : "append";
@@ -56,6 +64,10 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
       sessionFile: args.sessionFile,
       cwd: args.parsed.cwd,
       sessionId: args.sessionId,
+      ...(parentSessionId ? { parentSessionId } : {}),
+      ...(args.parsed.parentSessionFile
+        ? { parentSessionFile: args.parsed.parentSessionFile }
+        : {}),
       branchLeafId: leafId,
       messages: branchMessages.map((message) => message.data),
     },
@@ -70,6 +82,7 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
     "imported:true",
     `document:${documentId}`,
   ];
+  if (parentSessionId) tags.push(`parent:${parentSessionId}`);
   if (args.leaves.length > 1) tags.push("forked:true");
   const identity = createMemoryIdentity(args.cwd, args.config, args.sessionFile);
   const observationScopes = args.config.observations.enabled
@@ -120,6 +133,7 @@ export function previewImportBranch(args: Omit<ImportRetainArgs, "client">): Imp
 
 export async function retainImportBranch(args: ImportRetainArgs): Promise<ImportRetainResult> {
   const built = buildImportBranch(args);
+  const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
   await args.client.retain(args.bankId, built.content, {
     context: built.context,
     documentId: built.document.documentId,
@@ -131,6 +145,10 @@ export async function retainImportBranch(args: ImportRetainArgs): Promise<Import
       imported: "true",
       cwd: args.cwd,
       session_id: args.sessionId,
+      ...(parentSessionId ? { parent_session_id: parentSessionId } : {}),
+      ...(args.parsed.parentSessionFile
+        ? { parent_session_file: args.parsed.parentSessionFile }
+        : {}),
       branch_leaf_id: built.document.leafId,
       include_branches: args.config.import.includeBranches,
       ...(args.parsed.sessionTimestamp ? { session_timestamp: args.parsed.sessionTimestamp } : {}),
