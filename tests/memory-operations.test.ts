@@ -54,4 +54,31 @@ describe("memory operations", () => {
       global: { enabled: false },
     });
   });
+
+  it("checks the active global bank in global-only diagnostics", async () => {
+    const checkedBanks: string[] = [];
+    const operations = createMemoryOperations({
+      getClient: () => ({
+        ...client(),
+        getBankProfile: async (bankId: string) => {
+          checkedBanks.push(bankId);
+          return {};
+        },
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        banks: {
+          project: { enabled: false, derive: "repo" },
+          global: { enabled: true, bankId: "global-bank" },
+        },
+      }),
+      getProjectBankId: () => "project-bank",
+    });
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ops-"));
+
+    await operations.doctor(cwd);
+    await operations.debug({ cwd, ui: {} as any, sessionManager: {} as any } as any);
+
+    expect(checkedBanks).toEqual(["global-bank", "global-bank"]);
+  });
 });

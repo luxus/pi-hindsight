@@ -52,6 +52,12 @@ function recallTagsForBank(
     : recallScopeTags(cwd);
 }
 
+function diagnosticHealthBankId(config: ResolvedConfig, projectBankId: string): string {
+  if (config.banks.project.enabled) return projectBankId;
+  if (config.banks.global.enabled && config.banks.global.bankId) return config.banks.global.bankId;
+  return projectBankId;
+}
+
 export function createMemoryOperations(deps: MemoryOperationsDeps) {
   return {
     async recall(cwd: string, query: string, bank?: string, sessionFile?: string) {
@@ -201,8 +207,9 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
     async doctor(cwd: string) {
       const config = deps.getConfig();
       const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
+      const healthBankId = diagnosticHealthBankId(config, deps.getProjectBankId());
       const [health, queue, manifestRead] = await Promise.all([
-        checkHindsight(deps.getClient(), deps.getProjectBankId()),
+        checkHindsight(deps.getClient(), healthBankId),
         summarizeRetainQueue(queuePath),
         readImportManifestSafe(resolveImportManifestPath(cwd, config.import.manifestPath)),
       ]);
@@ -232,9 +239,10 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
     async debug(ctx: ExtensionCommandContext) {
       const config = deps.getConfig();
       const queuePath = resolveQueuePath(ctx.cwd, config.retain.queuePath);
+      const healthBankId = diagnosticHealthBankId(config, deps.getProjectBankId());
       const [queue, health] = await Promise.all([
         summarizeRetainQueue(queuePath),
-        checkHindsight(deps.getClient(), deps.getProjectBankId()),
+        checkHindsight(deps.getClient(), healthBankId),
       ]);
       const manifestPath = resolveImportManifestPath(ctx.cwd, config.import.manifestPath);
       const manifestRead = await readImportManifestSafe(manifestPath);
