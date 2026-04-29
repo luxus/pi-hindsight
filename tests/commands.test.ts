@@ -7,6 +7,11 @@ import { registerCommands } from "../extensions/commands.js";
 import { setSessionMemoryMode } from "../extensions/session-memory-meta.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
 
+type RegisteredTestCommand = {
+  handler: (args: unknown, ctx: any) => Promise<void>;
+  getArgumentCompletions?: (prefix: string) => unknown;
+};
+
 function client(): HindsightLikeClient {
   return {
     retain: async () => undefined,
@@ -16,6 +21,48 @@ function client(): HindsightLikeClient {
 }
 
 describe("hindsight commands", () => {
+  it("registers argument completions for fixed command arguments", async () => {
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+
+    const completions = async (name: string, prefix: string) =>
+      Promise.resolve(commands.get(name)?.getArgumentCompletions?.(prefix));
+
+    await expect(completions("hindsight:mode", "re")).resolves.toEqual([
+      { value: "read-only", label: "read-only" },
+    ]);
+    await expect(completions("hindsight:retain", "o")).resolves.toEqual([
+      { value: "on", label: "on" },
+      { value: "off", label: "off" },
+    ]);
+    await expect(completions("hindsight:tag", "a")).resolves.toEqual([
+      { value: "add", label: "add" },
+    ]);
+    await expect(completions("hindsight:import-current", "--d")).resolves.toEqual([
+      { value: "--dry-run", label: "--dry-run" },
+    ]);
+    await expect(completions("hindsight:import-current", "--dry-run --a")).resolves.toEqual([
+      { value: "--dry-run --all-leaves", label: "--all-leaves" },
+    ]);
+    await expect(completions("hindsight:last-recall", "")).resolves.toEqual([
+      { value: "--json", label: "--json" },
+    ]);
+    await expect(completions("hindsight:recall-cleanup", "session.jsonl --p")).resolves.toEqual([
+      { value: "session.jsonl --prune", label: "--prune" },
+    ]);
+  });
+
   it("reports missing last recall snapshot", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
     const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();

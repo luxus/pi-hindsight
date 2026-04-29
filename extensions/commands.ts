@@ -92,6 +92,30 @@ function compactText(value: string, maxLength: number): string {
   return compact.length <= maxLength ? compact : `${compact.slice(0, Math.max(0, maxLength - 1))}…`;
 }
 
+function completeValues(argumentPrefix: string, values: string[]) {
+  const prefix = argumentPrefix.trimStart();
+  if (prefix.includes(" ")) return null;
+  return values
+    .filter((value) => value.startsWith(prefix))
+    .map((value) => ({ value, label: value }));
+}
+
+function completeFlags(argumentPrefix: string, flags: string[]) {
+  const trimmed = argumentPrefix.trimStart();
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const completingNewToken = trimmed.endsWith(" ");
+  const current = completingNewToken ? "" : (parts.at(-1) ?? "");
+  if (current && !current.startsWith("--")) return null;
+  const used = new Set(parts.filter((part) => flags.includes(part)));
+  const prefixParts = completingNewToken ? parts : parts.slice(0, -1);
+  return flags
+    .filter((flag) => !used.has(flag) && flag.startsWith(current))
+    .map((flag) => {
+      const value = [...prefixParts, flag].join(" ");
+      return { value, label: flag };
+    });
+}
+
 export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
   const operations = createMemoryOperations(deps);
 
@@ -174,6 +198,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:import", {
     description: "Import the current Pi session JSONL into Hindsight.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
     handler: async (args, ctx) => {
       const sessionFile = ctx.sessionManager.getSessionFile?.();
       if (!sessionFile) {
@@ -199,6 +224,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:import-current", {
     description: "Import the current Pi session JSONL into Hindsight.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
     handler: async (args, ctx) => {
       const current = sessionFile(ctx);
       if (!current) {
@@ -221,6 +247,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:import-file", {
     description: "Import an explicit Pi session JSONL file into Hindsight.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
     handler: async (args, ctx) => {
       const file = firstNonFlagArg(args);
       if (!file) {
@@ -243,6 +270,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:import-project-sessions", {
     description: "Import Pi session JSONL files scoped to the current repo/cwd.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
     handler: async (args, ctx) => {
       const current = sessionFile(ctx);
       const result = await operations.importProjectSessions({
@@ -272,6 +300,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:mode", {
     description: "Set session memory mode: normal, read-only, or ignored.",
+    getArgumentCompletions: (prefix) => completeValues(prefix, ["normal", "read-only", "ignored"]),
     handler: async (args, ctx) => {
       const mode = firstArg(args);
       if (!isSessionMode(mode)) {
@@ -288,6 +317,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:retain", {
     description: "Enable or disable retain for this session.",
+    getArgumentCompletions: (prefix) => completeValues(prefix, ["on", "off"]),
     handler: async (args, ctx) => {
       const value = firstArg(args);
       if (value !== "on" && value !== "off") {
@@ -304,6 +334,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:tag", {
     description: "Add or remove a Hindsight tag for this session.",
+    getArgumentCompletions: (prefix) => completeValues(prefix, ["add", "remove"]),
     handler: async (args, ctx) => {
       const action = firstArg(args);
       const tag = secondArg(args);
@@ -321,6 +352,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:last-recall", {
     description: "Show the last opt-in persisted recall snapshot.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--json"]),
     handler: async (args, ctx) => {
       try {
         const result = await operations.lastRecall(ctx.cwd);
@@ -361,6 +393,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
   pi.registerCommand("hindsight:recall-cleanup", {
     description:
       "Scan or prune accidentally persisted Hindsight recall blocks from the current session transcript.",
+    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--prune"]),
     handler: async (args, ctx) => {
       const argsList = argList(args);
       const explicitFile = firstNonFlagArg(args);
