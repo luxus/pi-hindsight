@@ -8,7 +8,7 @@ import type {
   ResolvedConfig,
   TagsMatch,
 } from "./types.js";
-import { projectMessage } from "./messages.js";
+import { projectMessageText } from "./messages.js";
 import { createMemoryIdentity } from "./memory-identity.js";
 
 export interface RecallScope {
@@ -49,7 +49,7 @@ function messageRole(message: AgentMessage): string {
 }
 
 function messageContent(message: AgentMessage): string {
-  const content = projectMessage(message).content;
+  const content = projectMessageText(message).content;
   return typeof content === "string" ? content : JSON.stringify(content ?? "");
 }
 

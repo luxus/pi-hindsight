@@ -24,6 +24,7 @@ function textFromContent(
     includeText: boolean;
     includeThinking: boolean;
     includeToolCall: boolean;
+    includeUnknownJson?: boolean;
     toolCallFilter?: { include?: string[]; exclude?: string[] };
   },
 ): string {
@@ -44,10 +45,44 @@ function textFromContent(
         }
         if (p.type === "image") return options.includeText ? "[image omitted]" : "";
       }
-      return options.includeText ? JSON.stringify(part) : "";
+      return options.includeText && options.includeUnknownJson !== false
+        ? JSON.stringify(part)
+        : "";
     })
     .filter(Boolean)
     .join("\n");
+}
+
+function projectContent(
+  content: unknown,
+  options: {
+    includeText: boolean;
+    includeThinking: boolean;
+    includeToolCall: boolean;
+    toolCallFilter?: { include?: string[]; exclude?: string[] };
+  },
+): unknown {
+  if (typeof content === "string") return options.includeText ? content : "";
+  if (!Array.isArray(content)) return options.includeText ? (content ?? "") : "";
+  const projected = content
+    .map((part) => {
+      if (part && typeof part === "object" && "type" in part) {
+        const p = part as Record<string, unknown>;
+        if (p.type === "text") return options.includeText ? part : undefined;
+        if (p.type === "thinking") return options.includeThinking ? part : undefined;
+        if (p.type === "toolCall") {
+          if (!options.includeToolCall) return undefined;
+          const name = stringValue(p.name, "unknown");
+          if (options.toolCallFilter && !toolAllowed(name, options.toolCallFilter))
+            return undefined;
+          return part;
+        }
+        if (p.type === "image") return options.includeText ? part : undefined;
+      }
+      return options.includeText ? part : undefined;
+    })
+    .filter((part): part is unknown => part !== undefined);
+  return projected.length ? projected : "";
 }
 
 function stripFields(record: Record<string, unknown>, fields: string[]): Record<string, unknown> {
@@ -76,10 +111,43 @@ export function projectMessage(
   const base: Record<string, unknown> = {
     role,
     timestamp: messageTimestamp(m),
+    content: projectContent(m.content, {
+      includeText: !isAssistant || includeAssistantText,
+      includeThinking: isAssistant && includeThinking,
+      includeToolCall: isAssistant && includeToolCall,
+      ...(retain ? { toolCallFilter: retain.toolFilter.toolCall } : {}),
+    }),
+  };
+  if (role === "toolResult") {
+    base.toolName = m.toolName;
+    base.isError = m.isError;
+  }
+  if (role === "assistant") {
+    base.model = m.model;
+    base.stopReason = m.stopReason;
+  }
+  return stripFields(base, retain?.strip.message ?? []);
+}
+
+export function projectMessageText(
+  message: AgentMessage,
+  config?: ResolvedConfig,
+): Record<string, unknown> {
+  const m = message as unknown as Record<string, unknown>;
+  const role = stringValue(m.role, "unknown");
+  const retain = config?.retain;
+  const isAssistant = role === "assistant";
+  const includeAssistantText = retain?.content.assistant.includes("text") ?? true;
+  const includeThinking = retain?.content.assistant.includes("thinking") ?? false;
+  const includeToolCall = retain?.content.assistant.includes("toolCall") ?? true;
+  const base: Record<string, unknown> = {
+    role,
+    timestamp: messageTimestamp(m),
     content: textFromContent(m.content, {
       includeText: !isAssistant || includeAssistantText,
       includeThinking: isAssistant && includeThinking,
       includeToolCall: isAssistant && includeToolCall,
+      includeUnknownJson: false,
       ...(retain ? { toolCallFilter: retain.toolFilter.toolCall } : {}),
     }),
   };

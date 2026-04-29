@@ -97,7 +97,12 @@ describe("buildRetainJob", () => {
       bankId: "bank",
       messages: [baseMessage] as AgentEndEvent["messages"],
     });
-    expect(toolOnly?.item.content).toContain("[toolCall bash]");
+    const toolOnlyRetained = JSON.parse(toolOnly?.item.content ?? "[]") as Array<{
+      content: Array<Record<string, unknown>>;
+    }>;
+    expect(toolOnlyRetained[0]?.content).toEqual([
+      { type: "toolCall", name: "bash", arguments: { command: "echo hi" } },
+    ]);
     expect(toolOnly?.item.content).not.toContain("assistant text");
 
     const thinkingOnly = buildRetainJob({
@@ -112,9 +117,14 @@ describe("buildRetainJob", () => {
       bankId: "bank",
       messages: [baseMessage] as AgentEndEvent["messages"],
     });
-    expect(thinkingOnly?.item.content).toContain("private thought");
+    const thinkingOnlyRetained = JSON.parse(thinkingOnly?.item.content ?? "[]") as Array<{
+      content: Array<Record<string, unknown>>;
+    }>;
+    expect(thinkingOnlyRetained[0]?.content).toEqual([
+      { type: "thinking", thinking: "private thought" },
+    ]);
     expect(thinkingOnly?.item.content).not.toContain("assistant text");
-    expect(thinkingOnly?.item.content).not.toContain("[toolCall bash]");
+    expect(thinkingOnly?.item.content).not.toContain("toolCall");
   });
 
   it("filters excluded assistant tool calls without dropping assistant text", () => {
@@ -130,9 +140,39 @@ describe("buildRetainJob", () => {
       },
     ] as unknown as AgentEndEvent["messages"];
     const job = buildRetainJob({ config: DEFAULT_CONFIG, cwd: "/repo", bankId: "bank", messages });
-    expect(job?.item.content).toContain("keep this");
-    expect(job?.item.content).toContain("[toolCall bash]");
+    const retained = JSON.parse(job?.item.content ?? "[]") as Array<{
+      content: Array<Record<string, unknown>>;
+    }>;
+    expect(retained[0]?.content).toEqual([
+      { type: "text", text: "keep this" },
+      { type: "toolCall", name: "bash", arguments: { command: "echo ok" } },
+    ]);
     expect(job?.item.content).not.toContain("hindsight_recall");
+  });
+
+  it("preserves rich user content instead of flattening to text", () => {
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "see image" },
+          { type: "image", mimeType: "image/png", url: "file:///tmp/screenshot.png" },
+          { type: "custom", payload: { nested: true } },
+        ],
+        timestamp: Date.now(),
+      },
+    ] as unknown as AgentEndEvent["messages"];
+
+    const job = buildRetainJob({ config: DEFAULT_CONFIG, cwd: "/repo", bankId: "bank", messages });
+    const retained = JSON.parse(job?.item.content ?? "[]") as Array<{
+      content: Array<Record<string, unknown>>;
+    }>;
+
+    expect(retained[0]?.content).toEqual([
+      { type: "text", text: "see image" },
+      { type: "image", mimeType: "image/png", url: "file:///tmp/screenshot.png" },
+      { type: "custom", payload: { nested: true } },
+    ]);
   });
 
   it("strips configured fields", () => {

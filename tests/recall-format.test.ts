@@ -86,6 +86,41 @@ describe("recall formatting", () => {
     ).toBe("current Pi coding task");
   });
 
+  it("keeps recall queries text-oriented for rich content", () => {
+    const messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "look at this" },
+          { type: "image", mimeType: "image/png", data: "base64-secret" },
+          { type: "custom", payload: { nested: true } },
+        ],
+        timestamp: 1,
+      },
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "running command" },
+          { type: "toolCall", name: "bash", arguments: { command: "echo hi" } },
+        ],
+        timestamp: 2,
+      },
+    ] as unknown as AgentMessage[];
+
+    const query = composeRecallQuery(messages, {
+      roles: ["user", "assistant"],
+      contextTurns: 2,
+      maxQueryChars: 500,
+    });
+
+    expect(query).toContain("user: look at this");
+    expect(query).toContain("[image omitted]");
+    expect(query).toContain("assistant: running command");
+    expect(query).toContain("[toolCall bash]");
+    expect(query).not.toContain("base64-secret");
+    expect(query).not.toContain('"type"');
+  });
+
   it("adds deterministic context hints", () => {
     const messages = [
       { role: "user", content: "ship it", timestamp: 1 },
