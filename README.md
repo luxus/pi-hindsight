@@ -1,12 +1,14 @@
 # Pi Hindsight Extension
 
-Persistent memory for Pi, backed by Hindsight.
+Persistent memory for Pi, backed by [Hindsight](https://hindsight.vectorize.io/).
 
 This package adds a Pi extension that can recall relevant project memory before model calls, retain structured session deltas after completed agent runs, and expose explicit tools for direct memory operations.
 
+The extension is heavily inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). Many product ideas, memory lifecycle choices, and Pi/Hindsight integration patterns started from that extension and were adapted here with stricter project isolation, queue durability, diagnostics, and release-hardening goals.
+
 ## Hindsight mental model
 
-**Hindsight is a memory system that separates storage, retrieval, and reasoning.**
+**[Hindsight](https://hindsight.vectorize.io/) is a memory system that separates storage, retrieval, and reasoning.**
 
 ```text
 Retain  = store memory
@@ -175,6 +177,16 @@ Historical import examples:
 
 Preview output includes message count, document count, update mode, status, checkpoint path, and the unchanged manifest path. Import output reports the same document summary plus the first document ID and manifest path. Use `--all-leaves` only when you explicitly want every fork leaf; the default imports only the current branch.
 
+## Install
+
+Install the current pre-release directly from GitHub:
+
+```bash
+pi install https://github.com/luxus/pi-hindsight
+```
+
+An npm package install path is planned later. Until then, use the GitHub URL above or a local checkout path.
+
 ## Install for local development
 
 ```bash
@@ -189,19 +201,13 @@ Run Pi with the local package or extension:
 pi -e ./extensions/index.ts
 ```
 
-Or install the published package:
-
-```bash
-pi install @luxus/pi-hindsight
-```
-
 For local development, install a checkout path instead:
 
 ```bash
 pi install /path/to/pi-hindsight
 ```
 
-Published package name: `@luxus/pi-hindsight`.
+Planned npm package name: `@luxus/pi-hindsight`.
 
 ## Configuration
 
@@ -216,6 +222,13 @@ If both `.json` and `.jsonc` exist at the same scope, `.json` wins. Config is no
 ### Minimal configuration path
 
 Start with the smallest project-local config that points Pi at your Hindsight server. The default memory profile is `project-only`, which keeps automatic recall and retain scoped to a project bank.
+
+Use one of these Hindsight deployment paths:
+
+- [Hindsight Cloud signup](https://ui.hindsight.vectorize.io/signup)
+- [Local Hindsight installation](https://hindsight.vectorize.io/developer/installation)
+
+After you have a Hindsight server URL, put it in project config:
 
 ```json
 {
