@@ -4,6 +4,7 @@
 
 ### Features
 
+- expose release readiness memory controls ([5b1ebcb](https://github.com/luxus/pi-hindsight/commit/5b1ebcb9c364d431c2140c0eea268f4d170f7d66))
 - add recall cleanup command ([ed993d0](https://github.com/luxus/pi-hindsight/commit/ed993d0f87ba44b4fab15f414e40f208e44c8469))
 - add api key secret refs ([8ef4ec5](https://github.com/luxus/pi-hindsight/commit/8ef4ec5dc58f8bb3c6047011b1abbc1ea99678a7))
 - add setup deployment guidance ([d3c1dcd](https://github.com/luxus/pi-hindsight/commit/d3c1dcdef8a01db5bfe6aa23e4f581efdf70ba4b))
