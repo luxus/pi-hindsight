@@ -24,7 +24,12 @@ const packageJson = JSON.parse(await readFile("package.json", "utf8"));
 const repoUrl = String(packageJson.repository?.url ?? "")
   .replace(/^git\+/, "")
   .replace(/\.git$/, "");
-const { stdout: latestCommitDate } = await execFileAsync("git", ["log", "-1", "--format=%cs"]);
+const { stdout: latestCommitDate } = await execFileAsync("git", [
+  "log",
+  "--no-merges",
+  "-1",
+  "--format=%cs",
+]);
 const releaseDate = latestCommitDate.trim();
 const { stdout } = await execFileAsync("git", ["log", "--no-merges", "--format=%H%x00%s"]);
 const groups = new Map(sections.map(([, section]) => [section, []]));

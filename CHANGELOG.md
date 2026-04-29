@@ -63,6 +63,7 @@
 
 ### Documentation
 
+- refresh changelog generation ([cd9593a](https://github.com/luxus/pi-hindsight/commit/cd9593afb698c4bf98511f4dd8718ac2d2b07dd7))
 - mark global review loop complete ([e4a9318](https://github.com/luxus/pi-hindsight/commit/e4a9318b4a3c7c5deac7787468c563d2e4313912))
 - record upstream retain issue ([c3de5aa](https://github.com/luxus/pi-hindsight/commit/c3de5aaa07c82ff7ef16f6f7c26ac221aadefa31))
 - clarify release verification ([4f2de2c](https://github.com/luxus/pi-hindsight/commit/4f2de2c3821a59e17fa3600ab79f02fc4f991e63))
@@ -85,6 +86,7 @@
 
 ### Chores
 
+- remove unused changelog dependency ([ad3cd3a](https://github.com/luxus/pi-hindsight/commit/ad3cd3a6a5618b9588e159055582542a5bdffddf))
 - prepare package release metadata ([7b7deea](https://github.com/luxus/pi-hindsight/commit/7b7deea8075502940e2523426042bafce0de98cc))
 - ignore local agent skill files ([fd4d30e](https://github.com/luxus/pi-hindsight/commit/fd4d30eeaea7224cd8ce3c9e2213c7d7b9502833))
 
