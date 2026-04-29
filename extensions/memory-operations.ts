@@ -26,6 +26,7 @@ import {
   getEffectiveSessionMemoryMode,
   readSessionMemoryMeta,
   removeSessionMemoryTag,
+  setNextSessionRetainMode,
   setSessionMemoryMode,
   setSessionRetainEnabled,
   type SessionMemoryMode,
@@ -299,6 +300,11 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
 
     async setSessionRetain(cwd: string, sessionFile: string | undefined, enabled: boolean) {
       const meta = await setSessionRetainEnabled(cwd, sessionFile, enabled);
+      return { meta, effective: getEffectiveSessionMemoryMode(meta) };
+    },
+
+    async setNextRetainOff(cwd: string, sessionFile: string | undefined) {
+      const meta = await setNextSessionRetainMode(cwd, sessionFile, "off");
       return { meta, effective: getEffectiveSessionMemoryMode(meta) };
     },
 

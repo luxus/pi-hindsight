@@ -4,9 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   addSessionMemoryTag,
+  consumeNextSessionRetainMode,
   getEffectiveSessionMemoryMode,
   readSessionMemoryMeta,
   removeSessionMemoryTag,
+  setNextSessionRetainMode,
   setSessionMemoryMode,
   setSessionRetainEnabled,
   sessionMetaPath,
@@ -120,6 +122,18 @@ describe("session memory metadata", () => {
       recall: true,
       retain: false,
     });
+  });
+
+  it("persists and consumes one-turn retain opt-out", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-meta-"));
+
+    await setNextSessionRetainMode(cwd, "/tmp/session.jsonl", "off");
+    expect((await readSessionMemoryMeta(cwd, "/tmp/session.jsonl")).nextRetainMode).toBe("off");
+
+    const consumed = await consumeNextSessionRetainMode(cwd, "/tmp/session.jsonl");
+    expect(consumed.consumed).toBe("off");
+    expect(consumed.meta.nextRetainMode).toBe("normal");
+    expect((await readSessionMemoryMeta(cwd, "/tmp/session.jsonl")).nextRetainMode).toBe("normal");
   });
 
   it("adds and removes sanitized tags", async () => {

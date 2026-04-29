@@ -298,7 +298,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
     handler: async (_args, ctx) => {
       const result = await operations.session(ctx.cwd, sessionFile(ctx));
       ctx.ui.notify(
-        `Hindsight session mode=${result.meta.mode}; recall=${result.effective.recall}; retain=${result.effective.retain}; tags=${result.meta.tags.join(",") || "none"}`,
+        `Hindsight session mode=${result.meta.mode}; recall=${result.effective.recall}; retain=${result.effective.retain}; nextRetain=${result.meta.nextRetainMode}; tags=${result.meta.tags.join(",") || "none"}`,
         "info",
       );
     },
@@ -316,6 +316,17 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       const result = await operations.setSessionMode(ctx.cwd, sessionFile(ctx), mode);
       ctx.ui.notify(
         `Hindsight session mode=${result.meta.mode}; recall=${result.effective.recall}; retain=${result.effective.retain}`,
+        "info",
+      );
+    },
+  });
+
+  pi.registerCommand("hindsight:next-opt-out", {
+    description: "Skip automatic retain for the next agent run in this session.",
+    handler: async (_args, ctx) => {
+      const result = await operations.setNextRetainOff(ctx.cwd, sessionFile(ctx));
+      ctx.ui.notify(
+        `Hindsight will skip automatic retain for the next agent run in this session. nextRetain=${result.meta.nextRetainMode}`,
         "info",
       );
     },

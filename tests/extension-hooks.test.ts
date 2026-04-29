@@ -3,7 +3,12 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { enqueueRetainJob, readRetainQueue, resolveQueuePath } from "../extensions/queue.js";
-import { addSessionMemoryTag, setSessionMemoryMode } from "../extensions/session-memory-meta.js";
+import {
+  addSessionMemoryTag,
+  readSessionMemoryMeta,
+  setNextSessionRetainMode,
+  setSessionMemoryMode,
+} from "../extensions/session-memory-meta.js";
 import type { RetainJob } from "../extensions/types.js";
 
 const mocked = vi.hoisted(() => ({
@@ -101,6 +106,63 @@ describe("extension hooks", () => {
     expect(retainedContent).toContain("Decision still stands.");
     expect(retainedContent).not.toContain("<hindsight-memory>");
     expect(retainedContent).not.toContain("repo-specific remembered fact");
+  });
+
+  it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    mocked.client.retain.mockClear();
+
+    const skippedMessages = [
+      { role: "user", content: "Do not retain this", timestamp: 1 },
+      { role: "assistant", content: "Skipped answer", timestamp: 2 },
+    ];
+    await handlers.agent_end?.[0]?.({ messages: skippedMessages }, ctx);
+
+    expect(mocked.client.retain).not.toHaveBeenCalled();
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("normal");
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      "Hindsight skipped retain for this run due to next-opt-out.",
+      "info",
+    );
+
+    await handlers.agent_end?.[0]?.(
+      {
+        messages: [
+          ...skippedMessages,
+          { role: "user", content: "Retain this later", timestamp: 3 },
+          { role: "assistant", content: "Retained answer", timestamp: 4 },
+        ],
+      },
+      ctx,
+    );
+
+    expect(mocked.client.retain).toHaveBeenCalledTimes(1);
+    const retainedContent = mocked.client.retain.mock.calls[0]?.[1] as string;
+    expect(retainedContent).not.toContain("Do not retain this");
+    expect(retainedContent).not.toContain("Skipped answer");
+    expect(retainedContent).toContain("Retain this later");
+    expect(retainedContent).toContain("Retained answer");
   });
 
   it("writes opt-in last recall snapshot to sidecar", async () => {

@@ -91,9 +91,9 @@ Safe alternative:
   - `/hindsight:mode read-only`
   - `/hindsight:mode ignored`
   - `/hindsight:retain off`
-- Design a future command-based one-turn opt-out instead of hashtag parsing.
+- Use `/hindsight:next-opt-out` for command-based one-turn automatic retain opt-out instead of hashtag parsing.
 
-Preferred future direction:
+Implemented one-turn direction:
 
 ```text
 /hindsight:next-opt-out
@@ -106,7 +106,7 @@ Why this is better:
 - The behavior can be tested without parsing arbitrary user prose.
 - It does not conflict with Markdown.
 
-Initial semantics, if implemented later:
+Current semantics:
 
 - Applies once to the next agent run in the current session.
 - Disables automatic retain for that run.
@@ -123,11 +123,11 @@ Use commands for policy. Do not hide policy in prompt text.
 
 ## Decision summary
 
-| Feature                              | Status   | Safe alternative                                           |
-| ------------------------------------ | -------- | ---------------------------------------------------------- |
-| Persisted recall transcript messages | Deferred | ephemeral recall + last-recall sidecar                     |
-| Provider recall cache                | Deferred | fresh recall per turn + local inspection snapshot          |
-| `#nomem` / prompt hashtag controls   | Deferred | explicit commands; future `/hindsight:next-opt-out` design |
+| Feature                              | Status   | Safe alternative                                    |
+| ------------------------------------ | -------- | --------------------------------------------------- |
+| Persisted recall transcript messages | Deferred | ephemeral recall + last-recall sidecar              |
+| Provider recall cache                | Deferred | fresh recall per turn + local inspection snapshot   |
+| `#nomem` / prompt hashtag controls   | Deferred | explicit commands such as `/hindsight:next-opt-out` |
 
 ## Reopening criteria
 

@@ -19,7 +19,11 @@ import {
   readRetainFingerprints,
 } from "./retain-cursor.js";
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "./types.js";
-import { getEffectiveSessionMemoryMode, readSessionMemoryMeta } from "./session-memory-meta.js";
+import {
+  consumeNextSessionRetainMode,
+  getEffectiveSessionMemoryMode,
+  readSessionMemoryMeta,
+} from "./session-memory-meta.js";
 import { writeLastRecallSnapshot } from "./recall-visibility.js";
 import { redactError } from "./sanitize.js";
 
@@ -284,10 +288,12 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         return { queued: false, sent: 0, remaining: 0 };
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return { queued: false, sent: 0, remaining: 0 };
-      const sessionMemory = getEffectiveSessionMemoryMode(
-        await readSessionMemoryMeta(runtime.cwd, runtime.sessionFile),
+      const { meta: sessionMeta, consumed: nextRetainMode } = await consumeNextSessionRetainMode(
+        runtime.cwd,
+        runtime.sessionFile,
       );
-      if (!sessionMemory.retain) {
+      const sessionMemory = getEffectiveSessionMemoryMode(sessionMeta);
+      if (!sessionMemory.retain || nextRetainMode === "off") {
         try {
           await markRetainedMessages(runtime, event.messages);
         } catch (error) {
@@ -297,6 +303,9 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
             `Hindsight retain cursor update failed: ${(error as Error).message}`,
             "warning",
           );
+        }
+        if (nextRetainMode === "off") {
+          notify(runtime, "Hindsight skipped retain for this run due to next-opt-out.", "info");
         }
         return { queued: false, sent: 0, remaining: 0 };
       }

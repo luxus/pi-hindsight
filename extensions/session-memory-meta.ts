@@ -5,11 +5,13 @@ import { stableSessionId } from "./session.js";
 
 export type SessionMemoryMode = "normal" | "read-only" | "ignored";
 export type SessionMemorySwitch = "normal" | "off";
+export type NextRetainMode = "normal" | "off";
 
 export interface HindsightSessionMeta {
   retained: boolean;
   recallMode: SessionMemorySwitch;
   retainMode: SessionMemorySwitch;
+  nextRetainMode: NextRetainMode;
   mode: SessionMemoryMode;
   tags: string[];
   createdAt: string;
@@ -37,6 +39,7 @@ export function defaultSessionMemoryMeta(): HindsightSessionMeta {
     retained: true,
     recallMode: "normal",
     retainMode: "normal",
+    nextRetainMode: "normal",
     mode: "normal",
     tags: [],
     createdAt: now,
@@ -50,6 +53,7 @@ export function failClosedSessionMemoryMeta(): HindsightSessionMeta {
     retained: false,
     recallMode: "off",
     retainMode: "off",
+    nextRetainMode: "normal",
     mode: "ignored",
     tags: [],
     createdAt: now,
@@ -99,6 +103,7 @@ function isSessionMemoryMetaRecord(value: unknown): value is SessionMemoryMetaRe
     typeof record.retained === "boolean" &&
     isSwitch(record.recallMode) &&
     isSwitch(record.retainMode) &&
+    (record.nextRetainMode === undefined || isSwitch(record.nextRetainMode)) &&
     isMode(record.mode) &&
     Array.isArray(record.tags) &&
     typeof record.createdAt === "string" &&
@@ -112,6 +117,7 @@ export function normalizeSessionMemoryMeta(value: unknown): HindsightSessionMeta
     retained: value.retained,
     recallMode: value.recallMode,
     retainMode: value.retainMode,
+    nextRetainMode: value.nextRetainMode ?? "normal",
     mode: value.mode,
     tags: normalizeSessionTags(value.tags),
     createdAt: value.createdAt,
@@ -193,6 +199,29 @@ export async function setSessionRetainEnabled(
     retained: enabled,
     retainMode: enabled ? "normal" : "off",
   });
+}
+
+export async function setNextSessionRetainMode(
+  cwd: string,
+  sessionFile: string | undefined,
+  nextRetainMode: NextRetainMode,
+): Promise<HindsightSessionMeta> {
+  const meta = await readSessionMemoryMeta(cwd, sessionFile);
+  return writeSessionMemoryMeta(cwd, sessionFile, { ...meta, nextRetainMode });
+}
+
+export async function consumeNextSessionRetainMode(
+  cwd: string,
+  sessionFile: string | undefined,
+): Promise<{ meta: HindsightSessionMeta; consumed: NextRetainMode }> {
+  const meta = await readSessionMemoryMeta(cwd, sessionFile);
+  const consumed = meta.nextRetainMode;
+  if (consumed === "normal") return { meta, consumed };
+  const next = await writeSessionMemoryMeta(cwd, sessionFile, {
+    ...meta,
+    nextRetainMode: "normal",
+  });
+  return { meta: next, consumed };
 }
 
 export async function addSessionMemoryTag(
