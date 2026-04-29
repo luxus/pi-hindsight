@@ -45,8 +45,10 @@ export function bankSelectionMessage(projectBankId: string, config: ResolvedConf
   return `Hindsight bank auto-selected: ${projectBankId}. Override with PI_HINDSIGHT_PROJECT_BANK_ID or .pi/hindsight.json banks.project.bankId.`;
 }
 
-function memoryProfile(config: ResolvedConfig): "project-only" | "project+global" | "global-only" {
-  if (!config.banks.project.enabled) return "global-only";
+export function memoryProfile(
+  config: ResolvedConfig,
+): "project-only" | "project+global" | "global-only" | "none" {
+  if (!config.banks.project.enabled) return config.banks.global.enabled ? "global-only" : "none";
   if (config.banks.global.enabled) return "project+global";
   return "project-only";
 }

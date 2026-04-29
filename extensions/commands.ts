@@ -4,6 +4,7 @@ import type { MemoryOperationsDeps } from "./memory-operations.js";
 import { createMemoryOperations } from "./memory-operations.js";
 import { runHindsightSetupTui } from "./setup-tui.js";
 import type { SessionMemoryMode } from "./session-memory-meta.js";
+import { memoryProfile } from "./diagnostics.js";
 
 function firstArg(args: unknown): string | undefined {
   if (Array.isArray(args)) return typeof args[0] === "string" ? args[0] : undefined;
@@ -97,11 +98,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       const bank = status.config.banks.project.enabled
         ? status.bankId
         : (status.config.banks.global.bankId ?? "none");
-      const profile = status.config.banks.project.enabled
-        ? status.config.banks.global.enabled
-          ? "project+global"
-          : "project-only"
-        : "global-only";
+      const profile = memoryProfile(status.config);
       const queueIssue = queueIssueSummary(status.queue);
       ctx.ui.notify(
         `Hindsight ${status.config.enabled ? "on" : "off"}; profile ${profile}; bank ${bank}; queue ${status.queueLength}; imports ${status.imports.count}${queueIssue}`,

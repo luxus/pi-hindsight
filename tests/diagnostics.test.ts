@@ -100,6 +100,26 @@ describe("diagnostics", () => {
     expect(report.memoryRoutes).toEqual({ recall: ["global"], autoRetain: null });
   });
 
+  it("formats disabled bank routes without calling them global-only", () => {
+    const report = JSON.parse(
+      formatDebugReport({
+        cwd: process.cwd(),
+        projectBankId: "project-bank",
+        config: {
+          ...DEFAULT_CONFIG,
+          banks: {
+            project: { enabled: false, derive: "repo" },
+            global: { enabled: false },
+          },
+        },
+        queueLength: 0,
+      }),
+    ) as Record<string, unknown>;
+
+    expect(report.memoryProfile).toBe("none");
+    expect(report.memoryRoutes).toEqual({ recall: [], autoRetain: null });
+  });
+
   it("formats observation scope diagnostics", () => {
     const report = JSON.parse(
       formatDebugReport({

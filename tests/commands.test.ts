@@ -302,6 +302,40 @@ describe("hindsight commands", () => {
     );
   });
 
+  it("reports no-bank profile without calling it global-only", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => ({
+          ...DEFAULT_CONFIG,
+          banks: {
+            project: { enabled: false, derive: "repo" },
+            global: { enabled: false },
+          },
+        }),
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:status")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("profile none; bank none"),
+      "info",
+    );
+  });
+
   it("warns when doctor cannot read the retain queue", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
     writeFileSync(join(cwd, "not-a-dir"), "file blocks queue directory");
