@@ -134,35 +134,26 @@ describe("retain queue", () => {
     expect(calls[0]).toMatchObject(["b", "raw", { observationScopes: [["repo:abc"], ["bank:b"]] }]);
   });
 
-  it("replays queued append jobs through fallback target when append is unsupported", async () => {
+  it("keeps failed append jobs in the queue when append is unsupported", async () => {
     const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
-    await enqueueRetainJob(path, {
-      ...job,
-      appendFallback: { documentId: "doc:delta:abc", updateMode: "replace" },
-    });
+    await enqueueRetainJob(path, job);
     const calls: unknown[] = [];
 
     const result = await flushRetainQueue(path, {
       retain: async (...args: unknown[]) => {
         calls.push(args);
-        if (calls.length === 1)
-          throw new Error(
-            `retain failed: [{"loc":["body","items",0,"update_mode"],"msg":"Input should be 'replace'","input":"append"}]`,
-          );
+        throw new Error(
+          `retain failed: [{"loc":["body","items",0,"update_mode"],"msg":"Input should be 'replace'","input":"append"}]`,
+        );
       },
       recall: async () => [],
       reflect: async () => ({}),
     });
 
-    expect(result).toMatchObject({ sent: 1, remaining: 0, deadLettered: 0 });
-    expect(calls).toHaveLength(2);
+    expect(result).toMatchObject({ sent: 0, remaining: 1, deadLettered: 0 });
+    expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject(["b", "raw", { documentId: "doc", updateMode: "append" }]);
-    expect(calls[1]).toMatchObject([
-      "b",
-      "raw",
-      { documentId: "doc:delta:abc", updateMode: "replace" },
-    ]);
-    expect(await readRetainQueue(path)).toHaveLength(0);
+    expect(await readRetainQueue(path)).toHaveLength(1);
   });
 
   it("moves exhausted failed jobs to the dead-letter queue", async () => {

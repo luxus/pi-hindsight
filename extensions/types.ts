@@ -1,6 +1,5 @@
 export type Budget = "low" | "mid" | "high";
 export type UpdateMode = "append" | "replace";
-export type AppendFallback = "error" | "per-turn-documents";
 export type RetainUserContent = "text";
 export type RetainAssistantContent = "text" | "toolCall" | "thinking";
 export type RetainToolResultContent = "error" | "summary" | "content";
@@ -51,7 +50,6 @@ export interface ResolvedConfig {
     enabled: boolean;
     async: boolean;
     updateMode: UpdateMode;
-    appendFallback: AppendFallback;
     content: {
       user: RetainUserContent[];
       assistant: RetainAssistantContent[];
@@ -119,10 +117,6 @@ export interface RetainJob {
   createdAt: string;
   documentId: string;
   updateMode: UpdateMode;
-  appendFallback?: {
-    documentId: string;
-    updateMode: "replace";
-  };
   item: {
     content: string;
     context: string;

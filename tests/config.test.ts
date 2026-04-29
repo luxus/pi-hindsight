@@ -165,7 +165,6 @@ describe("resolveConfig", () => {
         observations: { enabled: true, scopes: [["repo:{repoKey}"], []] },
         retain: {
           queuePath: "",
-          appendFallback: "overwrite",
           shutdownFlushMaxJobs: -1,
           shutdownFlushTimeoutMs: 0,
           toolFilter: { toolCall: { include: [42] }, toolResult: { exclude: "read" } },
@@ -203,7 +202,6 @@ describe("resolveConfig", () => {
     expect(config.recall.topK).toBe(8);
     expect(config.recall.timeoutMs).toBe(10_000);
     expect(config.recall.injectionPosition).toBe("append");
-    expect(config.retain.appendFallback).toBe("error");
     expect(config.retain.content.toolResult).toEqual(["error"]);
     expect(config.retain.toolFilter.toolCall.exclude).toContain("hindsight_retain");
     expect(config.retain.toolFilter.toolResult.exclude).toContain("hindsight_recall");

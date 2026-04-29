@@ -40,7 +40,6 @@ const DEFAULT_CONFIG: ResolvedConfig = {
     enabled: true,
     async: true,
     updateMode: "append",
-    appendFallback: "error",
     content: {
       user: ["text"],
       assistant: ["text", "toolCall"],
@@ -331,11 +330,6 @@ export function normalizeConfig(
         config.retain?.updateMode,
         ["append", "replace"],
         DEFAULT_CONFIG.retain.updateMode,
-      ),
-      appendFallback: enumValue(
-        config.retain?.appendFallback,
-        ["error", "per-turn-documents"],
-        DEFAULT_CONFIG.retain.appendFallback,
       ),
       content: {
         user: enumArray(config.retain?.content?.user, ["text"], DEFAULT_CONFIG.retain.content.user),

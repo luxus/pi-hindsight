@@ -213,7 +213,7 @@ describe("durable explicit retain", () => {
     ]);
   });
 
-  it("refuses explicit append retain when known unsupported and fallback is error", async () => {
+  it("refuses explicit append retain when known unsupported", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-retain-"));
     const config = testConfig();
     const operations = createMemoryOperations({
@@ -233,12 +233,9 @@ describe("durable explicit retain", () => {
     expect(await readRetainQueue(resolveQueuePath(cwd, config.retain.queuePath))).toHaveLength(0);
   });
 
-  it("stores fallback targets when append support is unknown and fallback is configured", async () => {
+  it("keeps append target when append support probe was inconclusive", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-retain-"));
-    const config: ResolvedConfig = {
-      ...testConfig(),
-      retain: { ...testConfig().retain, appendFallback: "per-turn-documents" },
-    };
+    const config = testConfig();
     const operations = createMemoryOperations({
       getClient: () =>
         client(async () => {
@@ -251,42 +248,13 @@ describe("durable explicit retain", () => {
 
     await operations.retainExplicit({
       cwd,
-      content: "Decision: keep fallback target.",
+      content: "Decision: keep append target.",
       context: "unit test explicit retain",
     });
 
     const queued = await readRetainQueue(resolveQueuePath(cwd, config.retain.queuePath));
     expect(queued[0]?.updateMode).toBe("append");
-    expect(queued[0]?.appendFallback?.documentId).toMatch(/^pi-explicit:.*:delta:/);
-    expect(queued[0]?.appendFallback?.updateMode).toBe("replace");
-  });
-
-  it("uses per-delta explicit documents when append is unsupported and fallback is configured", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-retain-"));
-    const config: ResolvedConfig = {
-      ...testConfig(),
-      retain: { ...testConfig().retain, appendFallback: "per-turn-documents" },
-    };
-    const operations = createMemoryOperations({
-      getClient: () =>
-        client(async () => {
-          throw new Error("down");
-        }),
-      getConfig: () => config,
-      getProjectBankId: () => "project-bank",
-      getCapabilities: () => ({ appendUpdateMode: false, checkedAt: "now" }),
-    });
-
-    await operations.retainExplicit({
-      cwd,
-      content: "Decision: use per-delta docs.",
-      context: "unit test explicit retain",
-    });
-
-    const queued = await readRetainQueue(resolveQueuePath(cwd, config.retain.queuePath));
-    expect(queued).toHaveLength(1);
-    expect(queued[0]?.documentId).toMatch(/^pi-explicit:.*:delta:/);
-    expect(queued[0]?.updateMode).toBe("replace");
+    expect(queued[0]?.documentId).toMatch(/^pi-explicit:/);
   });
 
   it("blocks explicit recall and retain when session governance disables them", async () => {

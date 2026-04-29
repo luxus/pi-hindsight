@@ -3,19 +3,9 @@ import { DEFAULT_CONFIG } from "../extensions/config.js";
 import {
   detectAppendCapability,
   isAppendUnsupportedError,
-  perDeltaDocumentId,
   resolveRetainDocumentTarget,
 } from "../extensions/capabilities.js";
-import type { HindsightLikeClient, ResolvedConfig } from "../extensions/types.js";
-
-function config(
-  appendFallback: ResolvedConfig["retain"]["appendFallback"] = "error",
-): ResolvedConfig {
-  return {
-    ...DEFAULT_CONFIG,
-    retain: { ...DEFAULT_CONFIG.retain, appendFallback },
-  };
-}
+import type { HindsightLikeClient } from "../extensions/types.js";
 
 function client(retain: HindsightLikeClient["retain"]): HindsightLikeClient {
   return {
@@ -92,49 +82,30 @@ describe("append capabilities", () => {
   it("keeps stable append document IDs when append is supported or unknown", () => {
     expect(
       resolveRetainDocumentTarget({
-        config: config(),
+        config: DEFAULT_CONFIG,
         documentId: "doc",
         updateMode: "append",
-        fallbackParts: ["content"],
       }),
     ).toEqual({ documentId: "doc", updateMode: "append" });
 
     expect(
       resolveRetainDocumentTarget({
-        config: config(),
+        config: DEFAULT_CONFIG,
         capabilities: { appendUpdateMode: true, checkedAt: "now" },
         documentId: "doc",
         updateMode: "append",
-        fallbackParts: ["content"],
       }),
     ).toEqual({ documentId: "doc", updateMode: "append" });
   });
 
-  it("refuses append when unsupported and fallback is error", () => {
+  it("refuses append when unsupported", () => {
     expect(() =>
       resolveRetainDocumentTarget({
-        config: config("error"),
+        config: DEFAULT_CONFIG,
         capabilities: { appendUpdateMode: false, checkedAt: "now" },
         documentId: "doc",
         updateMode: "append",
-        fallbackParts: ["content"],
       }),
     ).toThrow(/append update mode is unsupported/);
-  });
-
-  it("falls back to deterministic per-delta documents when configured", () => {
-    const target = resolveRetainDocumentTarget({
-      config: config("per-turn-documents"),
-      capabilities: { appendUpdateMode: false, checkedAt: "now" },
-      documentId: "doc",
-      updateMode: "append",
-      fallbackParts: ["content"],
-    });
-
-    expect(target).toEqual({
-      documentId: perDeltaDocumentId("doc", ["content"]),
-      updateMode: "replace",
-    });
-    expect(target.documentId).toMatch(/^doc:delta:/);
   });
 });

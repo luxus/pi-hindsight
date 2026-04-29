@@ -160,12 +160,11 @@ export function formatDebugReport(args: DebugReportArgs): string {
             checkedAt: args.capabilities.checkedAt,
             error: args.capabilities.error ?? null,
             probeDocumentId: args.capabilities.probeDocumentId ?? null,
-            appendFallback: args.config.retain.appendFallback,
             action: args.capabilities.appendUpdateMode
               ? null
-              : "Upgrade Hindsight or set retain.appendFallback to per-turn-documents.",
+              : "Upgrade Hindsight; append update mode is required for live retain.",
           }
-        : { appendUpdateMode: "not checked", appendFallback: args.config.retain.appendFallback },
+        : { appendUpdateMode: "not checked" },
       imports: {
         manifestPath: args.importManifestPath ?? args.config.import.manifestPath,
         count: args.importCount ?? 0,
@@ -214,7 +213,6 @@ export function formatDebugReport(args: DebugReportArgs): string {
         enabled: args.config.retain.enabled,
         async: args.config.retain.async,
         updateMode: args.config.retain.updateMode,
-        appendFallback: args.config.retain.appendFallback,
         redactSecrets: args.config.retain.redactSecrets,
         content: args.config.retain.content,
         toolFilter: args.config.retain.toolFilter,

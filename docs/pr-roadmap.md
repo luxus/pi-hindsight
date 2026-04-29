@@ -32,7 +32,7 @@ Every PR must preserve these rules:
 - Always set `context` on retain items.
 - Use stable, meaningful `document_id` values.
 - Use `update_mode: "append"` for ongoing live sessions when the server supports it.
-- Use `replace` only for deterministic historical imports, rebuilds, or fallback documents that cannot overwrite earlier live deltas.
+- Use `replace` only for deterministic historical imports or rebuilds.
 - Use tags for recall scope and visibility. Use metadata only for provenance and source links.
 - Recall before answer generation.
 - Keep automatic recall ephemeral by default. Do not persist recalled memory into Pi transcript history.
@@ -60,7 +60,7 @@ Implemented and expected to stay:
 - Structured retain projection with configurable roles, tool calls, tool results, stripped fields, and secret redaction.
 - Durable JSONL retain queue with lock directory, retry limit, and dead-letter queue.
 - Queue-first explicit `hindsight_retain` tool.
-- Append capability probe and deterministic fallback policy.
+- Append capability probe with clear failure when append is unsupported.
 - Retain cursor to prevent duplicate append writes from overlapping transcripts.
 - Observation scope config and expansion.
 - Per-session memory mode, retain toggle, and manual tags.

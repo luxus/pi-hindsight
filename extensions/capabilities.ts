@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type {
   HindsightCapabilities,
   HindsightLikeClient,
@@ -6,40 +5,18 @@ import type {
   UpdateMode,
 } from "./types.js";
 
-export function perDeltaDocumentId(baseDocumentId: string, parts: unknown[]): string {
-  const hash = createHash("sha256").update(JSON.stringify(parts)).digest("hex").slice(0, 16);
-  return `${baseDocumentId}:delta:${hash}`;
-}
-
-export function appendFallbackTarget(args: {
-  config: ResolvedConfig;
-  documentId: string;
-  fallbackParts: unknown[];
-}): { documentId: string; updateMode: "replace" } | undefined {
-  if (args.config.retain.appendFallback !== "per-turn-documents") return undefined;
-  return {
-    documentId: perDeltaDocumentId(args.documentId, args.fallbackParts),
-    updateMode: "replace",
-  };
-}
-
 export function resolveRetainDocumentTarget(args: {
   config: ResolvedConfig;
   capabilities?: HindsightCapabilities;
   documentId: string;
   updateMode: UpdateMode;
-  fallbackParts: unknown[];
 }): { documentId: string; updateMode: UpdateMode } {
   if (args.updateMode !== "append")
     return { documentId: args.documentId, updateMode: args.updateMode };
   if (!args.capabilities || args.capabilities.appendUpdateMode) {
     return { documentId: args.documentId, updateMode: args.updateMode };
   }
-  const fallback = appendFallbackTarget(args);
-  if (fallback) return fallback;
-  throw new Error(
-    "Hindsight append update mode is unsupported. Upgrade Hindsight or set retain.appendFallback to per-turn-documents.",
-  );
+  throw new Error("Hindsight append update mode is unsupported. Upgrade Hindsight.");
 }
 
 export function isAppendUnsupportedError(error: unknown): boolean {

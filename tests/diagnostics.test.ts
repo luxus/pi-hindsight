@@ -63,7 +63,6 @@ describe("diagnostics", () => {
     });
     expect(report.capabilities).toMatchObject({
       appendUpdateMode: "not checked",
-      appendFallback: "error",
     });
     expect(report.memoryProfile).toBe("project-only");
     expect(report.memoryRoutes).toEqual({ recall: ["project"], autoRetain: "project" });
@@ -152,10 +151,9 @@ describe("diagnostics", () => {
 
     expect(report.capabilities).toMatchObject({
       appendUpdateMode: "unsupported",
-      appendFallback: "error",
       error: "unsupported",
       probeDocumentId: "pi-hindsight-capability:append:bank",
-      action: "Upgrade Hindsight or set retain.appendFallback to per-turn-documents.",
+      action: "Upgrade Hindsight; append update mode is required for live retain.",
     });
   });
 
