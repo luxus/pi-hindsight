@@ -63,6 +63,33 @@ describe("Pi session import", () => {
         }),
         JSON.stringify({
           type: "message",
+          id: "recall-memory",
+          parentId: "root",
+          timestamp: "t-recall",
+          message: {
+            role: "assistant",
+            content: "<hindsight-memory>persisted recall</hindsight-memory>",
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "legacy-recall-memory",
+          parentId: "recall-memory",
+          timestamp: "t-legacy-recall",
+          message: {
+            role: "assistant",
+            content: "<hindsight_memories>legacy recall</hindsight_memories>",
+          },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "custom-recall-memory",
+          parentId: "legacy-recall-memory",
+          timestamp: "t-custom-recall",
+          message: { role: "assistant", customType: "hindsight-recall", content: "custom recall" },
+        }),
+        JSON.stringify({
+          type: "message",
           id: "old",
           parentId: "root",
           timestamp: "t2",
@@ -71,7 +98,7 @@ describe("Pi session import", () => {
         JSON.stringify({
           type: "message",
           id: "current",
-          parentId: "root",
+          parentId: "custom-recall-memory",
           timestamp: "t3",
           message: { role: "assistant", content: "TOKEN=secret" },
         }),
@@ -123,6 +150,9 @@ describe("Pi session import", () => {
     expect(calls[0]?.[0]).toBe("bank");
     expect(calls[0]?.[1]).not.toContain("TOKEN=secret");
     expect(calls[0]?.[1]).not.toContain("old branch");
+    expect(calls[0]?.[1]).not.toContain("<hindsight-memory>");
+    expect(calls[0]?.[1]).not.toContain("<hindsight_memories>");
+    expect(calls[0]?.[1]).not.toContain("custom recall");
     expect(calls[0]?.[1]).toContain(parentSessionId);
     expect(calls[0]?.[1]).toContain(parentSessionFile);
     expect(calls[0]?.[2]).toMatchObject({

@@ -4,6 +4,7 @@ import { baseTags } from "./banking.js";
 import { redactSecrets } from "./sanitize.js";
 import { hashImportContent, type ImportManifestEntry } from "./import-manifest.js";
 import { createMemoryIdentity } from "./memory-identity.js";
+import { isInjectedHindsightMemory } from "./messages.js";
 import { expandObservationScopes } from "./observation-scopes.js";
 import type { ImportBranch } from "./import-branches.js";
 import type { ParsedSession } from "./import-parser.js";
@@ -55,7 +56,9 @@ function resolvedParentSessionId(parsed: ParsedSession, cwd: string): string | u
 function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranchBuildResult {
   const leafId = args.branch.leafId;
   const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
-  const branchMessages = args.branch.messages;
+  const branchMessages = args.branch.messages.filter(
+    (message) => !isInjectedHindsightMemory(message.data),
+  );
   const documentId = importDocumentId(args.sessionId, leafId);
   const updateMode = args.config.import.replaceExistingImportedDocs ? "replace" : "append";
   const contentRaw = JSON.stringify(

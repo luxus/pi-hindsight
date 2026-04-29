@@ -162,14 +162,15 @@ export function projectMessageText(
   return stripFields(base, retain?.strip.message ?? []);
 }
 
-function isInjectedHindsightMemory(message: AgentMessage): boolean {
-  return textFromContent((message as unknown as { content?: unknown }).content, {
+export function isInjectedHindsightMemory(message: unknown): boolean {
+  const record = message as { content?: unknown; customType?: unknown; type?: unknown };
+  if (record.customType === "hindsight-recall" || record.type === "hindsight-recall") return true;
+  const text = textFromContent(record.content, {
     includeText: true,
     includeThinking: false,
     includeToolCall: true,
-  })
-    .trim()
-    .startsWith("<hindsight-memory>");
+  }).trim();
+  return text.startsWith("<hindsight-memory>") || text.startsWith("<hindsight_memories>");
 }
 
 function toolResultContent(
