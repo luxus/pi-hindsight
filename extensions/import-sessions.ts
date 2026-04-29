@@ -111,6 +111,7 @@ export interface ImportSessionResult {
 
 export async function importPiSession(args: {
   sessionFile: string;
+  cwd?: string;
   bankId: string;
   client: HindsightLikeClient;
   config: ResolvedConfig;
@@ -119,7 +120,12 @@ export async function importPiSession(args: {
 }): Promise<ImportSessionResult> {
   const text = await readFile(args.sessionFile, "utf8");
   const parsed = parseImportSessionJsonl(text);
-  const cwd = parsed.cwd ?? dirname(args.sessionFile);
+  if (args.cwd && parsed.cwd && parsed.cwd !== args.cwd) {
+    throw new Error(
+      `Refusing to import session from cwd ${parsed.cwd}; current cwd is ${args.cwd}. Use project-scoped import from the matching repo.`,
+    );
+  }
+  const cwd = args.cwd ?? parsed.cwd ?? dirname(args.sessionFile);
   const sessionId = parsed.sessionId ?? stableSessionId(args.sessionFile, cwd);
   const leaves = leafIds(parsed.messages);
   const includeBranches = args.includeBranches ?? args.config.import.includeBranches;

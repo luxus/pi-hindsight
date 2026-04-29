@@ -125,6 +125,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
 
     async importSession(args: {
       sessionFile: string;
+      cwd?: string;
       bank?: string;
       dryRun?: boolean;
       includeBranches?: ResolvedConfig["import"]["includeBranches"];
@@ -132,6 +133,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
       const bankId = args.bank || deps.getProjectBankId();
       const result = await importPiSession({
         sessionFile: args.sessionFile,
+        ...(args.cwd ? { cwd: args.cwd } : {}),
         bankId,
         client: deps.getClient(),
         config: deps.getConfig(),

@@ -132,6 +132,7 @@ export function registerTools(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       if (!sessionFile) throw new Error("No session file available. Pass sessionFile explicitly.");
       const result = await operations.importSession({
         sessionFile,
+        cwd: ctx.cwd,
         ...(params.bank ? { bank: params.bank } : {}),
         ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
         ...(params.allLeaves !== undefined

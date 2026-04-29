@@ -181,6 +181,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       }
       const result = await operations.importSession({
         sessionFile,
+        cwd: ctx.cwd,
         ...importOptions(args),
       });
       ctx.ui.notify(
@@ -202,6 +203,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       }
       const result = await operations.importSession({
         sessionFile: current,
+        cwd: ctx.cwd,
         ...importOptions(args),
       });
       ctx.ui.notify(
@@ -221,7 +223,11 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         ctx.ui.notify("Usage: /hindsight:import-file <path> [--dry-run] [--all-leaves]", "warning");
         return;
       }
-      const result = await operations.importSession({ sessionFile: file, ...importOptions(args) });
+      const result = await operations.importSession({
+        sessionFile: file,
+        cwd: ctx.cwd,
+        ...importOptions(args),
+      });
       ctx.ui.notify(
         result.dryRun
           ? `Import preview: file=${file}; messages=${result.messageCount}; ${importDocumentSummary(result)}; write=no; checkpoint=${result.checkpointPath}; manifest unchanged=${result.manifestPath}`
