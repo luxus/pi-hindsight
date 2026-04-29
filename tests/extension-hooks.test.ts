@@ -12,9 +12,12 @@ import {
 } from "../extensions/session-memory-meta.js";
 import type { RetainJob } from "../extensions/types.js";
 
-async function waitForCondition(predicate: () => boolean, timeoutMs = 500): Promise<void> {
+async function waitForCondition(
+  predicate: () => boolean | Promise<boolean>,
+  timeoutMs = 500,
+): Promise<void> {
   const started = Date.now();
-  while (!predicate()) {
+  while (!(await predicate())) {
     if (Date.now() - started > timeoutMs) throw new Error("timed out waiting for condition");
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -159,6 +162,7 @@ describe("extension hooks", () => {
       await handlers.session_start?.[0]?.({}, ctx);
       mocked.client.retain.mockClear();
       await waitForCondition(() => mocked.client.retain.mock.calls.length > 0);
+      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 0);
 
       expect(mocked.client.retain).toHaveBeenCalledWith(
         "bank",

@@ -276,7 +276,7 @@ Memory profiles make global memory explicit. Choose the narrowest route that fit
 - `project+global` recalls from both the project bank and a configured global bank. Use this for most personal coding: project facts remain in the project bank, while durable preferences and cross-project habits can be recalled from the global bank. Automatic retain still writes project transcript deltas to the project bank by default.
 - `global-only` disables the project bank and recalls only from the global bank. Use this only when broad shared global recall is acceptable and you intentionally run a one-bank workflow. Automatic retain is disabled because there is no project bank retain route; use `hindsight_retain` with the global bank ID when you intentionally want global memory.
 
-When a profile enables global memory without an existing bank ID, setup writes `pi-global` as the global bank ID. Override it with `PI_HINDSIGHT_GLOBAL_BANK_ID`, `.pi/hindsight.json`, or the setup TUI if you prefer a different shared bank.
+When a profile enables global memory without an existing bank ID, setup writes `pi-global` as the global bank ID. Override it with `PI_HINDSIGHT_GLOBAL_BANK_ID`, `.pi/hindsight.json` `banks.global.bankId`, or the setup TUI if you prefer a different shared bank. `banks.global.bankId` is used only when `banks.global.enabled` is `true`.
 
 Profile routing is inspectable:
 
@@ -317,6 +317,7 @@ Advanced project config example:
     },
     "global": {
       "enabled": false,
+      "bankId": "pi-global",
       "mission": "Cross-project memory for durable user preferences, recurring workflows, coding habits, and stable assistant behavior."
     }
   },
