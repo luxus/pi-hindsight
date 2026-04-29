@@ -59,7 +59,6 @@
     "@mariozechner/pi-coding-agent": "*",
     "@types/node": "^22.15.3",
     "@typescript/native-preview": "^7.0.0-dev.20260426.1",
-    "conventional-changelog": "^7.2.0",
     "oxfmt": "^0.46.0",
     "oxlint": "^1.61.0",
     "oxlint-tsgolint": "^0.22.0",
