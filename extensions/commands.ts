@@ -49,10 +49,16 @@ function importOptions(args: unknown): {
   };
 }
 
-function importDocumentSummary(result: { documents: { updateMode: string; status: string }[] }) {
+function importDocumentSummary(result: {
+  documents: { updateMode: string; status: string }[];
+  malformedLineCount?: number;
+}) {
   const modes = [...new Set(result.documents.map((document) => document.updateMode))].join(",");
   const statuses = [...new Set(result.documents.map((document) => document.status))].join(",");
-  return `documents=${result.documents.length}; update=${modes || "n/a"}; status=${statuses || "n/a"}`;
+  const malformed = result.malformedLineCount
+    ? `; malformedLines=${result.malformedLineCount}`
+    : "";
+  return `documents=${result.documents.length}; update=${modes || "n/a"}; status=${statuses || "n/a"}${malformed}`;
 }
 
 function queueIssueSummary(queue?: {
@@ -280,8 +286,8 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
       });
       ctx.ui.notify(
         result.dryRun
-          ? `Project import preview: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}; write=no`
-          : `Imported project sessions: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}`,
+          ? `Project import preview: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}; malformedLines=${result.malformedLineCount}; write=no`
+          : `Imported project sessions: sessions=${result.sessionFiles.length}/${result.scanned}; documents=${result.documentCount}; messages=${result.messageCount}; malformedLines=${result.malformedLineCount}`,
         "info",
       );
     },

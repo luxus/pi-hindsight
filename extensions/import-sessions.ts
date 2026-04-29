@@ -81,6 +81,7 @@ export interface ImportProjectSessionsResult {
   messageCount: number;
   documentCount: number;
   dryRun: boolean;
+  malformedLineCount: number;
 }
 
 export interface ImportSessionDocumentResult {
@@ -106,6 +107,7 @@ export interface ImportSessionResult {
   manifestPath: string;
   checkpointPath: string;
   runId: string;
+  malformedLineCount: number;
   documents: ImportSessionDocumentResult[];
 }
 
@@ -273,6 +275,7 @@ export async function importPiSession(args: {
     manifestPath,
     checkpointPath,
     runId,
+    malformedLineCount: parsed.malformedLineCount,
     documents,
   };
 }
@@ -321,5 +324,6 @@ export async function importProjectSessions(args: {
     messageCount: imported.reduce((count, result) => count + result.messageCount, 0),
     documentCount: imported.reduce((count, result) => count + result.documents.length, 0),
     dryRun: Boolean(args.dryRun),
+    malformedLineCount: imported.reduce((count, result) => count + result.malformedLineCount, 0),
   };
 }

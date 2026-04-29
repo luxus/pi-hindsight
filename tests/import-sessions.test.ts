@@ -27,11 +27,13 @@ describe("Pi session import", () => {
           timestamp: "t",
           message: { role: "user", content: "hi" },
         }),
+        "{not json}",
         JSON.stringify({ type: "custom", data: {} }),
       ].join("\n"),
     );
     expect(parsed.cwd).toBe("/repo");
     expect(parsed.messages).toHaveLength(1);
+    expect(parsed.malformedLineCount).toBe(1);
     expect(parsed.messages[0]).toMatchObject({ id: "1", role: "user", content: "hi" });
   });
 
@@ -51,6 +53,7 @@ describe("Pi session import", () => {
           timestamp: "s-t",
           parentSession: parentSessionFile,
         }),
+        "{bad json}",
         JSON.stringify({
           type: "message",
           id: "root",
@@ -88,6 +91,7 @@ describe("Pi session import", () => {
       },
     });
     expect(result.messageCount).toBe(2);
+    expect(result.malformedLineCount).toBe(1);
     expect(result.documentId).toBe("pi-import:session-1:leaf:current");
     expect(result.documents).toEqual([
       expect.objectContaining({

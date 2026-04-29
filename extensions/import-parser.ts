@@ -21,6 +21,7 @@ export interface ParsedSession {
   parentSessionId?: string;
   parentSessionFile?: string;
   sessionTimestamp?: string;
+  malformedLineCount: number;
   messages: ParsedMessage[];
 }
 
@@ -51,9 +52,21 @@ export function parseImportSessionJsonl(text: string): ParsedSession {
   let parentSessionId: string | undefined;
   let parentSessionFile: string | undefined;
   let sessionTimestamp: string | undefined;
+  let malformedLineCount = 0;
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
-    const entry = JSON.parse(line) as JsonlEntry;
+    let entry: JsonlEntry;
+    try {
+      const parsed = JSON.parse(line) as unknown;
+      if (!isRecord(parsed)) {
+        malformedLineCount += 1;
+        continue;
+      }
+      entry = parsed as JsonlEntry;
+    } catch {
+      malformedLineCount += 1;
+      continue;
+    }
     if (entry.type === "session") {
       if (typeof entry.cwd === "string") cwd = entry.cwd;
       if (typeof entry.id === "string") sessionId = entry.id;
@@ -81,17 +94,20 @@ export function parseImportSessionJsonl(text: string): ParsedSession {
     ...(parentSessionId ? { parentSessionId } : {}),
     ...(parentSessionFile ? { parentSessionFile } : {}),
     ...(sessionTimestamp ? { sessionTimestamp } : {}),
+    malformedLineCount,
     messages,
   };
 }
 
 export function parsePiSessionJsonl(text: string): {
   cwd?: string;
+  malformedLineCount: number;
   messages: Record<string, unknown>[];
 } {
   const parsed = parseImportSessionJsonl(text);
   return {
     ...(parsed.cwd ? { cwd: parsed.cwd } : {}),
+    malformedLineCount: parsed.malformedLineCount,
     messages: parsed.messages.map((message) => message.data),
   };
 }
