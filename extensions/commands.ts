@@ -82,6 +82,11 @@ function hasQueueIssue(queue?: {
   );
 }
 
+function compactText(value: string, maxLength: number): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length <= maxLength ? compact : `${compact.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
 export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
   const operations = createMemoryOperations(deps);
 
@@ -306,7 +311,7 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
 
   pi.registerCommand("hindsight:last-recall", {
     description: "Show the last opt-in persisted recall snapshot.",
-    handler: async (_args, ctx) => {
+    handler: async (args, ctx) => {
       try {
         const result = await operations.lastRecall(ctx.cwd);
         if (!result.snapshot) {
@@ -317,12 +322,21 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
           return;
         }
         if (!Array.isArray(result.snapshot.blocks)) throw new Error("invalid snapshot shape");
+        const argsList = argList(args);
         const memoryCount = result.snapshot.blocks.reduce(
           (count, block) => count + block.memoryCount,
           0,
         );
+        const banks = result.snapshot.blocks
+          .map((block) => `${block.bankId}:${block.memoryCount}`)
+          .join(", ");
+        const query = compactText(result.snapshot.query, 180);
+        if (argsList.includes("--json")) {
+          ctx.ui.notify(JSON.stringify({ path: result.path, ...result.snapshot }, null, 2), "info");
+          return;
+        }
         ctx.ui.notify(
-          `Hindsight last recall ${result.snapshot.createdAt}; memories=${memoryCount}; query=${result.snapshot.query}`,
+          `Hindsight last recall ${result.snapshot.createdAt}; memories=${memoryCount}; banks=${banks || "none"}; query=${query}; path=${result.path}; visibility-only, not provider cache`,
           "info",
         );
       } catch (error) {

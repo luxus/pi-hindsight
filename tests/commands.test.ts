@@ -107,7 +107,45 @@ describe("hindsight commands", () => {
     await commands.get("hindsight:last-recall")?.handler([], ctx);
 
     expect(ctx.ui.notify).toHaveBeenCalledWith(
-      "Hindsight last recall 2026-04-27T00:00:00.000Z; memories=2; query=user: q",
+      `Hindsight last recall 2026-04-27T00:00:00.000Z; memories=2; banks=bank:2; query=user: q; path=${join(cwd, ".pi", "hindsight", "last-recall.json")}; visibility-only, not provider cache`,
+      "info",
+    );
+  });
+
+  it("reports last recall snapshot as json when requested", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".pi", "hindsight", "last-recall.json"),
+      JSON.stringify({
+        createdAt: "2026-04-27T00:00:00.000Z",
+        query: "user: q",
+        rendered: "<hindsight-memory>m</hindsight-memory>",
+        blocks: [{ bankId: "bank", query: "user: q", rendered: "", memoryCount: 2, results: [] }],
+      }),
+    );
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:last-recall")?.handler(["--json"], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining(`"path": "${join(cwd, ".pi", "hindsight", "last-recall.json")}"`),
       "info",
     );
   });

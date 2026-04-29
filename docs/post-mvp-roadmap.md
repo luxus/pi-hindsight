@@ -52,7 +52,7 @@ npm run format
 
 ### PR 9: Improve last-recall inspection UX
 
-**Status:** next.
+**Status:** completed.
 
 **Purpose:** Make cached recall useful for inspection without reusing stale recall as provider context.
 
@@ -84,7 +84,7 @@ npm run typecheck:tsc
 
 ### PR 10: Design command-based one-turn opt-out
 
-**Status:** planned.
+**Status:** next.
 
 **Purpose:** Give users fast memory control without prompt hashtag parsing.
 
