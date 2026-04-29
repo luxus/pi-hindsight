@@ -11,7 +11,7 @@ import {
 import { importPiSession, importProjectSessions } from "./import-sessions.js";
 import {
   importManifestSummary,
-  readImportManifest,
+  readImportManifestSafe,
   resolveImportManifestPath,
 } from "./import-manifest.js";
 import { recallScopeTags } from "./banking.js";
@@ -180,33 +180,43 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
     async status(cwd: string) {
       const config = deps.getConfig();
       const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
-      const [queue, manifest] = await Promise.all([
+      const [queue, manifestRead] = await Promise.all([
         summarizeRetainQueue(queuePath),
-        readImportManifest(resolveImportManifestPath(cwd, config.import.manifestPath)),
+        readImportManifestSafe(resolveImportManifestPath(cwd, config.import.manifestPath)),
       ]);
+      const manifest = manifestRead.manifest;
       return {
         config,
         bankId: deps.getProjectBankId(),
         queueLength: queue.active.valid,
         queue,
-        imports: importManifestSummary(manifest),
+        imports: {
+          ...importManifestSummary(manifest),
+          error: manifestRead.error,
+          action: manifestRead.action,
+        },
       };
     },
 
     async doctor(cwd: string) {
       const config = deps.getConfig();
       const queuePath = resolveQueuePath(cwd, config.retain.queuePath);
-      const [health, queue, manifest] = await Promise.all([
+      const [health, queue, manifestRead] = await Promise.all([
         checkHindsight(deps.getClient(), deps.getProjectBankId()),
         summarizeRetainQueue(queuePath),
-        readImportManifest(resolveImportManifestPath(cwd, config.import.manifestPath)),
+        readImportManifestSafe(resolveImportManifestPath(cwd, config.import.manifestPath)),
       ]);
+      const manifest = manifestRead.manifest;
       return {
         health,
         ...(deps.getCapabilities?.() ? { capabilities: deps.getCapabilities() } : {}),
         queueLength: queue.active.valid,
         queue,
-        imports: importManifestSummary(manifest),
+        imports: {
+          ...importManifestSummary(manifest),
+          error: manifestRead.error,
+          action: manifestRead.action,
+        },
         observations: observationScopeDiagnostics({
           cwd,
           projectBankId: deps.getProjectBankId(),
@@ -227,8 +237,8 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
         checkHindsight(deps.getClient(), deps.getProjectBankId()),
       ]);
       const manifestPath = resolveImportManifestPath(ctx.cwd, config.import.manifestPath);
-      const manifest = await readImportManifest(manifestPath);
-      const imports = importManifestSummary(manifest);
+      const manifestRead = await readImportManifestSafe(manifestPath);
+      const imports = importManifestSummary(manifestRead.manifest);
       const sessionFile = ctx.sessionManager.getSessionFile?.();
       const capabilities = deps.getCapabilities?.();
       return {
@@ -249,6 +259,8 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
           importManifestPath: manifestPath,
           importCount: imports.count,
           ...(imports.latest ? { latestImport: imports.latest } : {}),
+          importManifestError: manifestRead.error,
+          importManifestAction: manifestRead.action,
           health,
           ...(capabilities ? { capabilities } : {}),
         }),

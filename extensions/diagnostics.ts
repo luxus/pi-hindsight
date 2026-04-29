@@ -24,6 +24,8 @@ export interface DebugReportArgs {
   deadLetterMalformedLines?: number;
   deadLetterReadError?: string | null;
   importManifestPath?: string;
+  importManifestError?: string | null;
+  importManifestAction?: string | null;
   importCount?: number;
   latestImport?: ImportManifestEntry;
   health?: { ok: boolean; error?: string };
@@ -169,6 +171,11 @@ export function formatDebugReport(args: DebugReportArgs): string {
         : { appendUpdateMode: "not checked" },
       imports: {
         manifestPath: args.importManifestPath ?? args.config.import.manifestPath,
+        error: args.importManifestError ?? null,
+        action: args.importManifestError
+          ? (args.importManifestAction ??
+            "Move or repair the import manifest, then rerun the import command.")
+          : null,
         count: args.importCount ?? 0,
         latest: args.latestImport
           ? {

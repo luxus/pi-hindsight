@@ -446,6 +446,46 @@ describe("Pi session import", () => {
     ).rejects.toThrow("Refusing to import session from cwd");
   });
 
+  it("recreates corrupt manifest and checkpoint files during import", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+    mkdirSync(join(dir, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(
+      join(dir, ".pi/hindsight/import-manifest.json"),
+      JSON.stringify({ imports: "bad" }),
+    );
+    writeFileSync(
+      join(dir, ".pi/hindsight/import-checkpoint.json"),
+      JSON.stringify({ runId: "will-not-matter", documents: "bad" }),
+    );
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "corrupt-sidecars", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "1",
+          parentId: null,
+          message: { role: "user", content: "recover import sidecars" },
+        }),
+      ].join("\n"),
+    );
+
+    const result = await importPiSession({
+      sessionFile,
+      cwd: dir,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      client: { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
+    });
+
+    await expect(readImportManifest(result.manifestPath)).resolves.toMatchObject({ version: 1 });
+    await expect(readImportCheckpoint(result.checkpointPath)).resolves.toMatchObject({
+      version: 1,
+    });
+    expect(result.documents[0]?.status).toBe("completed");
+  });
+
   it("discovers only sessions scoped to the current project cwd", async () => {
     const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
     const other = mkdtempSync(join(tmpdir(), "pi-hindsight-other-"));

@@ -7,7 +7,7 @@ import { leafIds, selectImportBranches } from "./import-branches.js";
 import {
   createImportCheckpoint,
   importRunId,
-  readImportCheckpoint,
+  readImportCheckpointSafe,
   resolveImportCheckpointPath,
   writeImportCheckpoint,
   type ImportCheckpoint,
@@ -144,7 +144,7 @@ export async function importPiSession(args: {
   const importConfig = { ...args.config, import: { ...args.config.import, includeBranches } };
   const now = new Date().toISOString();
   const existingCheckpoint = args.config.import.resume
-    ? await readImportCheckpoint(checkpointPath)
+    ? (await readImportCheckpointSafe(checkpointPath)).checkpoint
     : undefined;
   let checkpoint: ImportCheckpoint =
     existingCheckpoint?.runId === runId

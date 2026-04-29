@@ -336,6 +336,45 @@ describe("hindsight commands", () => {
     );
   });
 
+  it("warns on corrupt import manifest in status and debug", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".pi/hindsight/import-manifest.json"),
+      JSON.stringify({ imports: "bad" }),
+    );
+    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
+    registerCommands(
+      {
+        registerCommand: (
+          name: string,
+          command: { handler: (args: unknown, ctx: any) => Promise<void> },
+        ) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:status")?.handler([], ctx);
+    await commands.get("hindsight:debug")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("import manifest unreadable:"),
+      "warning",
+    );
+    const debugCall = vi
+      .mocked(ctx.ui.notify)
+      .mock.calls.find(([message]) => String(message).includes('"imports"'));
+    expect(String(debugCall?.[0])).toContain('"error"');
+    expect(String(debugCall?.[0])).toContain('"action"');
+  });
+
   it("warns when doctor cannot read the retain queue", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
     writeFileSync(join(cwd, "not-a-dir"), "file blocks queue directory");

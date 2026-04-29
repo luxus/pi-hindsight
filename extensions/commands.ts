@@ -83,6 +83,10 @@ function hasQueueIssue(queue?: {
   );
 }
 
+function importIssueSummary(imports?: { error?: string | null }): string {
+  return imports?.error ? `; import manifest unreadable: ${imports.error}` : "";
+}
+
 function compactText(value: string, maxLength: number): string {
   const compact = value.replace(/\s+/g, " ").trim();
   return compact.length <= maxLength ? compact : `${compact.slice(0, Math.max(0, maxLength - 1))}…`;
@@ -100,9 +104,10 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         : (status.config.banks.global.bankId ?? "none");
       const profile = memoryProfile(status.config);
       const queueIssue = queueIssueSummary(status.queue);
+      const importIssue = importIssueSummary(status.imports);
       ctx.ui.notify(
-        `Hindsight ${status.config.enabled ? "on" : "off"}; profile ${profile}; bank ${bank}; queue ${status.queueLength}; imports ${status.imports.count}${queueIssue}`,
-        hasQueueIssue(status.queue) ? "warning" : "info",
+        `Hindsight ${status.config.enabled ? "on" : "off"}; profile ${profile}; bank ${bank}; queue ${status.queueLength}; imports ${status.imports.count}${queueIssue}${importIssue}`,
+        hasQueueIssue(status.queue) || Boolean(status.imports.error) ? "warning" : "info",
       );
     },
   });
@@ -120,12 +125,14 @@ export function registerCommands(pi: ExtensionAPI, deps: MemoryOperationsDeps) {
         ? `; observations invalid: ${doctor.observations.error}`
         : "";
       const queueIssue = queueIssueSummary(doctor.queue);
+      const importIssue = importIssueSummary(doctor.imports);
       ctx.ui.notify(
-        `Hindsight ${doctor.health.ok ? "reachable" : `unreachable: ${doctor.health.error}`}; ${append}; queue ${doctor.queueLength}; imports ${doctor.imports.count}${observation}${queueIssue}`,
+        `Hindsight ${doctor.health.ok ? "reachable" : `unreachable: ${doctor.health.error}`}; ${append}; queue ${doctor.queueLength}; imports ${doctor.imports.count}${observation}${queueIssue}${importIssue}`,
         doctor.health.ok &&
           doctor.capabilities?.appendUpdateMode !== false &&
           !doctor.observations.error &&
-          !hasQueueIssue(doctor.queue)
+          !hasQueueIssue(doctor.queue) &&
+          !doctor.imports.error
           ? "info"
           : "warning",
       );

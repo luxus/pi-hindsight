@@ -28,6 +28,12 @@ export interface ImportCheckpoint {
   documents: Record<string, ImportCheckpointDocument>;
 }
 
+export interface ImportCheckpointReadResult {
+  checkpoint?: ImportCheckpoint;
+  error: string | null;
+  action: string | null;
+}
+
 export function resolveImportCheckpointPath(cwd: string, checkpointPath: string): string {
   return isAbsolute(checkpointPath) ? checkpointPath : join(cwd, checkpointPath);
 }
@@ -51,16 +57,55 @@ export function importRunId(args: {
     .replace(/\s+/g, "_");
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isImportCheckpointDocument(value: unknown): value is ImportCheckpointDocument {
+  if (!isPlainRecord(value)) return false;
+  return (
+    typeof value.documentId === "string" &&
+    typeof value.leafId === "string" &&
+    typeof value.contentHash === "string" &&
+    typeof value.messageCount === "number" &&
+    (value.status === "pending" ||
+      value.status === "completed" ||
+      value.status === "failed" ||
+      value.status === "skipped") &&
+    typeof value.updatedAt === "string"
+  );
+}
+
 export async function readImportCheckpoint(path: string): Promise<ImportCheckpoint | undefined> {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
-      throw new Error("import checkpoint must be a JSON object");
-    const record = parsed as ImportCheckpoint;
-    return { ...record, version: 1, documents: record.documents ?? {} };
+    if (!isPlainRecord(parsed)) throw new Error("import checkpoint must be a JSON object");
+    const record = parsed as unknown as ImportCheckpoint;
+    if (record.documents !== undefined && !isPlainRecord(record.documents)) {
+      throw new Error("import checkpoint documents must be a JSON object");
+    }
+    const documents = record.documents ?? {};
+    for (const [documentId, document] of Object.entries(documents)) {
+      if (!isImportCheckpointDocument(document) || document.documentId !== documentId) {
+        throw new Error(`import checkpoint document ${documentId} is invalid`);
+      }
+    }
+    return { ...record, version: 1, documents };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw error;
+  }
+}
+
+export async function readImportCheckpointSafe(path: string): Promise<ImportCheckpointReadResult> {
+  try {
+    const checkpoint = await readImportCheckpoint(path);
+    return { ...(checkpoint ? { checkpoint } : {}), error: null, action: null };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      action: `Move or repair ${path}, then rerun the import command. The next successful import can recreate the checkpoint.`,
+    };
   }
 }
 
