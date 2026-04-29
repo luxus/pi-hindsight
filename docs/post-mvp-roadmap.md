@@ -84,7 +84,7 @@ npm run typecheck:tsc
 
 ### PR 10: Design command-based one-turn opt-out
 
-**Status:** next.
+**Status:** completed.
 
 **Purpose:** Give users fast memory control without prompt hashtag parsing.
 
@@ -154,7 +154,7 @@ npm run format
 
 ### PR 11: Global codebase review loop
 
-**Status:** planned.
+**Status:** next.
 
 **Purpose:** Review the whole extension after MVP hardening and before more feature work.
 

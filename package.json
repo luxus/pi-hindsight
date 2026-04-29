@@ -25,7 +25,8 @@
     "docs/hindsight-core-functions.md",
     "docs/pr-roadmap.md",
     "docs/post-mvp-roadmap.md",
-    "docs/risky-memory-modes.md"
+    "docs/risky-memory-modes.md",
+    "docs/next-opt-out-design.md"
   ],
   "type": "module",
   "publishConfig": {

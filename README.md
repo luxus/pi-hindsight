@@ -149,6 +149,8 @@ Intentionally deferred:
 
 See [`docs/risky-memory-modes.md`](docs/risky-memory-modes.md) for why persisted recall transcript messages, provider recall caching, and prompt hashtag controls remain deferred, and why command-based controls such as a future `/hindsight:next-opt-out` are preferred.
 
+See [`docs/next-opt-out-design.md`](docs/next-opt-out-design.md) for the proposed one-turn memory opt-out command design.
+
 Historical import supports importing the current Pi session, an explicit JSONL path, or all Pi session JSONL files in the current session directory that belong to the current repo/cwd. Imports write deterministic document IDs and update an import manifest so `/hindsight:debug` can show imported document count and latest import provenance. Use `/hindsight:import --dry-run`, `/hindsight:import-project-sessions --dry-run`, or `hindsight_import` with `dryRun: true` to preview documents, message counts, content sizes, tags, update mode, and target bank without writing Hindsight memory or mutating the manifest. Add `--all-leaves` or `allLeaves: true` to preview/import every branch leaf instead of only the current branch. Project session discovery intentionally avoids broad history imports: it scans only the current session file's directory and keeps only `.jsonl` session files whose parsed `cwd` exactly matches the current repo/cwd. Imports maintain `.pi/hindsight/import-checkpoint.json` by default and resume completed documents without re-retaining them when `import.resume` is enabled.
 
 Historical import examples:
