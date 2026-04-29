@@ -554,6 +554,43 @@ describe("extension hooks", () => {
     );
   });
 
+  it("explicit retain works while next opt-out is pending and does not consume it", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-tools-"));
+    mkdirSync(join(cwd, ".git"));
+    const sessionFile = join(cwd, "session.jsonl");
+    await setNextSessionRetainMode(cwd, sessionFile, "off");
+    const tools: Record<string, any> = {};
+    const pi = {
+      on: vi.fn(),
+      registerTool: vi.fn((tool: any) => {
+        tools[tool.name] = tool;
+      }),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await tools.hindsight_retain.execute(
+      "tool-call",
+      { content: "Explicit memory", context: "test" },
+      undefined,
+      undefined,
+      ctx,
+    );
+
+    expect(mocked.client.retain).toHaveBeenCalledWith(
+      expect.any(String),
+      "Explicit memory",
+      expect.objectContaining({ updateMode: "append" }),
+    );
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
+  });
+
   it("honors session read-only mode and manual tags", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));

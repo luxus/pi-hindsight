@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { registerCommands } from "../extensions/commands.js";
-import { setSessionMemoryMode } from "../extensions/session-memory-meta.js";
+import { readSessionMemoryMeta, setSessionMemoryMode } from "../extensions/session-memory-meta.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
 
 type RegisteredTestCommand = {
@@ -21,6 +21,42 @@ function client(): HindsightLikeClient {
 }
 
 describe("hindsight commands", () => {
+  it("sets and reports next opt-out session metadata", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    const sessionFile = join(cwd, "session.jsonl");
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd,
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+
+    await commands.get("hindsight:next-opt-out")?.handler([], ctx);
+
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      "Hindsight will skip automatic retain for the next agent run in this session. nextRetain=off",
+      "info",
+    );
+
+    vi.mocked(ctx.ui.notify).mockClear();
+    await commands.get("hindsight:session")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("nextRetain=off"), "info");
+  });
+
   it("registers argument completions for fixed command arguments", async () => {
     const commands = new Map<string, RegisteredTestCommand>();
     registerCommands(

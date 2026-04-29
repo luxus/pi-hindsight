@@ -129,14 +129,17 @@ Covered:
 - skipped messages are added to retain cursor so they are not retained later
 - opt-out clears after one completed agent run
 
-Remaining useful regression coverage:
+Additional coverage added after implementation:
 
 - command handler sets a pending one-turn retain opt-out
 - `/hindsight:session` reports pending opt-out
-- recall still runs while next retain is off
-- ignored/read-only/retain-off modes remain stronger than next opt-out
 - explicit `hindsight_retain` still queues normally while next opt-out is pending
 - historical import ignores next opt-out state
+
+Remaining useful regression coverage:
+
+- recall still runs while next retain is off
+- ignored/read-only/retain-off modes remain stronger than next opt-out
 
 ## Out of scope
 

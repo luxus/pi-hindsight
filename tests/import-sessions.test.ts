@@ -14,6 +14,7 @@ import {
 import { readImportCheckpoint } from "../extensions/import-checkpoint.js";
 import { readImportManifest } from "../extensions/import-manifest.js";
 import { stableSessionId } from "../extensions/session.js";
+import { setNextSessionRetainMode } from "../extensions/session-memory-meta.js";
 
 describe("Pi session import", () => {
   it("parses message entries from Pi JSONL", () => {
@@ -320,6 +321,44 @@ describe("Pi session import", () => {
       version: 1,
       imports: {},
     });
+  });
+
+  it("historical import ignores pending next opt-out session state", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    await setNextSessionRetainMode(dir, sessionFile, "off");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-next-opt-out", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "1",
+          parentId: null,
+          message: { role: "user", content: "import me anyway" },
+        }),
+      ].join("\n"),
+    );
+    const calls: unknown[][] = [];
+
+    const result = await importPiSession({
+      sessionFile,
+      cwd: dir,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      client: {
+        retain: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[1]).toContain("import me anyway");
+    expect(result.documents[0]?.status).toBe("completed");
   });
 
   it("resumes completed checkpoint documents without duplicate retain", async () => {
