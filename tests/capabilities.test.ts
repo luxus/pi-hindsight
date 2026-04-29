@@ -35,7 +35,7 @@ describe("append capabilities", () => {
         async: true,
         documentId: "pi-hindsight-capability:append:bank",
         updateMode: "append",
-        tags: ["source:pi", "test:capability", "feature:append-probe"],
+        tags: ["source:pi-hindsight-diagnostic", "test:capability", "feature:append-probe"],
       },
     ]);
   });

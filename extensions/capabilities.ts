@@ -44,7 +44,7 @@ export async function detectAppendCapability(
       documentId,
       updateMode: "append",
       context: "Pi Hindsight append capability detection",
-      tags: ["source:pi", "test:capability", "feature:append-probe"],
+      tags: ["source:pi-hindsight-diagnostic", "test:capability", "feature:append-probe"],
       metadata: {
         source: "pi-hindsight",
         capability: "append-update-mode",
