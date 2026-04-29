@@ -131,7 +131,7 @@ Recently completed release-hardening work:
 - roadmap/docs now match the implementation that already exists
 - focused Hindsight best-practice regression tests cover core memory invariants
 - documented configuration starts with memory profiles and minimal project config
-- outage, dead-letter, queue-lock, and append-compatibility behavior is documented and tested
+- outage, dead-letter, queue-lock, and append capability behavior is documented and tested
 - bank mission and observation-scope defaults are tuned for memory quality
 - historical import previews show document counts, update modes, checkpoint paths, and manifest behavior
 - packaging and live smoke-test paths are verified for release readiness
@@ -200,7 +200,7 @@ Defaults can be overridden by:
 2. `.pi/hindsight.json` in the current repo
 3. environment variables
 
-Config is normalized after merging. Unknown fields are ignored, invalid enum values fall back to defaults, and removed/reserved MVP fields do not affect behavior.
+Config is normalized after merging. Unknown fields are ignored, and invalid values fall back to defaults.
 
 ### Minimal configuration path
 
@@ -414,7 +414,7 @@ export HINDSIGHT_BASE_URL=http://localhost:8888
 npm run check:release
 ```
 
-`check:release` runs the normal check suite, the `tsc` compatibility typecheck, and the live smoke test. If no live server is available, run `npm run check` and `npm run typecheck:tsc`, then use the manual GitHub Actions `smoke-configured-server` job when credentials are available.
+`check:release` runs the normal check suite, the secondary `tsc` typecheck, and the live smoke test. If no live server is available, run `npm run check` and `npm run typecheck:tsc`, then use the manual GitHub Actions `smoke-configured-server` job when credentials are available.
 
 GitHub Actions runs normal checks on PRs/pushes. The live Hindsight smoke job is manual (`workflow_dispatch`) and requires repository secrets:
 

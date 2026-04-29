@@ -52,7 +52,7 @@ describe("append capabilities", () => {
     expect(capabilities.error).toContain("append unsupported");
   });
 
-  it("detects append validation errors from old servers", async () => {
+  it("detects append validation errors from servers without append support", async () => {
     const error = new Error(
       `retain failed: [{"loc":["body","items",0,"update_mode"],"msg":"Input should be 'replace'","input":"append"}]`,
     );

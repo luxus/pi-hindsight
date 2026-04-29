@@ -1,6 +1,6 @@
 # PR Roadmap
 
-This roadmap is the current implementation guide for `@luxus/pi-hindsight`. It supersedes the older, implementation-phase checklist in `docs/next-changes-plan.md`, which is now useful mainly as historical context.
+This roadmap records the completed MVP hardening plan for `@luxus/pi-hindsight`. See `docs/post-mvp-roadmap.md` for the current post-MVP roadmap.
 
 The goal is to keep the extension simple by default while preserving enough flexibility for real Pi and Hindsight workflows. The roadmap is intentionally ordered so a human or LLM agent can pick the next PR without re-planning the whole project.
 
@@ -80,7 +80,7 @@ Implemented and expected to stay:
 **Scope:**
 
 - Add this roadmap.
-- Mark `docs/next-changes-plan.md` as historical/superseded.
+- Replace the older implementation checklist with this roadmap.
 - Update README status from early scaffold to working MVP/pre-release.
 - Add a compact feature-status section with implemented, planned, and deferred items.
 - Link README to this roadmap for implementation order.
@@ -89,7 +89,6 @@ Implemented and expected to stay:
 
 - `README.md`
 - `docs/pr-roadmap.md`
-- `docs/next-changes-plan.md`
 
 **Acceptance criteria:**
 
