@@ -75,12 +75,10 @@ export interface ProjectConfigPatchInput {
   apiKeyEnvVar?: string;
   directApiKey?: string;
   projectBankId?: string;
-  projectMission?: string;
   projectRetainMission?: string;
   projectReflectMission?: string;
   projectObservationsMission?: string;
   globalBankId?: string;
-  globalMission?: string;
   globalRetainMission?: string;
   globalReflectMission?: string;
   globalObservationsMission?: string;
@@ -150,9 +148,6 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
       project: { enabled: true, derive: "manual", bankId: input.projectBankId },
     };
   }
-  if (input.projectMission !== undefined) {
-    mergeBankPatch(patch, "project", { mission: input.projectMission });
-  }
   if (input.projectRetainMission !== undefined) {
     mergeBankPatch(patch, "project", { retainMission: input.projectRetainMission });
   }
@@ -170,9 +165,6 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
         ...(input.globalBankId ? { bankId: input.globalBankId, enabled: true } : {}),
       },
     };
-  }
-  if (input.globalMission !== undefined) {
-    mergeBankPatch(patch, "global", { mission: input.globalMission });
   }
   if (input.globalRetainMission !== undefined) {
     mergeBankPatch(patch, "global", { retainMission: input.globalRetainMission });

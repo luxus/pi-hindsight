@@ -21,27 +21,6 @@ describe("config writer", () => {
     });
   });
 
-  it("builds bank mission patches without clobbering sibling bank settings", () => {
-    expect(
-      buildProjectConfigPatch({
-        projectBankId: "bank",
-        projectMission: "Project mission",
-        globalBankId: "pi-global",
-        globalMission: "Global mission",
-      }),
-    ).toEqual({
-      banks: {
-        project: {
-          enabled: true,
-          derive: "manual",
-          bankId: "bank",
-          mission: "Project mission",
-        },
-        global: { enabled: true, bankId: "pi-global", mission: "Global mission" },
-      },
-    });
-  });
-
   it("builds granular mission override patches", () => {
     expect(
       buildProjectConfigPatch({

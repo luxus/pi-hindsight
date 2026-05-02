@@ -35,8 +35,6 @@ export function patchForConfigEditingField(
       };
     case "projectBankId":
       return { projectBankId: value.trim() };
-    case "projectMission":
-      return { projectMission: value.trim() };
     case "projectRetainMission":
       return { projectRetainMission: value.trim() };
     case "projectReflectMission":
@@ -47,8 +45,6 @@ export function patchForConfigEditingField(
       return { enableGlobalBank: value === "Enable" };
     case "globalBankId":
       return { globalBankId: value.trim() };
-    case "globalMission":
-      return { globalMission: value.trim() };
     case "globalRetainMission":
       return { globalRetainMission: value.trim() };
     case "globalReflectMission":
@@ -108,8 +104,6 @@ export function inputDefaultForConfigEditingField(
       return "";
     case "projectBankId":
       return projectBankId;
-    case "projectMission":
-      return config.banks.project.mission ?? "";
     case "projectRetainMission":
       return config.banks.project.retainMission ?? "";
     case "projectReflectMission":
@@ -118,8 +112,6 @@ export function inputDefaultForConfigEditingField(
       return config.banks.project.observationsMission ?? "";
     case "globalBankId":
       return config.banks.global.bankId ?? DEFAULT_GLOBAL_BANK_ID;
-    case "globalMission":
-      return config.banks.global.mission ?? "";
     case "globalRetainMission":
       return config.banks.global.retainMission ?? "";
     case "globalReflectMission":

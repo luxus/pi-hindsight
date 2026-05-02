@@ -74,7 +74,7 @@ describe("memory router", () => {
           ...DEFAULT_CONFIG.banks,
           project: {
             ...DEFAULT_CONFIG.banks.project,
-            mission: "Importer checkpoint manifest architecture",
+            retainMission: "Importer checkpoint manifest architecture",
           },
         },
       },
@@ -107,8 +107,8 @@ describe("memory router", () => {
           ...DEFAULT_CONFIG,
           banks: {
             ...DEFAULT_CONFIG.banks,
-            project: { ...DEFAULT_CONFIG.banks.project, mission: "Project mission" },
-            global: { ...DEFAULT_CONFIG.banks.global, mission: "Global mission" },
+            project: { ...DEFAULT_CONFIG.banks.project, retainMission: "Project retain mission" },
+            global: { ...DEFAULT_CONFIG.banks.global, retainMission: "Global retain mission" },
           },
         },
       },
@@ -116,10 +116,10 @@ describe("memory router", () => {
     );
 
     expect(calls[0]).toMatchObject({
-      projectMission: "Project mission",
-      globalMission: "Global mission",
+      projectMission: "Project retain mission",
+      globalMission: "Global retain mission",
     });
-    expect(decision.projectMission).toBe("Project mission");
-    expect(decision.globalMission).toBe("Global mission");
+    expect(decision.projectMission).toBe("Project retain mission");
+    expect(decision.globalMission).toBe("Global retain mission");
   });
 });

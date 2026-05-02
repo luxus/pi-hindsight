@@ -37,15 +37,15 @@ describe("setup TUI receipt facts", () => {
       "bank",
       { project: {}, global: {}, env: {} },
       [],
-      { showAdvanced: false },
+      { showAdvanced: true },
     );
     const component = createSetupComponent(
       tabs,
       theme,
-      { tabIndex: 2, selectedByTab: { Banks: 2 }, showAdvanced: false },
+      { tabIndex: 2, selectedByTab: { Banks: 2 }, showAdvanced: true },
       () => undefined,
     );
 
-    expect(component.render(100).join("\n")).toContain("Extract durable project memory");
+    expect(component.render(100).join("\n")).toContain("Extract durable project");
   });
 });

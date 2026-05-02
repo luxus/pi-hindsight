@@ -306,7 +306,6 @@ Advanced project config example:
     "project": {
       "bankId": "pi-project-my-repo",
       "derive": "manual",
-      "mission": "Memory for this Pi coding project. Used as shorthand for retain, reflect, and observation missions when the specific fields below are omitted.",
       "retainMission": "Extract architecture decisions, bugs, fixes, constraints, durable preferences, and project continuity. Ignore chatter, secrets, and repeated recalled memory.",
       "reflectMission": "Help a Pi coding agent use project memory for current architecture, decisions, constraints, bugs, fixes, and continuity.",
       "observationsMission": "Identify durable project patterns, recurring constraints, and contradictions across Pi coding sessions."
@@ -314,7 +313,9 @@ Advanced project config example:
     "global": {
       "enabled": false,
       "bankId": "pi-global",
-      "mission": "Cross-project memory for durable user preferences, recurring workflows, coding habits, and stable assistant behavior."
+      "retainMission": "Extract durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior.",
+      "reflectMission": "Help recall durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior.",
+      "observationsMission": "Identify durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior patterns."
     }
   },
   "recall": {
@@ -401,7 +402,7 @@ Set `retain.flushIntervalMs` to a positive interval to flush queued jobs periodi
 
 Shutdown queue flushing is intentionally bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdownFlushTimeoutMs`. The timeout is a soft bound checked between queued jobs so shutdown does not leave a background flush holding the queue lock. If jobs remain after shutdown, they stay on disk and are visible through `/hindsight` for later flushing.
 
-At session start, the extension shows the selected bank ID. If no bank ID is configured, it reports the automatically derived bank ID and how to override it. Project and global banks can define mission text. Use the human-friendly `mission` shorthand when one bank purpose is enough; the extension sends it to Hindsight as `retainMission`, `reflectMission`, and `observationsMission`. Use `retainMission`, `reflectMission`, or `observationsMission` when extraction, reflection, and observation consolidation need different instructions. If no mission is configured, Pi-specific defaults are used: project banks focus on repo architecture, decisions, constraints, bugs, fixes, TODOs, conventions, and project-local preferences; global banks focus on durable user preferences, recurring workflows, coding habits, and stable assistant behavior while excluding repo-specific code facts by default.
+At session start, the extension shows the selected bank ID. If no bank ID is configured, it reports the automatically derived bank ID and how to override it. Project and global banks can define Hindsight's three supported mission fields: `retainMission`, `reflectMission`, and `observationsMission`. There is no generic bank `mission` field; if no specific mission is configured, Pi-specific defaults are used. Project banks focus on repo architecture, decisions, constraints, bugs, fixes, TODOs, conventions, and project-local preferences. Global banks focus on durable user preferences, recurring workflows, coding habits, and stable assistant behavior while excluding repo-specific code facts by default.
 
 Observation scope configuration is explicit under `observations`. The extension validates and expands scope placeholders for diagnostics, passes `observations.enabled` to bank ensure as Hindsight `enableObservations`, and stores expanded scopes on queued retain jobs so retries preserve the scope policy active when the job was created. The official Hindsight client exposes retain observation scopes through batch retain, so the adapter standardizes all retain writes on `retainBatch()`. Supported placeholders are `{repoKey}`, `{sessionId}`, `{cwdHash}`, `{projectBankId}`, and `{bankId}`. `{bankId}` is an alias for the target bank ID and is clearer for explicit retain/import paths that write to a custom or global bank.
 

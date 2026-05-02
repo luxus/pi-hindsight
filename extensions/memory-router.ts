@@ -149,10 +149,13 @@ export function routeMemoryCandidate(
   adapter: MemoryRouterAdapter = createMissionAwareMemoryRouter(),
 ): MemoryRouteDecision {
   const projectMission = missionSummary(
-    args.config.banks.project.mission,
-    "built-in project mission",
+    args.config.banks.project.retainMission,
+    "built-in project retain mission",
   );
-  const globalMission = missionSummary(args.config.banks.global.mission, "built-in global mission");
+  const globalMission = missionSummary(
+    args.config.banks.global.retainMission,
+    "built-in global retain mission",
+  );
   const classification = adapter.classify({
     content: args.content,
     ...(args.context ? { context: args.context } : {}),

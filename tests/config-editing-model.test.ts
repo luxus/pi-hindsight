@@ -28,7 +28,7 @@ describe("config editing model", () => {
     expect(fields.find((field) => field.id === "projectBankId")?.editableScopes).toEqual([
       "project",
     ]);
-    expect(fields.find((field) => field.id === "projectMission")?.editableScopes).toEqual([
+    expect(fields.find((field) => field.id === "projectRetainMission")?.editableScopes).toEqual([
       "project",
     ]);
     expect(fields.find((field) => field.id === "memoryProfile")?.editableScopes).toEqual([
@@ -67,7 +67,7 @@ describe("config editing model", () => {
       "project",
       "global",
     ]);
-    expect(fields.find((field) => field.id === "globalMission")?.editableScopes).toEqual([
+    expect(fields.find((field) => field.id === "globalRetainMission")?.editableScopes).toEqual([
       "project",
       "global",
     ]);
@@ -83,7 +83,7 @@ describe("config editing model", () => {
       choices: ["project-only", "project+global", "global-only"],
     });
     expect(queuePath).toMatchObject({ kind: "text" });
-    expect(fields.find((field) => field.id === "projectMission")).toMatchObject({
+    expect(fields.find((field) => field.id === "projectRetainMission")).toMatchObject({
       kind: "text",
       value: "built-in default",
       defaultValue: "built-in default",
@@ -108,7 +108,6 @@ describe("config editing model", () => {
       showAdvanced: true,
     }).find((tab) => tab.id === "Banks");
 
-    expect(basicBanks?.fields.map((field) => field.id)).toContain("projectMission");
     expect(basicBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
     expect(advancedBanks?.fields.map((field) => field.id)).toContain("projectRetainMission");
   });
@@ -116,12 +115,6 @@ describe("config editing model", () => {
   it("shows built-in mission text in mission field details", () => {
     const fields = buildConfigEditingFields(DEFAULT_CONFIG, "bank", layers());
 
-    expect(fields.find((field) => field.id === "projectMission")?.description).toContain(
-      "Extract durable project memory",
-    );
-    expect(fields.find((field) => field.id === "globalMission")?.description).toContain(
-      "Extract durable cross-project memory",
-    );
     expect(fields.find((field) => field.id === "projectRetainMission")?.description).toContain(
       "Built-in default: Extract durable project memory",
     );
@@ -134,16 +127,20 @@ describe("config editing model", () => {
           ...DEFAULT_CONFIG,
           banks: {
             ...DEFAULT_CONFIG.banks,
-            project: { ...DEFAULT_CONFIG.banks.project, mission: "Project memory mission" },
-            global: { enabled: true, bankId: "global-luxus", mission: "Global memory mission" },
+            project: { ...DEFAULT_CONFIG.banks.project, retainMission: "Project retain mission" },
+            global: {
+              enabled: true,
+              bankId: "global-luxus",
+              retainMission: "Global retain mission",
+            },
           },
         },
         "project-bank",
       ),
     ).toEqual(
       expect.arrayContaining([
-        ["Project mission", "Project memory mission"],
-        ["Global mission", "Global memory mission"],
+        ["Project retain mission", "Project retain mission"],
+        ["Global retain mission", "Global retain mission"],
       ]),
     );
   });

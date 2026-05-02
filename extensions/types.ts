@@ -11,8 +11,6 @@ export type RecallInjectionPosition = "prepend" | "append";
 export type GlobalRetainMode = "explicit-only" | "router";
 
 export interface BankMissionSettings {
-  /** Human-friendly shorthand. Used for any mission field not set explicitly. */
-  mission?: string;
   retainMission?: string;
   reflectMission?: string;
   observationsMission?: string;

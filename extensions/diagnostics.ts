@@ -120,13 +120,11 @@ export function formatDebugReport(args: DebugReportArgs): string {
         : args.config.banks.project.derive,
       bankMissions: {
         projectConfigured: Boolean(
-          args.config.banks.project.mission ||
           args.config.banks.project.retainMission ||
           args.config.banks.project.reflectMission ||
           args.config.banks.project.observationsMission,
         ),
         globalConfigured: Boolean(
-          args.config.banks.global.mission ||
           args.config.banks.global.retainMission ||
           args.config.banks.global.reflectMission ||
           args.config.banks.global.observationsMission,

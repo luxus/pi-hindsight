@@ -6,13 +6,11 @@ export type FieldId =
   | "timeoutMs"
   | "memoryProfile"
   | "projectBankId"
-  | "projectMission"
   | "projectRetainMission"
   | "projectReflectMission"
   | "projectObservationsMission"
   | "globalBankEnabled"
   | "globalBankId"
-  | "globalMission"
   | "globalRetainMission"
   | "globalReflectMission"
   | "globalObservationsMission"
@@ -44,13 +42,11 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   timeoutMs: ["hindsight", "timeoutMs"],
   memoryProfile: ["banks", "project", "enabled"],
   projectBankId: ["banks", "project", "bankId"],
-  projectMission: ["banks", "project", "mission"],
   projectRetainMission: ["banks", "project", "retainMission"],
   projectReflectMission: ["banks", "project", "reflectMission"],
   projectObservationsMission: ["banks", "project", "observationsMission"],
   globalBankEnabled: ["banks", "global", "enabled"],
   globalBankId: ["banks", "global", "bankId"],
-  globalMission: ["banks", "global", "mission"],
   globalRetainMission: ["banks", "global", "retainMission"],
   globalReflectMission: ["banks", "global", "reflectMission"],
   globalObservationsMission: ["banks", "global", "observationsMission"],
@@ -97,7 +93,6 @@ export const CONFIG_RESET_PATHS = {
     ["banks", "project", "reflectMission"],
     ["banks", "project", "observationsMission"],
   ],
-  "banks.project.mission": [["banks", "project", "mission"]],
   "banks.project.retainMission": [["banks", "project", "retainMission"]],
   "banks.project.reflectMission": [["banks", "project", "reflectMission"]],
   "banks.project.observationsMission": [["banks", "project", "observationsMission"]],
@@ -109,7 +104,6 @@ export const CONFIG_RESET_PATHS = {
     ["banks", "global", "reflectMission"],
     ["banks", "global", "observationsMission"],
   ],
-  "banks.global.mission": [["banks", "global", "mission"]],
   "banks.global.retainMission": [["banks", "global", "retainMission"]],
   "banks.global.reflectMission": [["banks", "global", "reflectMission"]],
   "banks.global.observationsMission": [["banks", "global", "observationsMission"]],
@@ -144,13 +138,11 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   timeoutMs: "hindsight.timeoutMs",
   memoryProfile: "banks.profile",
   projectBankId: "banks.project.bankId",
-  projectMission: "banks.project.mission",
   projectRetainMission: "banks.project.retainMission",
   projectReflectMission: "banks.project.reflectMission",
   projectObservationsMission: "banks.project.observationsMission",
   globalBankEnabled: "banks.global.enabled",
   globalBankId: "banks.global.bankId",
-  globalMission: "banks.global.mission",
   globalRetainMission: "banks.global.retainMission",
   globalReflectMission: "banks.global.reflectMission",
   globalObservationsMission: "banks.global.observationsMission",

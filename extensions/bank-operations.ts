@@ -46,11 +46,38 @@ export interface BankMissionConfig extends BankMissionSettings {
 
 function resolveBankMissions(config: BankMissionSettings, defaults: BankMissionDefaults) {
   return {
-    reflectMission: config.reflectMission ?? config.mission ?? defaults.reflectMission,
-    retainMission: config.retainMission ?? config.mission ?? defaults.retainMission,
-    observationsMission:
-      config.observationsMission ?? config.mission ?? defaults.observationsMission,
+    reflectMission: config.reflectMission ?? defaults.reflectMission,
+    retainMission: config.retainMission ?? defaults.retainMission,
+    observationsMission: config.observationsMission ?? defaults.observationsMission,
   };
+}
+
+function isNotFoundError(error: unknown): boolean {
+  if (typeof error !== "object" || !error) return false;
+  const fields = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+  return (
+    fields.status === 404 ||
+    fields.statusCode === 404 ||
+    fields.code === 404 ||
+    fields.code === "404" ||
+    (typeof fields.message === "string" && /\b404\b|not found/i.test(fields.message))
+  );
+}
+
+async function bankNeedsCreate(client: HindsightLikeClient, bankId: string): Promise<boolean> {
+  if (!client.getBankProfile) return false;
+  try {
+    await client.getBankProfile(bankId);
+    return false;
+  } catch (error) {
+    if (isNotFoundError(error)) return true;
+    throw error;
+  }
 }
 
 export async function ensureProjectBank(
@@ -58,7 +85,7 @@ export async function ensureProjectBank(
   bankId: string,
   config: BankMissionConfig = {},
 ): Promise<void> {
-  if (!client.createBank) return;
+  if (!client.createBank || !(await bankNeedsCreate(client, bankId))) return;
   const missions = resolveBankMissions(config, defaultProjectBankMissions());
   await client.createBank(bankId, {
     name: bankId,
@@ -73,7 +100,7 @@ export async function ensureGlobalBank(
   bankId: string,
   config: BankMissionConfig = {},
 ): Promise<void> {
-  if (!client.createBank) return;
+  if (!client.createBank || !(await bankNeedsCreate(client, bankId))) return;
   const missions = resolveBankMissions(config, defaultGlobalBankMissions());
   await client.createBank(bankId, {
     name: bankId,

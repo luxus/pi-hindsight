@@ -324,7 +324,6 @@ function hasConfiguredRecallField(rawConfig: unknown, field: string): boolean {
 function missionFields(bankConfig: unknown) {
   if (!isRecord(bankConfig)) return {};
   return {
-    ...(typeof bankConfig.mission === "string" ? { mission: bankConfig.mission } : {}),
     ...(typeof bankConfig.retainMission === "string"
       ? { retainMission: bankConfig.retainMission }
       : {}),

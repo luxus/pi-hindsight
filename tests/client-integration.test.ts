@@ -39,6 +39,10 @@ describe("Hindsight client adapter integration", () => {
       const body = await readBody(req);
       requests.push({ method: req.method, url: req.url, headers: req.headers, body });
 
+      if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/profile") {
+        sendJson(res, 404, { detail: "not found" });
+        return;
+      }
       if (req.method === "PUT" && req.url === "/v1/default/banks/test-bank") {
         sendJson(res, 200, { bank_id: "test-bank" });
         return;
@@ -109,6 +113,7 @@ describe("Hindsight client adapter integration", () => {
     expect(reflection).toEqual({ text: "reflection" });
 
     expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET /v1/default/banks/test-bank/profile",
       "PUT /v1/default/banks/test-bank",
       "POST /v1/default/banks/test-bank/memories",
       "POST /v1/default/banks/test-bank/memories",
@@ -116,7 +121,7 @@ describe("Hindsight client adapter integration", () => {
       "POST /v1/default/banks/test-bank/reflect",
     ]);
 
-    expect(requests[1]?.body).toMatchObject({
+    expect(requests[2]?.body).toMatchObject({
       items: [
         {
           content: "raw content",
@@ -130,8 +135,8 @@ describe("Hindsight client adapter integration", () => {
       ],
       async: true,
     });
-    expect(JSON.stringify(requests[1]?.body)).not.toContain("observation_scopes");
-    expect(requests[2]?.body).toMatchObject({
+    expect(JSON.stringify(requests[2]?.body)).not.toContain("observation_scopes");
+    expect(requests[3]?.body).toMatchObject({
       items: [
         {
           content: "scoped content",
@@ -143,8 +148,8 @@ describe("Hindsight client adapter integration", () => {
         },
       ],
     });
-    expect(JSON.stringify(requests[2]?.body)).not.toContain("observationScopes");
-    expect(requests[3]?.body).toMatchObject({
+    expect(JSON.stringify(requests[3]?.body)).not.toContain("observationScopes");
+    expect(requests[4]?.body).toMatchObject({
       query: "query",
       max_tokens: 123,
       budget: "low",
@@ -152,7 +157,7 @@ describe("Hindsight client adapter integration", () => {
       tags: ["source:pi"],
       tags_match: "any_strict",
     });
-    expect(requests[4]?.body).toMatchObject({
+    expect(requests[5]?.body).toMatchObject({
       query: "query",
       budget: "low",
       response_schema: { type: "object", properties: { answer: { type: "string" } } },

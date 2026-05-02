@@ -16,7 +16,7 @@ describe("resolveConfig", () => {
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
         recall: { maxTokens: 123 },
-        banks: { project: { derive: "cwd", mission: "Project mission" } },
+        banks: { project: { derive: "cwd", retainMission: "Project retain mission" } },
       }),
     );
     const config = resolveConfig(cwd, {
@@ -27,7 +27,7 @@ describe("resolveConfig", () => {
     expect(config.hindsight.baseUrl).toBe("http://h");
     expect(config.banks.project.bankId).toBe("manual-bank");
     expect(config.banks.project.derive).toBe("manual");
-    expect(config.banks.project.mission).toBe("Project mission");
+    expect(config.banks.project.retainMission).toBe("Project retain mission");
   });
 
   it("normalizes granular bank missions", () => {
@@ -43,7 +43,6 @@ describe("resolveConfig", () => {
             observationsMission: "Project observations",
           },
           global: {
-            mission: "Global shorthand",
             retainMission: "Global retain",
           },
         },
@@ -54,7 +53,6 @@ describe("resolveConfig", () => {
     expect(config.banks.project.retainMission).toBe("Project retain");
     expect(config.banks.project.reflectMission).toBe("Project reflect");
     expect(config.banks.project.observationsMission).toBe("Project observations");
-    expect(config.banks.global.mission).toBe("Global shorthand");
     expect(config.banks.global.retainMission).toBe("Global retain");
   });
 
