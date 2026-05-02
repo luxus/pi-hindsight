@@ -6,6 +6,17 @@ This package adds a Pi extension that can recall relevant project memory before 
 
 The extension is heavily inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). Many product ideas, memory lifecycle choices, and Pi/Hindsight integration patterns started from that extension and were adapted here with stricter project isolation, queue durability, diagnostics, and release-hardening goals.
 
+## Compatibility
+
+Supported runtime and package ranges are declared in `package.json` and enforced in CI with `npm ci --engine-strict`.
+
+- Node.js: `>=22 <25`
+- npm: `>=10 <12`
+- Pi peer package: `@mariozechner/pi-coding-agent >=0.70.2 <0.71.0`
+- TypeBox peer package: `typebox >=1.0.55 <2`
+
+Development dependencies pin the tested Pi package and native TypeScript preview build so local checks and CI resolve the same compatibility baseline.
+
 ## Hindsight mental model
 
 **[Hindsight](https://hindsight.vectorize.io/) is a memory system that separates storage, retrieval, and reasoning.**
