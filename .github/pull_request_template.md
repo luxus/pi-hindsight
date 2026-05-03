@@ -26,7 +26,7 @@
 - [ ] `npm run check:coverage`
 - [ ] `npm run typecheck:tsc`
 - [ ] `npm run pack:verify` (release/package changes)
-- [ ] `npm run smoke:hindsight` (live Hindsight behavior changes, if credentials are available)
+- [ ] `npm run smoke:hindsight` or configured `Hindsight Integration` pass (memory-path behavior changes; document unavailable live proof)
 
 ## Guidance sync
 

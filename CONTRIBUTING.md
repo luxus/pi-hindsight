@@ -82,13 +82,15 @@ For release-path or packaging changes, also run:
 npm run pack:verify
 ```
 
-For live Hindsight integration changes, run a configured smoke test when credentials are available:
+For memory-path behavior changes, prove the live Hindsight path before merging. Memory-path behavior includes retain payloads, recall queries/formatting, reflect calls, bank selection or creation, queue delivery, import delivery, Adapter transport, smoke helpers, and release packaging that can affect installed runtime behavior.
+
+Preferred proof is a configured smoke test:
 
 ```bash
 npm run smoke:hindsight
 ```
 
-The GitHub `Hindsight Integration` workflow skips cleanly unless `HINDSIGHT_INTEGRATION_ENABLED=true` is configured.
+The GitHub `Hindsight Integration` workflow skips cleanly unless `HINDSIGHT_INTEGRATION_ENABLED=true` is configured. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
 
 ## Commit messages
 
@@ -135,7 +137,7 @@ Before opening or marking a PR ready:
 - [ ] I ran `npm run check:coverage` when touching critical paths.
 - [ ] I ran `npm run typecheck:tsc`.
 - [ ] I ran `npm run audit:signatures` when touching release/package dependencies.
-- [ ] I ran `npm run smoke:hindsight` when live Hindsight behavior changed and credentials were available.
+- [ ] I ran `npm run smoke:hindsight` or confirmed a configured `Hindsight Integration` pass when memory-path behavior changed; if unavailable, I documented the limitation.
 
 ## Architecture guidance
 

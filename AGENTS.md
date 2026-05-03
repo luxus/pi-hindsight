@@ -216,13 +216,15 @@ If release or package dependencies changed, also run:
 npm run audit:signatures
 ```
 
-If live Hindsight integration behavior changed, also run the configured-server smoke test when credentials are available:
+If memory-path behavior changed, also prove the live Hindsight path before merging. Memory-path behavior includes retain payloads, recall queries/formatting, reflect calls, bank selection or creation, queue delivery, import delivery, Adapter transport, smoke helpers, and release packaging that can affect installed runtime behavior.
+
+Preferred proof is a configured-server smoke test:
 
 ```bash
 npm run smoke:hindsight
 ```
 
-GitHub Actions has a `Hindsight Integration` workflow that runs on PRs, nightly schedule, and manual dispatch. It runs live smoke only when `HINDSIGHT_INTEGRATION_ENABLED=true`; then it uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets. Otherwise it skips cleanly.
+GitHub Actions has a `Hindsight Integration` workflow that runs on PRs, nightly schedule, and manual dispatch. It runs live smoke only when `HINDSIGHT_INTEGRATION_ENABLED=true`; then it uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets. Otherwise it skips cleanly. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
 
 ## Common mistakes to avoid
 
