@@ -44,9 +44,16 @@ try {
   });
   recorder.step("bank_ok");
 
-  await adapter.health?.();
+  const adapterHealth = adapter.health;
+  const adapterCreateBank = adapter.createBank;
+  const adapterGetBankProfile = adapter.getBankProfile;
+  if (!adapterHealth || !adapterCreateBank || !adapterGetBankProfile) {
+    throw new Error("adapter missing required smoke capabilities");
+  }
+
+  await adapterHealth();
   recorder.step("adapter_health_ok");
-  await adapter.createBank?.(config.bankId, {
+  await adapterCreateBank(config.bankId, {
     name: config.bankId,
     reflectMission: "Smoke-test bank for Pi Hindsight extension development.",
     retainMission:
@@ -55,7 +62,7 @@ try {
     enableObservations: true,
   });
   recorder.step("adapter_bank_ok");
-  await adapter.getBankProfile?.(config.bankId);
+  await adapterGetBankProfile(config.bankId);
   recorder.step("adapter_profile_ok");
 
   await client.retain(config.bankId, `Smoke marker: ${marker}`, {
