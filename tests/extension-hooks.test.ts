@@ -63,6 +63,8 @@ describe("extension hooks", () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
     if (originalHome === undefined) {
       delete process.env.HOME;
     } else {
@@ -249,7 +251,7 @@ describe("extension hooks", () => {
       await handlers.session_shutdown?.[0]?.({}, ctx);
       vi.useRealTimers();
     }
-  });
+  }, 20_000);
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
