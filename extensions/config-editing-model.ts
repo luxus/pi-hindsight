@@ -21,11 +21,11 @@ export type {
   TabId,
 } from "./config-editing-types.js";
 export {
+  enabledDisabled,
   inputDefaultForConfigEditingField,
+  parseConfigEditingFieldInput,
   patchForConfigEditingField,
-} from "./config-editing-actions.js";
-
-export { enabledDisabled } from "./config-editing-registry.js";
+} from "./config-editing-registry.js";
 
 export function readConfigLayers(cwd: string): ConfigLayers {
   return { project: readProjectConfig(cwd), global: readGlobalConfig(), env: process.env };

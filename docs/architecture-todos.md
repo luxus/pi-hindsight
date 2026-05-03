@@ -10,7 +10,7 @@ These are deferred deepening opportunities identified after the mission/global-m
 
 ## Config editing
 
-- Config editing registry now owns field metadata plus layer/source display composition. Future work: move parse/patch behavior from config editing actions into the same registry so adding one setting usually touches one Module.
+- Config editing registry owns field metadata, layer/source display composition, input parsing, input defaults, and patch intent builders. Adding one setting should usually touch the registry plus config writer tests, not a separate action switch.
 
 ## Document deletion UX
 

@@ -3,6 +3,7 @@ import type { ResolvedConfig } from "./types.js";
 import {
   buildConfigEditingFields,
   inputDefaultForConfigEditingField,
+  parseConfigEditingFieldInput,
   patchForConfigEditingField,
   readConfigLayers,
   type ConfigEditingField,
@@ -18,14 +19,6 @@ const LOCAL_EMBED_GUIDANCE = [
   "uvx hindsight-embed@latest -p pi bank create <bank-id>",
   "uvx hindsight-embed@latest -p pi ui start",
 ].join("\n");
-
-function parsePositiveInt(value: string | undefined, field: string): number | undefined {
-  if (value === undefined || value.trim() === "") return undefined;
-  const parsed = Number(value.trim());
-  if (!Number.isInteger(parsed) || parsed <= 0)
-    throw new Error(`${field} must be a positive integer`);
-  return parsed;
-}
 
 async function writeAndReload(
   ctx: ExtensionCommandContext,
@@ -132,11 +125,9 @@ async function promptScopedValue(
     settingPrompt(field),
     inputDefaultForConfigEditingField(field.id, deps.getConfig(), deps.getProjectBankId()),
   );
-  if (!value) return undefined;
-  if (field.kind === "positive-int" && parsePositiveInt(value, field.id) === undefined) {
-    return undefined;
-  }
-  return { scope, value };
+  const parsed = parseConfigEditingFieldInput(field, value);
+  if (parsed === undefined) return undefined;
+  return { scope, value: parsed };
 }
 
 export async function handleResetFieldAction(args: {

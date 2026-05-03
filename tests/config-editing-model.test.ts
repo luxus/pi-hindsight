@@ -8,6 +8,9 @@ import {
 import {
   buildConfigEditingFields,
   buildConfigEditingTabs,
+  inputDefaultForConfigEditingField,
+  parseConfigEditingFieldInput,
+  patchForConfigEditingField,
   type ConfigLayers,
 } from "../extensions/config-editing-model.js";
 import { buildStatusFacts } from "../extensions/config-editing-registry.js";
@@ -77,7 +80,7 @@ describe("config editing model", () => {
     ]);
   });
 
-  it("builds patch intent for field edits", () => {
+  it("builds registry-backed field metadata for edits", () => {
     const fields = buildConfigEditingFields(DEFAULT_CONFIG, "bank", layers());
     const memoryProfile = fields.find((field) => field.id === "memoryProfile");
     const queuePath = fields.find((field) => field.id === "queuePath");
@@ -107,6 +110,38 @@ describe("config editing model", () => {
       advanced: true,
       value: "disabled",
     });
+  });
+
+  it("builds registry-backed patch intents and input defaults", () => {
+    expect(patchForConfigEditingField("enabled", "Enable", DEFAULT_CONFIG)).toEqual({
+      enabled: true,
+    });
+    const configuredGlobal = {
+      ...DEFAULT_CONFIG,
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        global: { ...DEFAULT_CONFIG.banks.global, bankId: "global-luxus" },
+      },
+    };
+    expect(patchForConfigEditingField("memoryProfile", "project+global", configuredGlobal)).toEqual(
+      {
+        memoryProfile: "project+global",
+        globalBankId: "global-luxus",
+      },
+    );
+    expect(patchForConfigEditingField("recallMaxTokens", "1234", DEFAULT_CONFIG)).toEqual({
+      recallMaxTokens: 1234,
+    });
+    expect(inputDefaultForConfigEditingField("apiKeyEnv", DEFAULT_CONFIG, "bank")).toBe(
+      "HINDSIGHT_API_KEY",
+    );
+    expect(inputDefaultForConfigEditingField("projectBankId", DEFAULT_CONFIG, "bank")).toBe("bank");
+    expect(parseConfigEditingFieldInput({ id: "recallMaxTokens", kind: "positive-int" }, "5")).toBe(
+      "5",
+    );
+    expect(() =>
+      parseConfigEditingFieldInput({ id: "recallMaxTokens", kind: "positive-int" }, "0"),
+    ).toThrow("recallMaxTokens must be a positive integer");
   });
 
   it("hides advanced fields unless advanced mode is enabled", () => {
