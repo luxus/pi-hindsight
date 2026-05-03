@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 import { HindsightClient } from "@vectorize-io/hindsight-client";
-import { logStep, retry, smokeConfig, smokeMarker } from "./smoke-helpers.mjs";
+import {
+  createSmokeRecorder,
+  renderSmokeSummary,
+  retry,
+  smokeConfig,
+  smokeMarker,
+  writeGitHubSummary,
+} from "./smoke-helpers.mjs";
 
 const config = smokeConfig();
 const marker = smokeMarker();
+const recorder = createSmokeRecorder();
 
 const client = new HindsightClient({
   baseUrl: config.baseUrl,
@@ -12,7 +20,7 @@ const client = new HindsightClient({
 });
 
 try {
-  logStep("start", { baseUrl: config.baseUrl, bankId: config.bankId });
+  recorder.step("start", { baseUrl: config.baseUrl, bankId: config.bankId });
   await client.createBank(config.bankId, {
     name: config.bankId,
     reflectMission: "Smoke-test bank for Pi Hindsight extension development.",
@@ -21,7 +29,7 @@ try {
     retainExtractionMode: "verbose",
     enableObservations: true,
   });
-  logStep("bank_ok");
+  recorder.step("bank_ok");
 
   await client.retain(config.bankId, `Smoke marker: ${marker}`, {
     context: "Pi Hindsight smoke test",
@@ -30,7 +38,7 @@ try {
     tags: ["source:pi", "test:smoke"],
     metadata: { marker },
   });
-  logStep("retain_ok", { marker });
+  recorder.step("retain_ok", { marker });
 
   const recall = await retry(
     async () =>
@@ -46,12 +54,12 @@ try {
     {
       attempts: config.attempts,
       delayMs: 2000,
-      onWait: ({ attempt, delayMs }) => logStep("recall_wait", { attempt, delayMs }),
+      onWait: ({ attempt, delayMs }) => recorder.step("recall_wait", { attempt, delayMs }),
       failureMessage: ({ attempts, preview }) =>
         `recall did not contain retained marker after ${attempts} attempts: ${preview}`,
     },
   );
-  logStep("recall_ok", { containsMarker: JSON.stringify(recall).includes(marker) });
+  recorder.step("recall_ok", { containsMarker: JSON.stringify(recall).includes(marker) });
 
   const reflection = await client.reflect(
     config.bankId,
@@ -62,9 +70,9 @@ try {
       tagsMatch: "any_strict",
     },
   );
-  logStep("reflect_ok", { responsePreview: JSON.stringify(reflection).slice(0, 300) });
+  recorder.step("reflect_ok", { responsePreview: JSON.stringify(reflection).slice(0, 300) });
 
-  logStep("success", { bankId: config.bankId, marker });
+  recorder.step("success", { bankId: config.bankId, marker });
 } catch (error) {
   console.error(
     JSON.stringify({
@@ -73,4 +81,7 @@ try {
     }),
   );
   process.exitCode = 1;
+} finally {
+  const summary = await writeGitHubSummary(renderSmokeSummary(recorder.entries()));
+  if (summary.error) recorder.step("summary_failed", { error: summary.error });
 }

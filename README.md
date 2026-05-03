@@ -442,7 +442,7 @@ export HINDSIGHT_BASE_URL=http://localhost:8888
 npm run smoke:hindsight
 ```
 
-The smoke test creates a temporary bank, retains a unique marker with `updateMode: "append"`, recalls it, and runs `reflect`. It uses the configured Hindsight server; it does not start a server and it prints step markers (`bank_ok`, `retain_ok`, `recall_ok`, `reflect_ok`) so failures identify the broken integration stage. For release verification with a configured Hindsight server, run:
+The smoke test creates a temporary bank, retains a unique marker with `updateMode: "append"`, recalls it, and runs `reflect`. It uses the configured Hindsight server; it does not start a server and it prints JSON step markers (`bank_ok`, `retain_ok`, `recall_ok`, `reflect_ok`) with elapsed duration so failures identify the broken integration stage. In GitHub Actions it also writes a Markdown step summary. For release verification with a configured Hindsight server, run:
 
 ```bash
 export HINDSIGHT_BASE_URL=http://localhost:8888

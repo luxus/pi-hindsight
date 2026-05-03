@@ -1,5 +1,17 @@
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { envValue, logStep, retry, smokeConfig, smokeMarker } from "../scripts/smoke-helpers.mjs";
+import {
+  createSmokeRecorder,
+  envValue,
+  logStep,
+  renderSmokeSummary,
+  retry,
+  smokeConfig,
+  smokeMarker,
+  writeGitHubSummary,
+} from "../scripts/smoke-helpers.mjs";
 
 describe("smoke helpers", () => {
   it("normalizes empty env values", () => {
@@ -70,5 +82,36 @@ describe("smoke helpers", () => {
         },
       ),
     ).rejects.toThrow('custom 2: "no"');
+  });
+
+  it("records timed steps while preserving JSONL output", () => {
+    const output = vi.fn();
+    let now = 100;
+    const recorder = createSmokeRecorder({ now: () => now, output });
+    now = 125;
+    recorder.step("retain_ok", { marker: "m" });
+
+    expect(output).toHaveBeenCalledWith('{"step":"retain_ok","durationMs":25,"marker":"m"}');
+    expect(recorder.entries()).toEqual([{ step: "retain_ok", durationMs: 25, marker: "m" }]);
+  });
+
+  it("renders GitHub summary markdown", () => {
+    expect(renderSmokeSummary([{ step: "retain_ok", durationMs: 25, marker: "m" }])).toContain(
+      "| retain_ok | 25ms | `",
+    );
+  });
+
+  it("writes GitHub summary when configured", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "smoke-summary-"));
+    const path = join(dir, "summary.md");
+
+    await expect(writeGitHubSummary("hello\n", { GITHUB_STEP_SUMMARY: path })).resolves.toEqual({
+      written: true,
+    });
+    await expect(readFile(path, "utf8")).resolves.toBe("hello\n");
+    await expect(writeGitHubSummary("hello\n", {})).resolves.toEqual({ written: false });
+    await expect(
+      writeGitHubSummary("hello\n", { GITHUB_STEP_SUMMARY: join(dir, "missing", "summary.md") }),
+    ).resolves.toMatchObject({ written: false, error: expect.any(String) });
   });
 });

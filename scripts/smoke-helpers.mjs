@@ -20,6 +20,46 @@ export function logStep(step, data = {}, output = console.log) {
   output(JSON.stringify({ step, ...data }));
 }
 
+export function createSmokeRecorder({ now = Date.now, output = console.log } = {}) {
+  const startedAt = now();
+  const steps = [];
+  return {
+    step(name, data = {}) {
+      const durationMs = now() - startedAt;
+      const entry = { step: name, durationMs, ...data };
+      steps.push(entry);
+      logStep(name, { durationMs, ...data }, output);
+      return entry;
+    },
+    entries() {
+      return [...steps];
+    },
+  };
+}
+
+export function renderSmokeSummary(entries, { title = "Hindsight smoke test" } = {}) {
+  const lines = [`## ${title}`, "", "| Step | Duration | Details |", "| --- | ---: | --- |"];
+  for (const entry of entries) {
+    const { step, durationMs, ...details } = entry;
+    lines.push(
+      `| ${step} | ${durationMs}ms | ${Object.keys(details).length ? `\`${JSON.stringify(details).replaceAll("`", "\\`")}\`` : ""} |`,
+    );
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+export async function writeGitHubSummary(markdown, env = process.env) {
+  const path = env.GITHUB_STEP_SUMMARY;
+  if (!path) return { written: false };
+  try {
+    const { appendFile } = await import("node:fs/promises");
+    await appendFile(path, markdown, "utf8");
+    return { written: true };
+  } catch (error) {
+    return { written: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
