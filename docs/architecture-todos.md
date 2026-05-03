@@ -6,7 +6,7 @@ These are deferred deepening opportunities identified after the mission/global-m
 
 - Keep `globalRetain.mode = "explicit-only"` as the default.
 - Router mode is explicit opt-in and now routes automatic retain through a mission-aware Adapter before enqueueing project/global/both/skip writes.
-- Evaluation fixtures cover project/global/both/skip decisions. Future work: expand fixtures and add an LLM-backed Adapter behind the same Interface if heuristic quality is not enough.
+- Evaluation fixtures cover balanced project/global/both/skip decisions across style, identity, workflow, implementation, delivery, and ephemeral artifact cases. Future work: add an LLM-backed Adapter behind the same Interface only if heuristic quality is not enough.
 
 ## Config editing
 

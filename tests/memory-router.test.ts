@@ -22,6 +22,27 @@ const routerEvalFixtures = JSON.parse(
 ) as RouterEvalFixture[];
 
 describe("memory router", () => {
+  it("keeps eval fixtures balanced across all route outcomes", () => {
+    expect(routerEvalFixtures).toHaveLength(12);
+    expect(new Set(routerEvalFixtures.map((fixture) => fixture.name)).size).toBe(
+      routerEvalFixtures.length,
+    );
+    expect(routerEvalFixtures.map((fixture) => fixture.expectedRoute).sort()).toEqual([
+      "both",
+      "both",
+      "both",
+      "global",
+      "global",
+      "global",
+      "project",
+      "project",
+      "project",
+      "skip",
+      "skip",
+      "skip",
+    ]);
+  });
+
   it.each(routerEvalFixtures)(
     "classifies eval fixture: $name",
     ({ content, context, expectedRoute, expectedSignals }) => {
@@ -33,6 +54,7 @@ describe("memory router", () => {
 
       expect(decision.route).toBe(expectedRoute);
       expect(decision.signals).toEqual(expect.arrayContaining(expectedSignals));
+      expect(decision.matchedSignals.length).toBeGreaterThanOrEqual(expectedSignals.length);
       expect(decision.writes).toEqual([]);
     },
   );
