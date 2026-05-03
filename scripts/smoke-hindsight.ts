@@ -1,7 +1,11 @@
 #!/usr/bin/env node
+import { mkdtempSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { HindsightClient } from "@vectorize-io/hindsight-client";
 import { createHindsightClient } from "../extensions/client.js";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
+import { createMemoryOperations } from "../extensions/memory-operation-service.js";
 import {
   cleanupSmokeBankOnSuccess,
   createSmokeRecorder,
@@ -15,6 +19,9 @@ import {
 const config = smokeConfig();
 const marker = smokeMarker();
 const adapterMarker = smokeMarker();
+const operationsMarker = smokeMarker();
+const operationsCwd = mkdtempSync(join(tmpdir(), "pi-hindsight-smoke-ops-"));
+mkdirSync(join(operationsCwd, ".git"));
 const recorder = createSmokeRecorder();
 let succeeded = false;
 
@@ -23,13 +30,19 @@ const client = new HindsightClient({
   ...(config.apiKey ? { apiKey: config.apiKey } : {}),
   userAgent: "pi-hindsight-smoke/0.1.0",
 });
-const adapter = createHindsightClient({
+const smokeExtensionConfig = {
   ...DEFAULT_CONFIG,
   hindsight: {
     ...DEFAULT_CONFIG.hindsight,
     baseUrl: config.baseUrl,
     ...(config.apiKey ? { apiKey: config.apiKey } : {}),
   },
+};
+const adapter = createHindsightClient(smokeExtensionConfig);
+const operations = createMemoryOperations({
+  getClient: () => adapter,
+  getConfig: () => smokeExtensionConfig,
+  getProjectBankId: () => config.bankId,
 });
 
 try {
@@ -152,7 +165,70 @@ try {
     responsePreview: JSON.stringify(adapterReflection).slice(0, 300),
   });
 
-  recorder.step("success", { bankId: config.bankId, marker, adapterMarker });
+  const operationsRetain = await operations.retainExplicit({
+    cwd: operationsCwd,
+    content: `Operations smoke marker: ${operationsMarker}`,
+    context: "Pi Hindsight operations smoke test",
+    bank: "project",
+    tags: ["test:smoke", "test:operations"],
+  });
+  recorder.step("operations_retain_ok", {
+    marker: operationsMarker,
+    documentId: operationsRetain.documentId,
+    sent: operationsRetain.sent,
+    remaining: operationsRetain.remaining,
+  });
+
+  const operationsFlush = await operations.flush(operationsCwd);
+  recorder.step("operations_flush_ok", {
+    sent: operationsFlush.sent,
+    remaining: operationsFlush.remaining,
+  });
+
+  const operationsRecall = await retry(
+    async () => operations.recall(operationsCwd, operationsMarker, "project"),
+    (result) => JSON.stringify(result).includes(operationsMarker),
+    {
+      attempts: config.attempts,
+      delayMs: 2000,
+      onWait: ({ attempt, delayMs }) =>
+        recorder.step("operations_recall_wait", { attempt, delayMs }),
+      failureMessage: ({ attempts, preview }) =>
+        `operations recall did not contain retained marker after ${attempts} attempts: ${preview}`,
+    },
+  );
+  recorder.step("operations_recall_ok", {
+    containsMarker: JSON.stringify(operationsRecall).includes(operationsMarker),
+  });
+
+  const operationsReflection = await operations.reflect(
+    operationsCwd,
+    `Return the operations smoke marker as JSON: ${operationsMarker}`,
+    "Pi Hindsight operations smoke test",
+    "project",
+    {
+      type: "object",
+      properties: { marker: { type: "string" } },
+      required: ["marker"],
+    },
+  );
+  recorder.step("operations_reflect_ok", {
+    responsePreview: JSON.stringify(operationsReflection).slice(0, 300),
+  });
+
+  const receipts = await operations.listRetainReceipts(operationsCwd, 5);
+  const operationsReceipt = receipts.find(
+    (receipt) =>
+      receipt.bankId === config.bankId &&
+      receipt.documentId === operationsRetain.documentId &&
+      receipt.tags.includes("test:operations"),
+  );
+  if (!operationsReceipt) {
+    throw new Error("operations retain receipt did not contain retained marker document");
+  }
+  recorder.step("operations_receipts_ok", { count: receipts.length });
+
+  recorder.step("success", { bankId: config.bankId, marker, adapterMarker, operationsMarker });
   succeeded = true;
 } catch (error) {
   console.error(
