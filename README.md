@@ -356,6 +356,8 @@ Advanced project config example:
   "retain": {
     "queuePath": ".pi/hindsight/retain-queue.jsonl",
     "flushIntervalMs": 30000,
+    "periodicFlushMaxJobs": 1,
+    "periodicFlushTimeoutMs": 2000,
     "updateMode": "append",
     "entities": [{ "text": "Pi", "type": "project" }],
     "content": {
@@ -410,9 +412,9 @@ Automatic retain runs in the `agent_end` hook. It stores a structured JSON proje
 
 Retain jobs are written to a JSONL queue before sending. If Hindsight is down, jobs remain on disk for later flushing. This queue-first behavior applies to both automatic retain and the explicit `hindsight_retain` tool, so manual memories are not lost during Hindsight outages. Queue operations use an in-process mutex plus a lock directory next to the queue file so multiple Pi processes do not rewrite the active queue concurrently. Stale queue locks are judged from the lock owner's `acquiredAt` timestamp, not from the waiting process age. Jobs that exceed the retry limit are moved to a sibling dead-letter file (`<queue>.dead.jsonl`) instead of retrying forever. Debug diagnostics summarize active queue jobs, malformed JSONL lines, queue read errors, dead-letter jobs, and the dead-letter path without printing raw retained content; if malformed, unreadable, or dead-lettered entries exist, inspect the queue files offline, repair permissions or malformed lines deliberately, then run `/hindsight:flush` after Hindsight is reachable.
 
-Set `retain.flushIntervalMs` to a positive interval to flush queued jobs periodically while Pi is running. The default `0` disables periodic flushing, so retain still flushes on new retain attempts, manual `/hindsight:flush`, and shutdown.
+Set `retain.flushIntervalMs` to a positive interval to flush queued jobs periodically while Pi is running. The default `0` disables periodic flushing, so retain still flushes on new retain attempts, manual `/hindsight:flush`, and shutdown. Periodic background flushes are bounded separately by `retain.periodicFlushMaxJobs` and `retain.periodicFlushTimeoutMs` so they stay small and do not borrow shutdown semantics.
 
-Shutdown queue flushing is intentionally bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdownFlushTimeoutMs`. The timeout is a soft bound checked between queued jobs so shutdown does not leave a background flush holding the queue lock. If jobs remain after shutdown, they stay on disk and are visible through `/hindsight` for later flushing.
+Shutdown queue flushing is intentionally bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdownFlushTimeoutMs`. The timeout is a soft bound checked between queued jobs so shutdown can use a larger drain budget without leaving a background flush holding the queue lock. If jobs remain after shutdown, they stay on disk and are visible through `/hindsight` for later flushing.
 
 At session start, the extension shows the selected bank ID. If no bank ID is configured, it reports the automatically derived bank ID and how to override it. Project and global banks can define Hindsight's three supported mission fields: `retainMission`, `reflectMission`, and `observationsMission`. There is no generic bank `mission` field; if no specific mission is configured, Pi-specific defaults are used. Project banks focus on repo architecture, decisions, constraints, bugs, fixes, TODOs, conventions, and project-local preferences. Global banks focus on durable user preferences, recurring workflows, coding habits, and stable assistant behavior while excluding repo-specific code facts by default.
 

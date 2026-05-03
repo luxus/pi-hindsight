@@ -69,8 +69,8 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       periodicFlushActive = true;
       void flushRetainQueue(queuePath, client, {
         stopOnFirstFailure: true,
-        maxJobs: config.retain.shutdownFlushMaxJobs,
-        maxElapsedMs: config.retain.shutdownFlushTimeoutMs,
+        maxJobs: config.retain.periodicFlushMaxJobs,
+        maxElapsedMs: config.retain.periodicFlushTimeoutMs,
       })
         .catch(() => undefined)
         .finally(() => {

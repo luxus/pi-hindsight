@@ -81,6 +81,8 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     entities: [],
     queuePath: ".pi/hindsight/retain-queue.jsonl",
     flushIntervalMs: 0,
+    periodicFlushMaxJobs: 1,
+    periodicFlushTimeoutMs: 2_000,
     shutdownFlushMaxJobs: 10,
     shutdownFlushTimeoutMs: 2_000,
   },

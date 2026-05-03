@@ -83,6 +83,8 @@ export interface ResolvedConfig {
     entities: HindsightEntityInput[];
     queuePath: string;
     flushIntervalMs: number;
+    periodicFlushMaxJobs: number;
+    periodicFlushTimeoutMs: number;
     shutdownFlushMaxJobs: number;
     shutdownFlushTimeoutMs: number;
   };

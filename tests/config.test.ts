@@ -221,6 +221,8 @@ describe("resolveConfig", () => {
           queuePath: "",
           flushIntervalMs: -1,
           entities: [{ text: "ok" }, { text: 42 }],
+          periodicFlushMaxJobs: -1,
+          periodicFlushTimeoutMs: 0,
           shutdownFlushMaxJobs: -1,
           shutdownFlushTimeoutMs: 0,
           toolFilter: { toolCall: { include: [42] }, toolResult: { exclude: "read" } },
@@ -269,6 +271,8 @@ describe("resolveConfig", () => {
     expect(config.retain.queuePath).toBe(".pi/hindsight/retain-queue.jsonl");
     expect(config.retain.flushIntervalMs).toBe(0);
     expect(config.retain.entities).toEqual([]);
+    expect(config.retain.periodicFlushMaxJobs).toBe(1);
+    expect(config.retain.periodicFlushTimeoutMs).toBe(2_000);
     expect(config.retain.shutdownFlushMaxJobs).toBe(10);
     expect(config.retain.shutdownFlushTimeoutMs).toBe(2_000);
     expect(config.import.includeBranches).toBe("current-only");

@@ -265,6 +265,14 @@ export function normalizeConfig(
           ? config.retain.flushIntervalMs
           : DEFAULT_CONFIG.retain.flushIntervalMs,
       ),
+      periodicFlushMaxJobs: positiveInt(
+        config.retain?.periodicFlushMaxJobs,
+        DEFAULT_CONFIG.retain.periodicFlushMaxJobs,
+      ),
+      periodicFlushTimeoutMs: positiveInt(
+        config.retain?.periodicFlushTimeoutMs,
+        DEFAULT_CONFIG.retain.periodicFlushTimeoutMs,
+      ),
       shutdownFlushMaxJobs: positiveInt(
         config.retain?.shutdownFlushMaxJobs,
         DEFAULT_CONFIG.retain.shutdownFlushMaxJobs,
