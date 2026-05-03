@@ -499,7 +499,7 @@ The `version` script also regenerates and stages `CHANGELOG.md` during `npm vers
 Before publishing or tagging a release:
 
 1. Ensure `main` is synced.
-2. Run `npm run check`, `npm run check:coverage`, `npm run typecheck:tsc`, and `npm run pack:verify`.
+2. Run `npm run check`, `npm run check:coverage`, `npm run typecheck:tsc`, `npm run audit:signatures`, and `npm run pack:verify`.
 3. Run `npm run smoke:hindsight` locally when a configured server is available, or check the `Hindsight Integration` workflow result.
 4. Run `npm run changelog` after final Conventional Commits.
 5. Use `npm version <patch|minor|major>` so the version script stages the regenerated changelog.

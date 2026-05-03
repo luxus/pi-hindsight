@@ -134,6 +134,7 @@ Before opening or marking a PR ready:
 - [ ] I ran `npm run check`.
 - [ ] I ran `npm run check:coverage` when touching critical paths.
 - [ ] I ran `npm run typecheck:tsc`.
+- [ ] I ran `npm run audit:signatures` when touching release/package dependencies.
 - [ ] I ran `npm run smoke:hindsight` when live Hindsight behavior changed and credentials were available.
 
 ## Architecture guidance
