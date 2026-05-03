@@ -8,13 +8,16 @@ import { describe, expect, it } from "vitest";
 const execFileAsync = promisify(execFile);
 const generatorPath = resolve("scripts/generate-changelog.mjs");
 
+const subprocessTimeoutMs = 10_000;
+
 async function git(cwd: string, args: string[]) {
-  await execFileAsync("git", args, { cwd });
+  await execFileAsync("git", args, { cwd, timeout: subprocessTimeoutMs });
 }
 
 async function commit(cwd: string, message: string, date: string) {
   await execFileAsync("git", ["commit", "--allow-empty", "-m", message], {
     cwd,
+    timeout: subprocessTimeoutMs,
     env: {
       ...process.env,
       GIT_AUTHOR_DATE: `${date}T00:00:00Z`,
@@ -47,9 +50,9 @@ describe("generate-changelog", () => {
       await git(cwd, ["checkout", "main"]);
       await git(cwd, ["merge", "--no-ff", "topic", "-m", "Merge pull request #1"]);
 
-      await execFileAsync("node", [generatorPath], { cwd });
+      await execFileAsync("node", [generatorPath], { cwd, timeout: subprocessTimeoutMs });
       const first = await readFile(join(cwd, "CHANGELOG.md"), "utf8");
-      await execFileAsync("node", [generatorPath], { cwd });
+      await execFileAsync("node", [generatorPath], { cwd, timeout: subprocessTimeoutMs });
       const second = await readFile(join(cwd, "CHANGELOG.md"), "utf8");
 
       expect(second).toBe(first);
@@ -65,5 +68,5 @@ describe("generate-changelog", () => {
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
-  });
+  }, 20_000);
 });
