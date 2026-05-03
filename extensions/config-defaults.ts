@@ -1,0 +1,104 @@
+import type { ResolvedConfig } from "./types.js";
+
+export const DEFAULT_CONFIG: ResolvedConfig = {
+  enabled: true,
+  hindsight: { baseUrl: "http://localhost:8888", timeoutMs: 30_000 },
+  banks: {
+    project: { enabled: true, derive: "repo" },
+    global: { enabled: false },
+  },
+  recall: {
+    enabled: true,
+    budget: "mid",
+    maxTokens: 800,
+    types: ["observation"],
+    contextTurns: 2,
+    roles: ["user", "assistant"],
+    maxQueryChars: 800,
+    queryPreamble: "Pi coding task memory lookup.",
+    projectQueryPreamble:
+      "Project memory lookup for current repo architecture, tasks, bugs, decisions, and constraints.",
+    globalQueryPreamble:
+      "Global memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
+    includeDateInQuery: false,
+    includeRepoHintsInQuery: true,
+    storeLastRecall: false,
+    lastRecallPath: ".pi/hindsight/last-recall.json",
+    topK: 8,
+    timeoutMs: 10_000,
+    injectionMode: "context",
+    injectionPosition: "append",
+    includeFactsInDebug: false,
+  },
+  observations: {
+    enabled: true,
+    scopes: [["harness:pi"], ["repo:{repoKey}"]],
+  },
+  globalRetain: {
+    mode: "explicit-only",
+  },
+  retain: {
+    enabled: true,
+    async: true,
+    updateMode: "append",
+    content: {
+      user: ["text"],
+      assistant: ["text", "toolCall"],
+      toolResult: ["error"],
+    },
+    toolFilter: {
+      toolCall: {
+        exclude: [
+          "hindsight_retain",
+          "hindsight_retain_global",
+          "hindsight_delete_document",
+          "hindsight_retain_receipts",
+          "hindsight_route_memory",
+          "hindsight_recall",
+          "hindsight_reflect",
+        ],
+      },
+      toolResult: {
+        exclude: [
+          "hindsight_retain",
+          "hindsight_retain_global",
+          "hindsight_delete_document",
+          "hindsight_retain_receipts",
+          "hindsight_route_memory",
+          "hindsight_recall",
+          "hindsight_reflect",
+          "read",
+          "grep",
+          "find",
+          "find_files",
+          "ls",
+        ],
+      },
+    },
+    strip: { message: ["usage", "cost", "responseId"], topLevel: ["id", "parentId"] },
+    redactSecrets: true,
+    entities: [],
+    queuePath: ".pi/hindsight/retain-queue.jsonl",
+    flushIntervalMs: 0,
+    shutdownFlushMaxJobs: 10,
+    shutdownFlushTimeoutMs: 2_000,
+  },
+  import: {
+    includeBranches: "current-only",
+    replaceExistingImportedDocs: true,
+    manifestPath: ".pi/hindsight/import-manifest.json",
+    checkpointPath: ".pi/hindsight/import-checkpoint.json",
+    resume: true,
+  },
+  status: {
+    style: "text",
+    detail: "activity",
+    maxLength: 24,
+    showActivity: true,
+  },
+  notifications: {
+    startup: true,
+    recall: false,
+    retain: false,
+  },
+};

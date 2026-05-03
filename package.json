@@ -51,7 +51,8 @@
     "version": "npm run changelog && npm run format:fix && git add CHANGELOG.md"
   },
   "dependencies": {
-    "@vectorize-io/hindsight-client": "^0.5.4"
+    "@vectorize-io/hindsight-client": "^0.5.4",
+    "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
