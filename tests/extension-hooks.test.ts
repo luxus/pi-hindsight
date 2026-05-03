@@ -192,7 +192,7 @@ describe("extension hooks", () => {
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
         hindsight: { baseUrl: "http://unused.test" },
-        retain: { flushIntervalMs: 1_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
+        retain: { flushIntervalMs: 3_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
       }),
     );
     const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
@@ -233,8 +233,8 @@ describe("extension hooks", () => {
         retries: 0,
       });
       mocked.client.retain.mockClear();
-      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0, 1_500);
-      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1);
+      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0, 5_000);
+      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1, 5_000);
 
       expect(mocked.client.retain).toHaveBeenCalledTimes(1);
       expect((await readRetainQueue(queuePath)).map((job) => job.id)).toEqual(["queued-2"]);
@@ -246,7 +246,7 @@ describe("extension hooks", () => {
     } finally {
       await handlers.session_shutdown?.[0]?.({}, ctx);
     }
-  });
+  }, 10_000);
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));

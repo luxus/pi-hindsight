@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 const script = resolve("scripts/verify-release.mjs");
+const testEnv = { ...process.env, GITHUB_REF_NAME: "" };
 
 async function repo(version, changelog) {
   const dir = await mkdtemp(join(tmpdir(), "verify-release-"));
@@ -18,14 +19,14 @@ async function repo(version, changelog) {
 describe("verify-release", () => {
   it("accepts exact changelog version heading", async () => {
     const cwd = await repo("1.2.3", "## [1.2.3] - 2026-01-01\n");
-    await expect(execFileAsync("node", [script], { cwd })).resolves.toMatchObject({
+    await expect(execFileAsync("node", [script], { cwd, env: testEnv })).resolves.toMatchObject({
       stdout: expect.stringContaining('"version":"1.2.3"'),
     });
   });
 
   it("rejects substring changelog version heading", async () => {
     const cwd = await repo("1.2.3", "## [11.2.3] - 2026-01-01\n");
-    await expect(execFileAsync("node", [script], { cwd })).rejects.toMatchObject({
+    await expect(execFileAsync("node", [script], { cwd, env: testEnv })).rejects.toMatchObject({
       stderr: expect.stringContaining("CHANGELOG.md missing release heading for 1.2.3"),
     });
   });
@@ -33,7 +34,7 @@ describe("verify-release", () => {
   it("rejects mismatched tag version", async () => {
     const cwd = await repo("1.2.3", "## [1.2.3] - 2026-01-01\n");
     await expect(
-      execFileAsync("node", [script], { cwd, env: { ...process.env, GITHUB_REF_NAME: "v1.2.4" } }),
+      execFileAsync("node", [script], { cwd, env: { ...testEnv, GITHUB_REF_NAME: "v1.2.4" } }),
     ).rejects.toMatchObject({
       stderr: expect.stringContaining(
         "Release tag v1.2.4 does not match package.json version 1.2.3",
