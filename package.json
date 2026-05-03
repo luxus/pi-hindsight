@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.3",
     "@mariozechner/pi-coding-agent": "0.72.1",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "7.0.0-dev.20260426.1",
