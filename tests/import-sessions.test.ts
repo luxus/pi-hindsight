@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import {
   discoverProjectSessionFiles,
@@ -16,6 +16,17 @@ import { readImportManifest } from "../extensions/import-manifest.js";
 import { enqueueRetainJob, readRetainQueue, resolveQueuePath } from "../extensions/queue.js";
 import { stableSessionId } from "../extensions/session.js";
 import { setNextSessionRetainMode } from "../extensions/session-memory-meta.js";
+
+const equivalentPathVariants = [
+  { name: "same path", sessionCwd: (project: string) => project },
+  { name: "trailing separator", sessionCwd: (project: string) => `${project}${sep}` },
+  { name: "raw dot segment", sessionCwd: (project: string) => `${project}${sep}.${sep}` },
+  {
+    name: "raw parent traversal",
+    sessionCwd: (project: string) => `${project}${sep}nested${sep}..`,
+  },
+  { name: "resolved path", sessionCwd: (project: string) => resolve(project) },
+];
 
 describe("Pi session import", () => {
   it("parses message entries from Pi JSONL", () => {
@@ -594,37 +605,40 @@ describe("Pi session import", () => {
     expect(result.runId).toContain(":replace:");
   });
 
-  it("accepts equivalent normalized project cwd paths", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
-    mkdirSync(join(dir, ".git"));
-    const sessionFile = join(dir, "session.jsonl");
-    writeFileSync(
-      sessionFile,
-      [
-        JSON.stringify({ type: "session", id: "session-normalized", cwd: `${dir}/` }),
-        JSON.stringify({
-          type: "message",
-          id: "root",
-          parentId: null,
-          message: { role: "user", content: "normalized cwd" },
-        }),
-      ].join("\n"),
-    );
+  it.each(equivalentPathVariants)(
+    "accepts equivalent normalized project cwd paths: $name",
+    async ({ sessionCwd }) => {
+      const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+      mkdirSync(join(dir, ".git"));
+      const sessionFile = join(dir, "session.jsonl");
+      writeFileSync(
+        sessionFile,
+        [
+          JSON.stringify({ type: "session", id: "session-normalized", cwd: sessionCwd(dir) }),
+          JSON.stringify({
+            type: "message",
+            id: "root",
+            parentId: null,
+            message: { role: "user", content: "normalized cwd" },
+          }),
+        ].join("\n"),
+      );
 
-    const result = await importPiSession({
-      sessionFile,
-      cwd: dir,
-      bankId: "bank",
-      config: DEFAULT_CONFIG,
-      client: {
-        retain: async () => undefined,
-        recall: async () => [],
-        reflect: async () => ({}),
-      },
-    });
+      const result = await importPiSession({
+        sessionFile,
+        cwd: dir,
+        bankId: "bank",
+        config: DEFAULT_CONFIG,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+      });
 
-    expect(result.documents[0]?.documentId).toBe("pi-import:session-normalized:leaf:root");
-  });
+      expect(result.documents[0]?.documentId).toBe("pi-import:session-normalized:leaf:root");
+    },
+  );
 
   it("rejects explicit imports from a different project cwd", async () => {
     const current = mkdtempSync(join(tmpdir(), "pi-hindsight-import-current-"));
@@ -732,6 +746,48 @@ describe("Pi session import", () => {
 
     expect(result.scanned).toBe(3);
     expect(result.sessionFiles).toEqual([current, related].sort());
+  });
+
+  it("discovers repeated equivalent normalized project cwd paths", async () => {
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    const other = mkdtempSync(join(tmpdir(), "pi-hindsight-other-"));
+    const sessionsDir = mkdtempSync(join(tmpdir(), "pi-hindsight-sessions-"));
+    const expected: string[] = [];
+
+    for (const [index, variant] of equivalentPathVariants.entries()) {
+      const file = join(sessionsDir, `related-${index}.jsonl`);
+      expected.push(file);
+      writeFileSync(
+        file,
+        [
+          JSON.stringify({
+            type: "session",
+            id: `related-${index}`,
+            cwd: variant.sessionCwd(project),
+          }),
+          JSON.stringify({
+            type: "message",
+            id: "1",
+            message: { role: "user", content: `related ${index}` },
+          }),
+        ].join("\n"),
+      );
+    }
+    writeFileSync(
+      join(sessionsDir, "unrelated.jsonl"),
+      [
+        JSON.stringify({ type: "session", id: "other", cwd: join(other, "nested", "..") }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "o" } }),
+      ].join("\n"),
+    );
+
+    const result = await discoverProjectSessionFiles({
+      cwd: join(project, "."),
+      searchDir: sessionsDir,
+    });
+
+    expect(result.scanned).toBe(equivalentPathVariants.length + 1);
+    expect(result.sessionFiles).toEqual(expected.sort());
   });
 
   it("resumes project session imports with per-file checkpoints", async () => {
