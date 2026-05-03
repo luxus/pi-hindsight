@@ -210,6 +210,12 @@ npm run check:coverage
 npm run typecheck:tsc
 ```
 
+If release or package dependencies changed, also run:
+
+```bash
+npm run audit:signatures
+```
+
 If live Hindsight integration behavior changed, also run the configured-server smoke test when credentials are available:
 
 ```bash

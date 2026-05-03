@@ -44,6 +44,9 @@ jobs:
       - name: Run TypeScript compiler fallback
         run: npm run typecheck:tsc
 
+      - name: Verify registry signatures
+        run: npm run audit:signatures
+
       - name: Verify release metadata and package install
         run: npm run pack:verify
 

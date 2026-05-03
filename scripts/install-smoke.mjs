@@ -17,16 +17,15 @@ async function main() {
   try {
     await execFileAsync("npm", ["init", "-y"], { cwd: dir });
     await execFileAsync("npm", ["install", tarball, "--ignore-scripts"], { cwd: dir });
+    const packageJson = JSON.parse(await readFile(join(cwd, "package.json"), "utf8"));
+    const packagePath = String(packageJson.name).split("/");
     const installed = JSON.parse(
-      await readFile(join(dir, "node_modules", "@luxus", "pi-hindsight", "package.json"), "utf8"),
+      await readFile(join(dir, "node_modules", ...packagePath, "package.json"), "utf8"),
     );
     if (!installed.pi?.extensions?.includes("./extensions")) {
       throw new Error("installed package missing pi.extensions entry");
     }
-    await readFile(
-      join(dir, "node_modules", "@luxus", "pi-hindsight", "extensions", "index.ts"),
-      "utf8",
-    );
+    await readFile(join(dir, "node_modules", ...packagePath, "extensions", "index.ts"), "utf8");
     console.log(JSON.stringify({ ok: true, package: installed.name, version: installed.version }));
   } finally {
     await rm(tarball, { force: true });

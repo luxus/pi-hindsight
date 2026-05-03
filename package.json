@@ -1,5 +1,5 @@
 {
-  "name": "@luxus/pi-hindsight",
+  "name": "@luxusai/pi-hindsight",
   "version": "0.1.0",
   "description": "Pi extension for durable Hindsight-backed long-term memory.",
   "keywords": [
@@ -41,7 +41,7 @@
     "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\"",
     "check": "npm run format && npm run lint && npm run typecheck && npm test",
     "check:ci": "npm run check && npm run check:coverage",
-    "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run pack:verify && npm run smoke:hindsight",
+    "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run audit:signatures && npm run pack:verify && npm run smoke:hindsight",
     "install-hooks": "node scripts/install-hooks.mjs",
     "prepare": "npm run install-hooks",
     "precommit": "npm run check",
@@ -52,24 +52,25 @@
     "test:coverage": "vitest run --coverage",
     "check:coverage": "npm run test:coverage",
     "pack:verify": "npm run release:verify && npm pack --dry-run && node scripts/install-smoke.mjs",
+    "audit:signatures": "npm audit signatures",
     "release:verify": "node scripts/verify-release.mjs"
   },
   "dependencies": {
-    "@vectorize-io/hindsight-client": "^0.5.4",
+    "@vectorize-io/hindsight-client": "^0.5.6",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.3",
     "@mariozechner/pi-coding-agent": "0.72.1",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "7.0.0-dev.20260426.1",
     "@vitest/coverage-v8": "^3.2.4",
-    "oxfmt": "^0.46.0",
+    "oxfmt": "^0.47.0",
     "oxlint": "^1.61.0",
     "oxlint-tsgolint": "^0.22.0",
     "tsx": "4.21.0",
-    "typebox": "1.1.33",
+    "typebox": "1.1.37",
     "typescript": "^6.0.3",
     "vitest": "^3.1.2"
   },
