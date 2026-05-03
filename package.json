@@ -37,10 +37,10 @@
     "typecheck:tsc": "tsc --noEmit",
     "lint": "oxlint --type-aware --type-check extensions tests",
     "lint:fix": "oxlint --type-aware --type-check --fix extensions tests",
-    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
-    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
+    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
+    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
     "check": "npm run format && npm run lint && npm run typecheck && npm test",
-    "check:ci": "npm run check",
+    "check:ci": "npm run check && npm run check:coverage",
     "check:release": "npm run check && npm run typecheck:tsc && npm run smoke:hindsight",
     "install-hooks": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "prepare": "npm run install-hooks",
@@ -48,7 +48,9 @@
     "test": "vitest run",
     "smoke:hindsight": "node scripts/smoke-hindsight.mjs",
     "changelog": "node scripts/generate-changelog.mjs",
-    "version": "npm run changelog && npm run format:fix && git add CHANGELOG.md"
+    "version": "npm run changelog && npm run format:fix && git add CHANGELOG.md",
+    "test:coverage": "vitest run --coverage",
+    "check:coverage": "npm run test:coverage"
   },
   "dependencies": {
     "@vectorize-io/hindsight-client": "^0.5.4",
@@ -60,6 +62,7 @@
     "@mariozechner/pi-coding-agent": "0.70.2",
     "@types/node": "^22.15.3",
     "@typescript/native-preview": "7.0.0-dev.20260426.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "oxfmt": "^0.46.0",
     "oxlint": "^1.61.0",
     "oxlint-tsgolint": "^0.22.0",

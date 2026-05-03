@@ -202,6 +202,7 @@ Before merging or considering a task done, run:
 
 ```bash
 npm run check
+npm run check:coverage
 npm run typecheck:tsc
 ```
 

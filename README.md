@@ -430,6 +430,8 @@ Pi window notifications are configurable under `notifications`. Startup bank sel
 
 ## Debug and smoke tests
 
+Critical-path coverage thresholds are configured in `vitest.config.ts` for queue, config, lifecycle, and transport modules. Run them with `npm run check:coverage`; CI runs this after the normal fast check.
+
 Use `/hindsight` inside Pi to inspect what the extension believes. The TUI status view includes memory health, selected banks, recent explicit retain receipts, retain queue path, import status, and key configuration state. Advanced one-off diagnostics remain available through tests and explicit tools rather than separate status/debug/doctor commands.
 
 Run the local smoke test against a real Hindsight server:
@@ -493,7 +495,7 @@ The `version` script also regenerates and stages `CHANGELOG.md` during `npm vers
 Before publishing or tagging a release:
 
 1. Ensure `main` is synced.
-2. Run `npm run check` and `npm run typecheck:tsc`.
+2. Run `npm run check`, `npm run check:coverage`, and `npm run typecheck:tsc`.
 3. Run `npm run smoke:hindsight` locally when a configured server is available, or check the `Hindsight Integration` workflow result.
 4. Run `npm run changelog` after final Conventional Commits.
 5. Use `npm version <patch|minor|major>` so the version script stages the regenerated changelog.
