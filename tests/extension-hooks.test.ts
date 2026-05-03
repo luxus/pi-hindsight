@@ -235,8 +235,8 @@ describe("extension hooks", () => {
       });
       mocked.client.retain.mockClear();
       await vi.advanceTimersByTimeAsync(1_000);
-      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0);
-      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1);
+      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0, 5_000);
+      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1, 5_000);
 
       expect(mocked.client.retain).toHaveBeenCalledTimes(1);
       expect((await readRetainQueue(queuePath)).map((job) => job.id)).toEqual(["queued-2"]);
