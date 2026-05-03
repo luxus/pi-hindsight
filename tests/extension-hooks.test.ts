@@ -192,7 +192,7 @@ describe("extension hooks", () => {
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
         hindsight: { baseUrl: "http://unused.test" },
-        retain: { flushIntervalMs: 10, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
+        retain: { flushIntervalMs: 100, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
       }),
     );
     const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
