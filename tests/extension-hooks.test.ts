@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,13 +50,24 @@ vi.mock("../extensions/bank-operations.js", () => ({
 }));
 
 describe("extension hooks", () => {
+  const originalHome = process.env.HOME;
+
   beforeEach(() => {
+    process.env.HOME = mkdtempSync(join(tmpdir(), "pi-hindsight-home-"));
     vi.useRealTimers();
     vi.clearAllMocks();
     mocked.client.recall.mockImplementation(async (..._args: unknown[]) => ({
       results: [{ text: "repo-specific remembered fact" }],
     }));
     mocked.client.retain.mockImplementation(async (..._args: unknown[]) => undefined);
+  });
+
+  afterEach(() => {
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
   });
 
   it("marks startup status connected after bank ensure succeeds", async () => {

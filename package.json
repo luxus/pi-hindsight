@@ -61,8 +61,8 @@
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.0",
-    "@mariozechner/pi-coding-agent": "0.70.2",
-    "@types/node": "^22.15.3",
+    "@mariozechner/pi-coding-agent": "0.72.1",
+    "@types/node": "^24.12.2",
     "@typescript/native-preview": "7.0.0-dev.20260426.1",
     "@vitest/coverage-v8": "^3.2.4",
     "oxfmt": "^0.46.0",
@@ -74,12 +74,12 @@
     "vitest": "^3.1.2"
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": ">=0.70.2 <0.71.0",
-    "typebox": ">=1.0.55 <2"
+    "@mariozechner/pi-coding-agent": ">=0.72.1 <0.73.0",
+    "typebox": ">=1.1.24 <2"
   },
   "engines": {
-    "node": ">=22 <25",
-    "npm": ">=10 <12"
+    "node": ">=24 <25",
+    "npm": ">=11 <12"
   },
   "pi": {
     "extensions": [

@@ -10,10 +10,10 @@ The extension is heavily inspired by [`noctuid/pi-hindsight`](https://github.com
 
 Supported runtime and package ranges are declared in `package.json` and enforced in CI with `npm ci --engine-strict`.
 
-- Node.js: `>=22 <25`
-- npm: `>=10 <12`
-- Pi peer package: `@mariozechner/pi-coding-agent >=0.70.2 <0.71.0`
-- TypeBox peer package: `typebox >=1.0.55 <2`
+- Node.js: `>=24 <25`
+- npm: `>=11 <12`
+- Pi peer package: `@mariozechner/pi-coding-agent >=0.72.1 <0.73.0`
+- TypeBox peer package: `typebox >=1.1.24 <2`
 
 Development dependencies pin the tested Pi package and native TypeScript preview build so local checks and CI resolve the same compatibility baseline.
 
