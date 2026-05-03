@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import {
   enqueueRetainJob,
   flushRetainQueue,
@@ -36,11 +37,14 @@ const job: RetainJob = {
   retries: 0,
 };
 
+const require = createRequire(import.meta.url);
+const viteNodeBin = require.resolve("vite-node/vite-node.mjs");
+
 function runWorker(mode: string, path: string, id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(
-      "node_modules/.bin/vite-node",
-      ["tests/fixtures/queue-worker.mjs", mode, path, id],
+      process.execPath,
+      [viteNodeBin, "tests/fixtures/queue-worker.mjs", mode, path, id],
       {
         cwd: process.cwd(),
         stdio: ["ignore", "pipe", "pipe"],

@@ -227,10 +227,8 @@ describe("hindsight commands", () => {
 
     await commands.get("hindsight:last-recall")?.handler(["--json"], ctx);
 
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining(`"path": "${join(cwd, ".pi", "hindsight", "last-recall.json")}"`),
-      "info",
-    );
+    const json = JSON.parse(ctx.ui.notify.mock.calls[0]?.[0]);
+    expect(json.path).toBe(join(cwd, ".pi", "hindsight", "last-recall.json"));
   });
 
   it("refuses to prune explicit active session transcript", async () => {

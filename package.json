@@ -42,7 +42,7 @@
     "check": "npm run format && npm run lint && npm run typecheck && npm test",
     "check:ci": "npm run check && npm run check:coverage",
     "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run pack:verify && npm run smoke:hindsight",
-    "install-hooks": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
+    "install-hooks": "node scripts/install-hooks.mjs",
     "prepare": "npm run install-hooks",
     "precommit": "npm run check",
     "test": "vitest run",

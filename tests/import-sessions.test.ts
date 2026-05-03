@@ -156,7 +156,8 @@ describe("Pi session import", () => {
     expect(calls[0]?.[1]).not.toContain("<hindsight_memories>");
     expect(calls[0]?.[1]).not.toContain("custom recall");
     expect(calls[0]?.[1]).toContain(parentSessionId);
-    expect(calls[0]?.[1]).toContain(parentSessionFile);
+    const retainedContent = calls[0]?.[1] as string;
+    expect(JSON.parse(retainedContent).parentSessionFile).toBe(parentSessionFile);
     expect(calls[0]?.[2]).toMatchObject({
       updateMode: "replace",
       documentId: result.documentId,

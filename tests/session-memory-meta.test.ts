@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import {
   addSessionMemoryTag,
   clearNextSessionRetainMode,
@@ -145,6 +145,6 @@ describe("session memory metadata", () => {
     await removeSessionMemoryTag(cwd, undefined, "domain:test");
     meta = await readSessionMemoryMeta(cwd);
     expect(meta.tags).toEqual([]);
-    expect(sessionMetaPath(cwd)).toContain(".pi/hindsight/session-meta/");
+    expect(sessionMetaPath(cwd)).toContain([".pi", "hindsight", "session-meta", ""].join(sep));
   });
 });
