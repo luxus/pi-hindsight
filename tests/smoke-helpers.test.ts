@@ -12,7 +12,7 @@ import {
   smokeConfig,
   smokeMarker,
   writeGitHubSummary,
-} from "../scripts/smoke-helpers.mjs";
+} from "../scripts/smoke-helpers.js";
 
 describe("smoke helpers", () => {
   it("normalizes empty env values", () => {
