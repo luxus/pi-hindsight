@@ -50,6 +50,14 @@ Keep each PR focused on one vertical slice. A good PR has:
 
 Avoid combining architecture changes, product behavior, and release automation in the same PR unless they are inseparable.
 
+## Work tracking
+
+GitHub Issues are the project task ledger for backlog items, current work, blockers, decisions, and follow-ups. Use the `gh` CLI from this repository to create, read, comment on, label, assign, and close issues.
+
+Do not rely on local scratch files, private harness TODOs, chat-only plans, or hidden task lists as the source of truth for project work. If a change needs tracking, create or update a GitHub issue before continuing. If a report or review produces useful work, move the accepted items into GitHub issues and remove or archive the scratch report once the issues carry the actionable content.
+
+Every PR should reference the issue it advances. If a follow-up remains, add it as an issue or as a comment on the existing issue rather than leaving it only in a local note.
+
 ## Memory invariants
 
 Every code change must preserve these rules:
@@ -128,6 +136,7 @@ A change is done only when:
 Before opening or marking a PR ready:
 
 - [ ] I used project terms from `CONTEXT.md`.
+- [ ] I linked or updated the relevant GitHub issue, including follow-ups or blockers.
 - [ ] I kept the diff focused.
 - [ ] I preserved Retain, Recall, Reflect, bank isolation, queue-first, and redaction invariants.
 - [ ] I added or updated tests for meaningful behavior.

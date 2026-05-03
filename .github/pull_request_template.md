@@ -2,6 +2,10 @@
 
 -
 
+## Issue
+
+- Closes/updates #
+
 ## Change type
 
 - [ ] feat
@@ -34,4 +38,4 @@
 
 ## Notes
 
-Mention any ADR conflicts, skipped checks, live-smoke limitations, or follow-up issues.
+Mention any ADR conflicts, skipped checks, live-smoke limitations, or follow-up issues. Track follow-ups in GitHub Issues, not hidden local TODOs.

@@ -59,6 +59,12 @@ Or install the checkout path:
 pi install /path/to/pi-hindsight
 ```
 
+## Work tracking
+
+Use GitHub Issues as the project task ledger. Backlog items, current work, blockers, decisions, and follow-ups should be visible in issues or issue comments. Do not rely on local scratch files, chat-only plans, or private harness TODOs as the source of truth for project work.
+
+When a report or review creates actionable work, turn accepted items into issues and remove or archive the scratch file after the issues carry the work.
+
 ## Coverage gates
 
 Critical-path coverage thresholds are configured in `vitest.config.ts` for:

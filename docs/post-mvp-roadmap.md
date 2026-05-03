@@ -1,6 +1,6 @@
 # Post-MVP Roadmap
 
-This roadmap starts after the MVP hardening pass in `docs/pr-roadmap.md`. The goal is to keep Pi Hindsight simple and Hindsight-correct while improving inspectability and user control.
+This roadmap records the completed post-MVP hardening pass after `docs/pr-roadmap.md`. Current and future work lives in GitHub Issues; treat this file as historical context, not the task ledger.
 
 ## Product rule
 
@@ -184,7 +184,7 @@ npm run format
 
 **Acceptance criteria:**
 
-- Findings are recorded in an issue or review document.
+- Findings are recorded in a GitHub issue or issue comment.
 - Every accepted finding has either a fix, test, doc update, or explicit no-action decision.
 - The loop stops only when remaining findings are deferred/non-blocking.
 

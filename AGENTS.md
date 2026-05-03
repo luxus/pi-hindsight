@@ -33,6 +33,12 @@ The extension must be:
 
 Human and agent guidance must stay aligned. When changing source-of-truth order, contributor workflow, verification expectations, memory policy, or definition-of-done criteria, update `CONTRIBUTING.md` and this file together. `CONTEXT.md` is the shared vocabulary for both human-facing and agent-facing docs.
 
+### Work tracking
+
+GitHub Issues are the project task ledger. Use `gh` for backlog items, roadmap slices, current multi-step work, blockers, follow-ups, and done/close updates. Do not use harness-private or local hidden TODO systems as the source of truth for project work. If work needs tracking, create or update a GitHub issue before continuing.
+
+When starting from a report, review, plan, or research note, convert accepted work into GitHub issues and delete or archive the scratch note after the issues carry the actionable content. When finishing work, update or close the relevant issue with the verification performed and any follow-up issue numbers.
+
 ## Hard rules
 
 ### Retain rules
