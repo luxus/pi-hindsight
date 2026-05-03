@@ -214,7 +214,7 @@ For local development, install a checkout path instead:
 pi install /path/to/pi-hindsight
 ```
 
-Planned npm package name: `@luxus/pi-hindsight`.
+Npm package name: `@luxusai/pi-hindsight`.
 
 ## Configuration
 

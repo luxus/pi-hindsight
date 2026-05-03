@@ -1,5 +1,5 @@
 {
-  "name": "@luxus/pi-hindsight",
+  "name": "@luxusai/pi-hindsight",
   "version": "0.1.0",
   "description": "Pi extension for durable Hindsight-backed long-term memory.",
   "keywords": [
