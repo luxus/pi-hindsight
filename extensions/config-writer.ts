@@ -88,6 +88,8 @@ export interface ProjectConfigPatchInput {
   recallEnabled?: boolean;
   recallBudget?: "low" | "mid" | "high";
   recallMaxTokens?: number;
+  recallStoreLast?: boolean;
+  recallStoreFailures?: boolean;
   retainEnabled?: boolean;
   retainAsync?: boolean;
   retainUpdateMode?: "append" | "replace";
@@ -181,12 +183,18 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   if (
     input.recallEnabled !== undefined ||
     input.recallBudget ||
-    input.recallMaxTokens !== undefined
+    input.recallMaxTokens !== undefined ||
+    input.recallStoreLast !== undefined ||
+    input.recallStoreFailures !== undefined
   ) {
     patch.recall = {
       ...(input.recallEnabled !== undefined ? { enabled: input.recallEnabled } : {}),
       ...(input.recallBudget ? { budget: input.recallBudget } : {}),
       ...(input.recallMaxTokens !== undefined ? { maxTokens: input.recallMaxTokens } : {}),
+      ...(input.recallStoreLast !== undefined ? { storeLastRecall: input.recallStoreLast } : {}),
+      ...(input.recallStoreFailures !== undefined
+        ? { storeLastRecallFailures: input.recallStoreFailures }
+        : {}),
     };
   }
   if (

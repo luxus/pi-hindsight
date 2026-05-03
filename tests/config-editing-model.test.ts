@@ -63,6 +63,10 @@ describe("config editing model", () => {
       "project",
       "global",
     ]);
+    expect(fields.find((field) => field.id === "recallStoreFailures")?.editableScopes).toEqual([
+      "project",
+      "global",
+    ]);
     expect(fields.find((field) => field.id === "statusStyle")?.editableScopes).toEqual([
       "project",
       "global",
@@ -98,6 +102,11 @@ describe("config editing model", () => {
       advanced: true,
       value: "explicit-only",
     });
+    expect(fields.find((field) => field.id === "recallStoreFailures")).toMatchObject({
+      kind: "boolean",
+      advanced: true,
+      value: "disabled",
+    });
   });
 
   it("hides advanced fields unless advanced mode is enabled", () => {
@@ -107,9 +116,17 @@ describe("config editing model", () => {
     const advancedBanks = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers(), [], {
       showAdvanced: true,
     }).find((tab) => tab.id === "Banks");
+    const basicRecall = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers()).find(
+      (tab) => tab.id === "Recall",
+    );
+    const advancedRecall = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers(), [], {
+      showAdvanced: true,
+    }).find((tab) => tab.id === "Recall");
 
     expect(basicBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
     expect(advancedBanks?.fields.map((field) => field.id)).toContain("projectRetainMission");
+    expect(basicRecall?.fields.map((field) => field.id)).not.toContain("recallStoreFailures");
+    expect(advancedRecall?.fields.map((field) => field.id)).toContain("recallStoreFailures");
   });
 
   it("shows built-in mission text in mission field details", () => {

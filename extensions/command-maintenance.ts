@@ -34,8 +34,12 @@ export function maintenanceCommandOperations(operations: Operations): CommandOpe
               (count, block) => count + block.memoryCount,
               0,
             );
+            const failures = result.snapshot.failures ?? [];
             const banks = result.snapshot.blocks
               .map((block) => `${block.bankId}:${block.memoryCount}`)
+              .join(", ");
+            const failedBanks = failures
+              .map((failure) => `${failure.bankId}:${failure.error}`)
               .join(", ");
             const query = compactText(result.snapshot.query, 180);
             if (argsList.includes("--json")) {
@@ -46,7 +50,7 @@ export function maintenanceCommandOperations(operations: Operations): CommandOpe
               return;
             }
             ctx.ui.notify(
-              `Hindsight last recall ${result.snapshot.createdAt}; memories=${memoryCount}; banks=${banks || "none"}; query=${query}; path=${result.path}; visibility-only, not provider cache`,
+              `Hindsight last recall ${result.snapshot.createdAt}; memories=${memoryCount}; banks=${banks || "none"}; failed=${result.snapshot.failed ?? failures.length}; failures=${failedBanks || "none"}; query=${query}; path=${result.path}; visibility-only, not provider cache`,
               "info",
             );
           } catch (error) {

@@ -3,6 +3,7 @@ import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type {
   HindsightLikeClient,
   RecallBlock,
+  RecallFailure,
   RecallResultItem,
   RecallRole,
   ResolvedConfig,
@@ -10,6 +11,7 @@ import type {
 } from "./types.js";
 import { projectMessageText } from "./messages.js";
 import { createMemoryIdentity } from "./memory-identity.js";
+import { redactError } from "./sanitize.js";
 
 export interface RecallScope {
   kind?: "project" | "global";
@@ -160,9 +162,14 @@ export async function recallForContext(args: {
   scopes: RecallScope[];
   messages: AgentMessage[];
   cwd?: string;
-}): Promise<{ rendered: string; blocks: RecallBlock[]; failed: number }> {
+}): Promise<{
+  rendered: string;
+  blocks: RecallBlock[];
+  failed: number;
+  failures: RecallFailure[];
+}> {
   const blocks: RecallBlock[] = [];
-  let failed = 0;
+  const failures: RecallFailure[] = [];
   for (const scope of args.scopes) {
     const query = composeRecallQuery(args.messages, {
       roles: args.config.recall.roles,
@@ -194,10 +201,22 @@ export async function recallForContext(args: {
         memoryCount: results.length,
         rendered: "",
       });
-    } catch {
-      failed += 1;
+    } catch (error) {
+      failures.push({
+        bankId: scope.bankId,
+        query,
+        error: redactError(error),
+        ...(scope.kind ? { kind: scope.kind } : {}),
+        ...(scope.tags ? { tags: scope.tags } : {}),
+        ...(scope.tagsMatch ? { tagsMatch: scope.tagsMatch } : {}),
+      });
     }
   }
   const rendered = renderRecallBlocks(blocks, args.config.recall.topK);
-  return { rendered, blocks: blocks.map((block) => ({ ...block, rendered })), failed };
+  return {
+    rendered,
+    blocks: blocks.map((block) => ({ ...block, rendered })),
+    failed: failures.length,
+    failures,
+  };
 }

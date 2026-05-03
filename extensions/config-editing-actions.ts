@@ -59,6 +59,10 @@ export function patchForConfigEditingField(
       return { recallBudget: value as "low" | "mid" | "high" };
     case "recallMaxTokens":
       return { recallMaxTokens: Number(value) };
+    case "recallStoreLast":
+      return { recallStoreLast: value === "Enable" };
+    case "recallStoreFailures":
+      return { recallStoreFailures: value === "Enable" };
     case "retainEnabled":
       return { retainEnabled: value === "Enable" };
     case "retainAsync":

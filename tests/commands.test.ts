@@ -190,7 +190,7 @@ describe("hindsight commands", () => {
     await commands.get("hindsight:last-recall")?.handler([], ctx);
 
     expect(ctx.ui.notify).toHaveBeenCalledWith(
-      `Hindsight last recall 2026-04-27T00:00:00.000Z; memories=2; banks=bank:2; query=user: q; path=${join(cwd, ".pi", "hindsight", "last-recall.json")}; visibility-only, not provider cache`,
+      `Hindsight last recall 2026-04-27T00:00:00.000Z; memories=2; banks=bank:2; failed=0; failures=none; query=user: q; path=${join(cwd, ".pi", "hindsight", "last-recall.json")}; visibility-only, not provider cache`,
       "info",
     );
   });

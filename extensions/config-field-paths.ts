@@ -18,6 +18,8 @@ export type FieldId =
   | "recallEnabled"
   | "recallBudget"
   | "recallMaxTokens"
+  | "recallStoreLast"
+  | "recallStoreFailures"
   | "retainEnabled"
   | "retainAsync"
   | "queuePath"
@@ -54,6 +56,8 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   recallEnabled: ["recall", "enabled"],
   recallBudget: ["recall", "budget"],
   recallMaxTokens: ["recall", "maxTokens"],
+  recallStoreLast: ["recall", "storeLastRecall"],
+  recallStoreFailures: ["recall", "storeLastRecallFailures"],
   retainEnabled: ["retain", "enabled"],
   retainAsync: ["retain", "async"],
   queuePath: ["retain", "queuePath"],
@@ -111,6 +115,8 @@ export const CONFIG_RESET_PATHS = {
   "recall.enabled": [["recall", "enabled"]],
   "recall.budget": [["recall", "budget"]],
   "recall.maxTokens": [["recall", "maxTokens"]],
+  "recall.storeLastRecall": [["recall", "storeLastRecall"]],
+  "recall.storeLastRecallFailures": [["recall", "storeLastRecallFailures"]],
   "retain.enabled": [["retain", "enabled"]],
   "retain.async": [["retain", "async"]],
   "retain.queuePath": [["retain", "queuePath"]],
@@ -150,6 +156,8 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   recallEnabled: "recall.enabled",
   recallBudget: "recall.budget",
   recallMaxTokens: "recall.maxTokens",
+  recallStoreLast: "recall.storeLastRecall",
+  recallStoreFailures: "recall.storeLastRecallFailures",
   retainEnabled: "retain.enabled",
   retainAsync: "retain.async",
   queuePath: "retain.queuePath",

@@ -575,6 +575,87 @@ describe("extension hooks", () => {
     );
   });
 
+  it("writes opt-in last recall failure details to sidecar", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        banks: { global: { enabled: false } },
+        recall: { storeLastRecall: true, storeLastRecallFailures: true },
+      }),
+    );
+    mocked.client.recall.mockRejectedValue(new Error("Bearer secret-token failed"));
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    const result = await handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "Why no memory?", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(result).toBeUndefined();
+    const snapshotPath = join(cwd, ".pi", "hindsight", "last-recall.json");
+    expect(existsSync(snapshotPath)).toBe(true);
+    const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8")) as Record<string, any>;
+    expect(snapshot.failed).toBe(1);
+    expect(snapshot.failures[0].bankId).toMatch(/^pi-project-/);
+    expect(snapshot.failures[0].query).toContain("Why no memory?");
+    expect(snapshot.failures[0].error).not.toContain("secret-token");
+  });
+
+  it("does not write all-failed last recall snapshot unless failure debug is enabled", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        banks: { global: { enabled: false } },
+        recall: { storeLastRecall: true },
+      }),
+    );
+    mocked.client.recall.mockRejectedValue(new Error("server unavailable"));
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    await handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "Why no memory?", timestamp: 1 }] },
+      ctx,
+    );
+
+    expect(existsSync(join(cwd, ".pi", "hindsight", "last-recall.json"))).toBe(false);
+  });
+
   it("does not write last recall snapshot by default", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));

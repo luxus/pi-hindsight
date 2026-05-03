@@ -336,6 +336,28 @@ export function buildBaseConfigEditingFields(
       resetKey: "recall.maxTokens",
     }),
     booleanField({
+      id: "recallStoreLast",
+      tab: "Recall",
+      label: "Store last recall snapshot",
+      description:
+        "Advanced. Writes the latest successful recall snapshot to a local sidecar for /hindsight:last-recall.",
+      value: config.recall.storeLastRecall,
+      defaultValue: defaults.recall.storeLastRecall,
+      resetKey: "recall.storeLastRecall",
+      advanced: true,
+    }),
+    booleanField({
+      id: "recallStoreFailures",
+      tab: "Recall",
+      label: "Store recall failures",
+      description:
+        "Advanced. Also records redacted failed recall attempts in the last-recall sidecar. Requires storing last recall snapshots.",
+      value: config.recall.storeLastRecallFailures,
+      defaultValue: defaults.recall.storeLastRecallFailures,
+      resetKey: "recall.storeLastRecallFailures",
+      advanced: true,
+    }),
+    booleanField({
       id: "retainEnabled",
       tab: "Retain",
       label: "Automatic retain",

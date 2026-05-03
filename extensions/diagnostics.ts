@@ -221,6 +221,7 @@ export function formatDebugReport(args: DebugReportArgs): string {
         includeDateInQuery: args.config.recall.includeDateInQuery,
         includeRepoHintsInQuery: args.config.recall.includeRepoHintsInQuery,
         storeLastRecall: args.config.recall.storeLastRecall,
+        storeLastRecallFailures: args.config.recall.storeLastRecallFailures,
         lastRecallPath: args.config.recall.lastRecallPath,
         topK: args.config.recall.topK,
         timeoutMs: args.config.recall.timeoutMs,

@@ -208,6 +208,7 @@ describe("resolveConfig", () => {
           includeDateInQuery: "yes",
           includeRepoHintsInQuery: "yes",
           storeLastRecall: "yes",
+          storeLastRecallFailures: "yes",
           lastRecallPath: "",
           topK: -1,
           timeoutMs: 0,
@@ -253,6 +254,7 @@ describe("resolveConfig", () => {
     expect(config.recall.includeDateInQuery).toBe(false);
     expect(config.recall.includeRepoHintsInQuery).toBe(true);
     expect(config.recall.storeLastRecall).toBe(false);
+    expect(config.recall.storeLastRecallFailures).toBe(false);
     expect(config.recall.lastRecallPath).toBe(".pi/hindsight/last-recall.json");
     expect(config.recall.topK).toBe(8);
     expect(config.recall.timeoutMs).toBe(10_000);

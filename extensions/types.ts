@@ -46,6 +46,7 @@ export interface ResolvedConfig {
     includeDateInQuery: boolean;
     includeRepoHintsInQuery: boolean;
     storeLastRecall: boolean;
+    storeLastRecallFailures: boolean;
     lastRecallPath: string;
     topK: number;
     timeoutMs: number;
@@ -118,6 +119,15 @@ export interface RecallResultItem {
   tags?: string[];
   metadata?: Record<string, string>;
   occurred_start?: string | null;
+}
+
+export interface RecallFailure {
+  bankId: string;
+  query: string;
+  error: string;
+  kind?: "project" | "global";
+  tags?: string[];
+  tagsMatch?: TagsMatch;
 }
 
 export interface RecallBlock {

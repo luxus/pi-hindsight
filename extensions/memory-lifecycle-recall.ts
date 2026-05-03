@@ -72,7 +72,7 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
 
       try {
         deps.setMemoryStatus(runtime, "recalling");
-        const { rendered, blocks, failed } = await recallForContext({
+        const { rendered, blocks, failed, failures } = await recallForContext({
           client: deps.getClient(),
           config,
           scopes,
@@ -96,12 +96,17 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
             failed > 0 && memoryCount === 0 ? "warning" : "info",
           );
         }
-        if (config.recall.storeLastRecall && (rendered || failed === 0)) {
+        if (
+          config.recall.storeLastRecall &&
+          (rendered || failed === 0 || config.recall.storeLastRecallFailures)
+        ) {
           try {
             await writeLastRecallSnapshot(runtime.cwd, config.recall.lastRecallPath, {
-              query: blocks[0]?.query ?? "",
+              query: blocks[0]?.query ?? failures[0]?.query ?? "",
               rendered,
               blocks,
+              failed,
+              ...(failures.length ? { failures } : {}),
             });
           } catch (error) {
             deps.notify(

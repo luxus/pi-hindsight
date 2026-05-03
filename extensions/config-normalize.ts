@@ -191,6 +191,10 @@ export function normalizeConfig(
         DEFAULT_CONFIG.recall.includeRepoHintsInQuery,
       ),
       storeLastRecall: bool(config.recall?.storeLastRecall, DEFAULT_CONFIG.recall.storeLastRecall),
+      storeLastRecallFailures: bool(
+        config.recall?.storeLastRecallFailures,
+        DEFAULT_CONFIG.recall.storeLastRecallFailures,
+      ),
       lastRecallPath:
         typeof config.recall?.lastRecallPath === "string" && config.recall.lastRecallPath.trim()
           ? config.recall.lastRecallPath

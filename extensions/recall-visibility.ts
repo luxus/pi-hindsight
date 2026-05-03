@@ -1,12 +1,14 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
-import type { RecallBlock } from "./types.js";
+import type { RecallBlock, RecallFailure } from "./types.js";
 
 export interface LastRecallSnapshot {
   createdAt: string;
   query: string;
   rendered: string;
   blocks: RecallBlock[];
+  failed?: number;
+  failures?: RecallFailure[];
 }
 
 export function resolveLastRecallPath(cwd: string, configuredPath: string): string {

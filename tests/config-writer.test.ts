@@ -72,6 +72,8 @@ describe("config writer", () => {
         apiKeyEnvVar: "HINDSIGHT_API_KEY",
         recallBudget: "mid",
         recallMaxTokens: 900,
+        recallStoreLast: true,
+        recallStoreFailures: true,
         retainAsync: false,
         importIncludeBranches: "all-leaves",
         importManifestPath: ".pi/custom-manifest.json",
@@ -87,7 +89,12 @@ describe("config writer", () => {
       }),
     ).toEqual({
       hindsight: { timeoutMs: 1234, apiKey: { source: "env", name: "HINDSIGHT_API_KEY" } },
-      recall: { budget: "mid", maxTokens: 900 },
+      recall: {
+        budget: "mid",
+        maxTokens: 900,
+        storeLastRecall: true,
+        storeLastRecallFailures: true,
+      },
       retain: { async: false },
       import: {
         includeBranches: "all-leaves",

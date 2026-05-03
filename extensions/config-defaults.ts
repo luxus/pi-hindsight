@@ -23,6 +23,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     includeDateInQuery: false,
     includeRepoHintsInQuery: true,
     storeLastRecall: false,
+    storeLastRecallFailures: false,
     lastRecallPath: ".pi/hindsight/last-recall.json",
     topK: 8,
     timeoutMs: 10_000,
