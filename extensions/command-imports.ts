@@ -1,5 +1,5 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import type { createMemoryOperations } from "./memory-operations.js";
+import type { createMemoryOperations } from "./memory-operation-service.js";
+import type { CommandOperation } from "./operation-catalog.js";
 import { completeFlags, firstNonFlagArg, sessionFile, argList } from "./command-utils.js";
 import { renderImportSessionMessage, renderProjectImportMessage } from "./import-presentation.js";
 
@@ -34,131 +34,145 @@ async function confirmImportWrite(
   return action === "Import";
 }
 
-export function registerImportCommands(pi: ExtensionAPI, operations: Operations): void {
-  pi.registerCommand("hindsight:import", {
-    description: "Import the current Pi session JSONL into Hindsight.",
-    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
-    handler: async (args, ctx) => {
-      const current = ctx.sessionManager.getSessionFile?.();
-      if (!current) {
-        ctx.ui.notify(
-          "No session file available; use hindsight_import tool with sessionFile.",
-          "warning",
-        );
-        return;
-      }
-      const options = importOptions(args);
-      ctx.ui.notify(importStartMessage("current session", options), "info");
-      if (!options.dryRun) {
-        const preview = await operations.importSession({
-          sessionFile: current,
-          cwd: ctx.cwd,
-          ...options,
-          dryRun: true,
-        });
-        if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview)))) {
-          ctx.ui.notify("Hindsight import cancelled.", "warning");
-          return;
-        }
-      }
-      const result = await operations.importSession({
-        sessionFile: current,
-        cwd: ctx.cwd,
-        ...options,
-      });
-      ctx.ui.notify(renderImportSessionMessage(result), "info");
+export function importCommandOperations(operations: Operations): CommandOperation[] {
+  return [
+    {
+      name: "hindsight:import",
+      spec: {
+        description: "Import the current Pi session JSONL into Hindsight.",
+        getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
+        handler: async (args, ctx) => {
+          const current = ctx.sessionManager.getSessionFile?.();
+          if (!current) {
+            ctx.ui.notify(
+              "No session file available; use hindsight_import tool with sessionFile.",
+              "warning",
+            );
+            return;
+          }
+          const options = importOptions(args);
+          ctx.ui.notify(importStartMessage("current session", options), "info");
+          if (!options.dryRun) {
+            const preview = await operations.importSession({
+              sessionFile: current,
+              cwd: ctx.cwd,
+              ...options,
+              dryRun: true,
+            });
+            if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview)))) {
+              ctx.ui.notify("Hindsight import cancelled.", "warning");
+              return;
+            }
+          }
+          const result = await operations.importSession({
+            sessionFile: current,
+            cwd: ctx.cwd,
+            ...options,
+          });
+          ctx.ui.notify(renderImportSessionMessage(result), "info");
+        },
+      },
     },
-  });
-
-  pi.registerCommand("hindsight:import-current", {
-    description: "Import the current Pi session JSONL into Hindsight.",
-    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
-    handler: async (args, ctx) => {
-      const current = sessionFile(ctx);
-      if (!current) {
-        ctx.ui.notify("No current session file available.", "warning");
-        return;
-      }
-      const options = importOptions(args);
-      ctx.ui.notify(importStartMessage("current session", options), "info");
-      if (!options.dryRun) {
-        const preview = await operations.importSession({
-          sessionFile: current,
-          cwd: ctx.cwd,
-          ...options,
-          dryRun: true,
-        });
-        if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, "current")))) {
-          ctx.ui.notify("Hindsight import cancelled.", "warning");
-          return;
-        }
-      }
-      const result = await operations.importSession({
-        sessionFile: current,
-        cwd: ctx.cwd,
-        ...options,
-      });
-      ctx.ui.notify(renderImportSessionMessage(result, "current"), "info");
+    {
+      name: "hindsight:import-current",
+      spec: {
+        description: "Import the current Pi session JSONL into Hindsight.",
+        getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
+        handler: async (args, ctx) => {
+          const current = sessionFile(ctx);
+          if (!current) {
+            ctx.ui.notify("No current session file available.", "warning");
+            return;
+          }
+          const options = importOptions(args);
+          ctx.ui.notify(importStartMessage("current session", options), "info");
+          if (!options.dryRun) {
+            const preview = await operations.importSession({
+              sessionFile: current,
+              cwd: ctx.cwd,
+              ...options,
+              dryRun: true,
+            });
+            if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, "current")))) {
+              ctx.ui.notify("Hindsight import cancelled.", "warning");
+              return;
+            }
+          }
+          const result = await operations.importSession({
+            sessionFile: current,
+            cwd: ctx.cwd,
+            ...options,
+          });
+          ctx.ui.notify(renderImportSessionMessage(result, "current"), "info");
+        },
+      },
     },
-  });
-
-  pi.registerCommand("hindsight:import-file", {
-    description: "Import an explicit Pi session JSONL file into Hindsight.",
-    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
-    handler: async (args, ctx) => {
-      const file = firstNonFlagArg(args);
-      if (!file) {
-        ctx.ui.notify("Usage: /hindsight:import-file <path> [--dry-run] [--all-leaves]", "warning");
-        return;
-      }
-      const options = importOptions(args);
-      ctx.ui.notify(importStartMessage("file", options), "info");
-      if (!options.dryRun) {
-        const preview = await operations.importSession({
-          sessionFile: file,
-          cwd: ctx.cwd,
-          ...options,
-          dryRun: true,
-        });
-        if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, { file })))) {
-          ctx.ui.notify("Hindsight import cancelled.", "warning");
-          return;
-        }
-      }
-      const result = await operations.importSession({
-        sessionFile: file,
-        cwd: ctx.cwd,
-        ...options,
-      });
-      ctx.ui.notify(renderImportSessionMessage(result, { file }), "info");
+    {
+      name: "hindsight:import-file",
+      spec: {
+        description: "Import an explicit Pi session JSONL file into Hindsight.",
+        getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
+        handler: async (args, ctx) => {
+          const file = firstNonFlagArg(args);
+          if (!file) {
+            ctx.ui.notify(
+              "Usage: /hindsight:import-file <path> [--dry-run] [--all-leaves]",
+              "warning",
+            );
+            return;
+          }
+          const options = importOptions(args);
+          ctx.ui.notify(importStartMessage("file", options), "info");
+          if (!options.dryRun) {
+            const preview = await operations.importSession({
+              sessionFile: file,
+              cwd: ctx.cwd,
+              ...options,
+              dryRun: true,
+            });
+            if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, { file })))) {
+              ctx.ui.notify("Hindsight import cancelled.", "warning");
+              return;
+            }
+          }
+          const result = await operations.importSession({
+            sessionFile: file,
+            cwd: ctx.cwd,
+            ...options,
+          });
+          ctx.ui.notify(renderImportSessionMessage(result, { file }), "info");
+        },
+      },
     },
-  });
-
-  pi.registerCommand("hindsight:import-project-sessions", {
-    description: "Import Pi session JSONL files scoped to the current repo/cwd.",
-    getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
-    handler: async (args, ctx) => {
-      const current = sessionFile(ctx);
-      const options = importOptions(args);
-      ctx.ui.notify(importStartMessage("project sessions", options), "info");
-      if (!options.dryRun) {
-        const preview = await operations.importProjectSessions({
-          cwd: ctx.cwd,
-          ...(current ? { currentSessionFile: current } : {}),
-          ...options,
-          dryRun: true,
-        });
-        if (!(await confirmImportWrite(ctx, renderProjectImportMessage(preview)))) {
-          ctx.ui.notify("Hindsight import cancelled.", "warning");
-          return;
-        }
-      }
-      const result = await operations.importProjectSessions({
-        cwd: ctx.cwd,
-        ...(current ? { currentSessionFile: current } : {}),
-        ...options,
-      });
-      ctx.ui.notify(renderProjectImportMessage(result), "info");
+    {
+      name: "hindsight:import-project-sessions",
+      spec: {
+        description: "Import Pi session JSONL files scoped to the current repo/cwd.",
+        getArgumentCompletions: (prefix) => completeFlags(prefix, ["--dry-run", "--all-leaves"]),
+        handler: async (args, ctx) => {
+          const current = sessionFile(ctx);
+          const options = importOptions(args);
+          ctx.ui.notify(importStartMessage("project sessions", options), "info");
+          if (!options.dryRun) {
+            const preview = await operations.importProjectSessions({
+              cwd: ctx.cwd,
+              ...(current ? { currentSessionFile: current } : {}),
+              ...options,
+              dryRun: true,
+            });
+            if (!(await confirmImportWrite(ctx, renderProjectImportMessage(preview)))) {
+              ctx.ui.notify("Hindsight import cancelled.", "warning");
+              return;
+            }
+          }
+          const result = await operations.importProjectSessions({
+            cwd: ctx.cwd,
+            ...(current ? { currentSessionFile: current } : {}),
+            ...options,
+          });
+          ctx.ui.notify(renderProjectImportMessage(result), "info");
+        },
+      },
     },
-  });
+  ];
 }

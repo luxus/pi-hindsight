@@ -89,7 +89,7 @@ Use:
 - `extensions/` directory
 - one main entrypoint: `extensions/index.ts`
 - `memory-lifecycle.ts` for one-turn hook policy
-- `memory-operations.ts` for shared tool/command/setup intents
+- `memory-operation-service.ts` for shared tool/command/setup intents
 - `memory-identity.ts` and `memory-scope.ts` for repo/session/bank/document/tag policy
 - `retain-cursor.ts` for persisted duplicate-retain prevention
 - focused modules for config, config writing, client transport, bank operations, recall formatting, retain job building, queue durability, import parsing/branches/retain orchestration, tools, commands, diagnostics, status, and setup TUI

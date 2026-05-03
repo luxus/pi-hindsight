@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
-import { createMemoryOperations } from "../extensions/memory-operations.js";
+import { createMemoryOperations } from "../extensions/memory-operation-service.js";
 import {
   flushRetainQueue,
   readDeadLetterQueue,

@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
-import { createMemoryOperations } from "../extensions/memory-operations.js";
+import { createMemoryOperations } from "../extensions/memory-operation-service.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
 
 function client(): HindsightLikeClient {

@@ -1,4 +1,4 @@
-import type { MemoryOperations } from "./memory-operations.js";
+import type { MemoryOperations } from "./memory-operation-service.js";
 
 type ToolTextResponse<Details> = {
   content: Array<{ type: "text"; text: string }>;

@@ -18,7 +18,7 @@ import {
   type FieldId,
   type TabId,
 } from "./config-editing-model.js";
-import { createMemoryOperations, type MemoryOperationsDeps } from "./memory-operations.js";
+import { createMemoryOperations, type MemoryOperationsDeps } from "./memory-operation-service.js";
 import { type ConfigScope, type ProjectConfigPatchInput } from "./config-writer.js";
 import { collectStatusHealthFacts } from "./status-health.js";
 import { listRetainReceipts, type RetainReceipt } from "./retain-receipts.js";

@@ -1,4 +1,4 @@
-import type { ConfigureMemoryArgs, MemoryOperationsDeps } from "./memory-operation-types.js";
+import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 import { importMemoryProjectSessions, importMemorySession } from "./import-operations.js";
 import { createConfigOperations } from "./memory-config-operations.js";
 import { createDocumentOperations } from "./memory-document-operations.js";
