@@ -62,6 +62,14 @@ function runWorker(mode: string, path: string, id: string): Promise<void> {
   });
 }
 
+const stressCases = [0, 1, 2, 3, 4];
+
+async function createQueueWithJob(id = "1"): Promise<string> {
+  const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+  await enqueueRetainJob(path, { ...job, id });
+  return path;
+}
+
 describe("retain queue", () => {
   it("checks stale locks from owner acquiredAt instead of waiter age", () => {
     const now = Date.parse("2026-04-27T12:00:00.000Z");
@@ -168,27 +176,34 @@ describe("retain queue", () => {
     });
   });
 
-  it("quarantines malformed active lines and flushes valid queued jobs", async () => {
-    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
-    writeFileSync(path, `{not json}\nnull\n{"id":"wrong-shape"}\n${JSON.stringify(job)}\n`, "utf8");
-    const calls: unknown[] = [];
+  it.each(stressCases)(
+    "quarantines malformed active lines and flushes valid queued jobs under stress %#",
+    async (index) => {
+      const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+      writeFileSync(
+        path,
+        `{not json ${index}}\nnull\n{"id":"wrong-shape-${index}"}\n${JSON.stringify({ ...job, id: `valid-${index}` })}\n`,
+        "utf8",
+      );
+      const calls: unknown[] = [];
 
-    const result = await flushRetainQueue(path, {
-      retain: async (...args: unknown[]) => {
-        calls.push(args);
-      },
-      recall: async () => [],
-      reflect: async () => ({}),
-    });
+      const result = await flushRetainQueue(path, {
+        retain: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      });
 
-    expect(result).toMatchObject({ sent: 1, remaining: 0, deadLettered: 0, malformed: 3 });
-    expect(calls).toHaveLength(1);
-    expect(await readRetainQueue(path)).toHaveLength(0);
-    const malformed = readFileSync(resolveMalformedQueuePath(path), "utf8");
-    expect(malformed).toContain("{not json}");
-    expect(malformed).toContain("null");
-    expect(malformed).toContain("wrong-shape");
-  });
+      expect(result).toMatchObject({ sent: 1, remaining: 0, deadLettered: 0, malformed: 3 });
+      expect(calls).toHaveLength(1);
+      expect(await readRetainQueue(path)).toHaveLength(0);
+      const malformed = readFileSync(resolveMalformedQueuePath(path), "utf8");
+      expect(malformed).toContain(`{not json ${index}}`);
+      expect(malformed).toContain("null");
+      expect(malformed).toContain(`wrong-shape-${index}`);
+    },
+  );
 
   it("forwards queued observation scopes to retain", async () => {
     const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
@@ -231,28 +246,32 @@ describe("retain queue", () => {
     expect(await readRetainQueue(path)).toHaveLength(1);
   });
 
-  it("moves exhausted failed jobs to the dead-letter queue", async () => {
-    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
-    await enqueueRetainJob(path, job);
-    const result = await flushRetainQueue(
-      path,
-      {
-        retain: async () => {
-          throw new Error("down");
+  it.each(stressCases)(
+    "moves exhausted failed jobs to the dead-letter queue under stress %#",
+    async (index) => {
+      const path = await createQueueWithJob(`failed-${index}`);
+      const result = await flushRetainQueue(
+        path,
+        {
+          retain: async () => {
+            throw new Error(`down-${index}`);
+          },
+          recall: async () => [],
+          reflect: async () => ({}),
         },
-        recall: async () => [],
-        reflect: async () => ({}),
-      },
-      { maxRetries: 1 },
-    );
-    expect(result).toMatchObject({ sent: 0, remaining: 0, deadLettered: 1 });
-    expect(await readRetainQueue(path)).toHaveLength(0);
-    const dead = await readDeadLetterQueue(path);
-    expect(dead).toHaveLength(1);
-    expect(dead[0]?.retries).toBe(1);
-    expect(dead[0]?.lastError).toContain("moved to dead-letter queue");
-    expect(dead[0]?.deadLetteredAt).toBeDefined();
-  });
+        { maxRetries: 1 },
+      );
+      expect(result).toMatchObject({ sent: 0, remaining: 0, deadLettered: 1 });
+      expect(await readRetainQueue(path)).toHaveLength(0);
+      const dead = await readDeadLetterQueue(path);
+      expect(dead).toHaveLength(1);
+      expect(dead[0]?.id).toBe(`failed-${index}`);
+      expect(dead[0]?.retries).toBe(1);
+      expect(dead[0]?.lastError).toContain("moved to dead-letter queue");
+      expect(dead[0]?.lastError).toContain(`down-${index}`);
+      expect(dead[0]?.deadLetteredAt).toBeDefined();
+    },
+  );
 
   it("does not duplicate dead-letter jobs by id", async () => {
     const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
@@ -486,20 +505,23 @@ describe("retain queue", () => {
     }
   });
 
-  it("does not lose jobs when multiple processes enqueue concurrently", async () => {
-    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
-    await Promise.all(
-      Array.from({ length: 8 }, (_, index) => runWorker("enqueue", path, String(index))),
-    );
-    expect((await readRetainQueue(path)).map((item) => item.id).sort()).toEqual([
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-    ]);
-  });
+  it.each(stressCases)(
+    "does not lose jobs when multiple processes enqueue concurrently under stress %#",
+    async (run) => {
+      const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+      await Promise.all(
+        Array.from({ length: 8 }, (_, index) => runWorker("enqueue", path, `${run}-${index}`)),
+      );
+      expect((await readRetainQueue(path)).map((item) => item.id).sort()).toEqual([
+        `${run}-0`,
+        `${run}-1`,
+        `${run}-2`,
+        `${run}-3`,
+        `${run}-4`,
+        `${run}-5`,
+        `${run}-6`,
+        `${run}-7`,
+      ]);
+    },
+  );
 });
