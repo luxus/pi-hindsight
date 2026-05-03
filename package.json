@@ -55,7 +55,7 @@
     "release:verify": "node scripts/verify-release.mjs"
   },
   "dependencies": {
-    "@vectorize-io/hindsight-client": "^0.5.4",
+    "@vectorize-io/hindsight-client": "^0.5.6",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
