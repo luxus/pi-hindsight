@@ -12,6 +12,8 @@ export default defineConfig({
         "extensions/config*.ts",
         "extensions/memory-lifecycle*.ts",
         "extensions/client.ts",
+        "extensions/client-rest.ts",
+        "extensions/timeout.ts",
       ],
       thresholds: {
         statements: 60,
@@ -35,6 +37,18 @@ export default defineConfig({
           branches: 60,
           functions: 55,
           lines: 65,
+        },
+        "extensions/client-rest.ts": {
+          statements: 70,
+          branches: 65,
+          functions: 70,
+          lines: 70,
+        },
+        "extensions/timeout.ts": {
+          statements: 80,
+          branches: 75,
+          functions: 80,
+          lines: 80,
         },
       },
     },
