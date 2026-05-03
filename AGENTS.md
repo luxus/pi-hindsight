@@ -29,6 +29,10 @@ The extension must be:
 - Treat Pi’s documented extension lifecycle as source of truth
 - Do not invent undocumented Pi internals or undocumented Hindsight request shapes
 
+### Shared contributor guidance
+
+Human and agent guidance must stay aligned. When changing source-of-truth order, contributor workflow, verification expectations, memory policy, or definition-of-done criteria, update `CONTRIBUTING.md` and this file together. `CONTEXT.md` is the shared vocabulary for both human-facing and agent-facing docs.
+
 ## Hard rules
 
 ### Retain rules

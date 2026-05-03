@@ -28,6 +28,10 @@
 - [ ] `npm run pack:verify` (release/package changes)
 - [ ] `npm run smoke:hindsight` (live Hindsight behavior changes, if credentials are available)
 
+## Guidance sync
+
+- [ ] If this changes source-of-truth order, contributor workflow, verification expectations, memory policy, or definition of done, `AGENTS.md` and `CONTRIBUTING.md` were updated together.
+
 ## Notes
 
 Mention any ADR conflicts, skipped checks, live-smoke limitations, or follow-up issues.

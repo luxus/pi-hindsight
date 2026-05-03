@@ -13,6 +13,20 @@ Before making a change, read:
 
 Use the terms from `CONTEXT.md` in issue titles, test names, PR descriptions, and docs. Prefer **Project Bank**, **Global Bank**, **Retain**, **Recall**, **Reflect**, **Retain Queue**, **Retain Job**, **Recall Block**, **Last-Recall Snapshot**, **Import Manifest**, **Import Checkpoint**, **Memory Operation Service**, and **Operation Catalog** over local synonyms.
 
+Human and agent guidance must stay aligned. If you change source-of-truth order, contributor workflow, verification expectations, memory policy, or definition-of-done criteria, update both this file and `AGENTS.md` in the same PR.
+
+## Source-of-truth order
+
+Use this order when implementation choices conflict:
+
+1. Official Hindsight docs and API behavior.
+2. Official Pi extension, session, and package docs.
+3. This repository's PRDs, ADRs, and coding plans.
+4. Public reference repos as implementation inspiration only.
+5. User notes and gists as hypotheses only.
+
+Do not invent undocumented Pi internals or undocumented Hindsight request shapes. Prefer the official Hindsight TypeScript client and the documented Pi extension lifecycle.
+
 ## Development setup
 
 This package targets the runtime declared in `package.json`.
@@ -96,6 +110,17 @@ docs: add project domain context
 
 Do not use `git commit --no-verify` or any equivalent bypass.
 
+## Definition of done
+
+A change is done only when:
+
+1. it follows the official Hindsight memory rules;
+2. it uses documented Pi extension hooks;
+3. tests cover the changed logic;
+4. user-visible behavior is documented if changed;
+5. the diff is minimal and focused; and
+6. no new memory anti-pattern was introduced.
+
 ## PR checklist
 
 Before opening or marking a PR ready:
@@ -105,6 +130,7 @@ Before opening or marking a PR ready:
 - [ ] I preserved Retain, Recall, Reflect, bank isolation, queue-first, and redaction invariants.
 - [ ] I added or updated tests for meaningful behavior.
 - [ ] I updated README/docs when user-visible behavior changed.
+- [ ] I updated `AGENTS.md` and `CONTRIBUTING.md` together when source-of-truth order, workflow, verification, or definition-of-done guidance changed.
 - [ ] I ran `npm run check`.
 - [ ] I ran `npm run check:coverage` when touching critical paths.
 - [ ] I ran `npm run typecheck:tsc`.
