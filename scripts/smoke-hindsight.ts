@@ -35,7 +35,12 @@ const smokeExtensionConfig = {
   hindsight: {
     ...DEFAULT_CONFIG.hindsight,
     baseUrl: config.baseUrl,
+    timeoutMs: 90_000,
     ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+  },
+  recall: {
+    ...DEFAULT_CONFIG.recall,
+    budget: "low" as const,
   },
 };
 const adapter = createHindsightClient(smokeExtensionConfig);
