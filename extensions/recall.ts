@@ -12,6 +12,7 @@ import type {
 import { projectMessageText } from "./messages.js";
 import { createMemoryIdentity } from "./memory-identity.js";
 import { redactError } from "./sanitize.js";
+import { withTimeout } from "./timeout.js";
 
 export interface RecallScope {
   kind?: "project" | "global";
@@ -108,23 +109,6 @@ export function composeRecallQuery(messages: AgentMessage[], policy: RecallQuery
   );
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timeout: NodeJS.Timeout | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error(`hindsight recall timed out after ${timeoutMs}ms`)),
-          timeoutMs,
-        );
-      }),
-    ]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
-}
-
 export function renderRecallBlocks(blocks: RecallBlock[], topK = 12): string {
   const nonEmpty = blocks.filter((block) => block.memoryCount > 0);
   if (nonEmpty.length === 0) return "";
@@ -180,7 +164,7 @@ export async function recallForContext(args: {
       hints: args.cwd ? queryHints(args.cwd, args.config, scope) : [],
     });
     try {
-      const response = await withTimeout(
+      const response = await withTimeout("hindsight recall", args.config.recall.timeoutMs, () =>
         args.client.recall(scope.bankId, query, {
           budget: args.config.recall.budget,
           maxTokens: args.config.recall.maxTokens,
@@ -191,7 +175,6 @@ export async function recallForContext(args: {
           ...(scope.tags ? { tags: scope.tags } : {}),
           ...(scope.tagsMatch ? { tagsMatch: scope.tagsMatch } : {}),
         }),
-        args.config.recall.timeoutMs,
       );
       const results = textFromRecallResponse(response);
       blocks.push({
