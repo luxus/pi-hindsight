@@ -442,7 +442,7 @@ export HINDSIGHT_BASE_URL=http://localhost:8888
 npm run smoke:hindsight
 ```
 
-The smoke test creates a temporary bank, retains a unique marker with `updateMode: "append"`, recalls it, and runs `reflect`. It uses the configured Hindsight server; it does not start a server and it prints JSON step markers (`bank_ok`, `retain_ok`, `recall_ok`, `reflect_ok`) with elapsed duration so failures identify the broken integration stage. In GitHub Actions it also writes a Markdown step summary. For release verification with a configured Hindsight server, run:
+The smoke test creates a temporary bank, retains a unique marker with `updateMode: "append"`, recalls it, and runs `reflect`. It deletes temporary smoke banks after success and keeps artifacts after failure for debugging; if `PI_HINDSIGHT_SMOKE_BANK_ID` points at a configured bank, cleanup is skipped. It uses the configured Hindsight server; it does not start a server and it prints JSON step markers (`bank_ok`, `retain_ok`, `recall_ok`, `reflect_ok`, `cleanup_ok`) with elapsed duration so failures identify the broken integration stage. In GitHub Actions it also writes a Markdown step summary. For release verification with a configured Hindsight server, run:
 
 ```bash
 export HINDSIGHT_BASE_URL=http://localhost:8888
@@ -466,6 +466,7 @@ Optional secret and variables:
 
 - `HINDSIGHT_API_KEY` — only if the server requires an API key
 - `HINDSIGHT_SMOKE_ATTEMPTS` — recall retry attempts, default `20`
+- `HINDSIGHT_SMOKE_CLEANUP_TIMEOUT_MS` — best-effort cleanup timeout, default `5000`
 - `PI_HINDSIGHT_SMOKE_BANK_ID` — fixed smoke bank ID; omit to use a timestamped bank
 
 ## Safety notes

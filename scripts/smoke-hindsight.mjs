@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { HindsightClient } from "@vectorize-io/hindsight-client";
 import {
+  cleanupSmokeBankOnSuccess,
   createSmokeRecorder,
   renderSmokeSummary,
   retry,
@@ -12,6 +13,7 @@ import {
 const config = smokeConfig();
 const marker = smokeMarker();
 const recorder = createSmokeRecorder();
+let succeeded = false;
 
 const client = new HindsightClient({
   baseUrl: config.baseUrl,
@@ -73,6 +75,7 @@ try {
   recorder.step("reflect_ok", { responsePreview: JSON.stringify(reflection).slice(0, 300) });
 
   recorder.step("success", { bankId: config.bankId, marker });
+  succeeded = true;
 } catch (error) {
   console.error(
     JSON.stringify({
@@ -82,6 +85,7 @@ try {
   );
   process.exitCode = 1;
 } finally {
+  await cleanupSmokeBankOnSuccess({ config, bankId: config.bankId, succeeded, recorder });
   const summary = await writeGitHubSummary(renderSmokeSummary(recorder.entries()));
   if (summary.error) recorder.step("summary_failed", { error: summary.error });
 }
