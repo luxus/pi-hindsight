@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { mkdtempSync, mkdirSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HindsightClient } from "@vectorize-io/hindsight-client";
@@ -20,6 +21,7 @@ const config = smokeConfig();
 const marker = smokeMarker();
 const adapterMarker = smokeMarker();
 const operationsMarker = smokeMarker();
+const importMarker = smokeMarker();
 const operationsCwd = mkdtempSync(join(tmpdir(), "pi-hindsight-smoke-ops-"));
 mkdirSync(join(operationsCwd, ".git"));
 const recorder = createSmokeRecorder();
@@ -233,7 +235,85 @@ try {
   }
   recorder.step("operations_receipts_ok", { count: receipts.length });
 
-  recorder.step("success", { bankId: config.bankId, marker, adapterMarker, operationsMarker });
+  const importSessionFile = join(operationsCwd, "smoke-import.jsonl");
+  await writeFile(
+    importSessionFile,
+    [
+      JSON.stringify({
+        type: "session",
+        id: `smoke-import-${importMarker}`,
+        cwd: operationsCwd,
+        timestamp: "2026-05-03T00:00:00.000Z",
+      }),
+      JSON.stringify({
+        type: "message",
+        id: "root",
+        parentId: null,
+        timestamp: "2026-05-03T00:00:01.000Z",
+        message: { role: "user", content: `Import smoke marker: ${importMarker}` },
+      }),
+      JSON.stringify({
+        type: "message",
+        id: "leaf",
+        parentId: "root",
+        timestamp: "2026-05-03T00:00:02.000Z",
+        message: { role: "assistant", content: `Imported marker acknowledged: ${importMarker}` },
+      }),
+    ].join("\n") + "\n",
+    "utf8",
+  );
+
+  const importDryRun = await operations.importSession({
+    sessionFile: importSessionFile,
+    cwd: operationsCwd,
+    bank: "project",
+    dryRun: true,
+  });
+  if (importDryRun.retained || importDryRun.documents.length !== 1) {
+    throw new Error("import dry-run did not preview exactly one unwritten document");
+  }
+  recorder.step("import_dry_run_ok", {
+    documentCount: importDryRun.documents.length,
+    messageCount: importDryRun.messageCount,
+  });
+
+  const importResult = await operations.importSession({
+    sessionFile: importSessionFile,
+    cwd: operationsCwd,
+    bank: "project",
+    dryRun: false,
+  });
+  const importedDocument = importResult.documents[0];
+  if (!importResult.retained || !importedDocument || importedDocument.status !== "completed") {
+    throw new Error("import smoke did not complete a retained document");
+  }
+  recorder.step("import_ok", {
+    documentId: importedDocument.documentId,
+    messageCount: importResult.messageCount,
+  });
+
+  const importRecall = await retry(
+    async () => operations.recall(operationsCwd, importMarker, "project"),
+    (result) => JSON.stringify(result).includes(importMarker),
+    {
+      attempts: config.attempts,
+      delayMs: 2000,
+      onWait: ({ attempt, delayMs }) => recorder.step("import_recall_wait", { attempt, delayMs }),
+      failureMessage: ({ attempts, preview }) =>
+        `import recall did not contain retained marker after ${attempts} attempts: ${preview}`,
+    },
+  );
+  recorder.step("import_recall_ok", {
+    containsMarker: JSON.stringify(importRecall).includes(importMarker),
+  });
+
+  recorder.step("success", {
+    bankId: config.bankId,
+    marker,
+    adapterMarker,
+    operationsMarker,
+    importMarker,
+  });
   succeeded = true;
 } catch (error) {
   console.error(
