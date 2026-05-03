@@ -503,7 +503,7 @@ Before publishing or tagging a release:
 3. Run `npm run smoke:hindsight` locally when a configured server is available, or check the `Hindsight Integration` workflow result.
 4. Run `npm run changelog` after final Conventional Commits.
 5. Use `npm version <patch|minor|major>` so the version script stages the regenerated changelog.
-6. Push a `v*.*.*` tag to run the release workflow. Publishing requires `NPM_TOKEN`; manual dispatch can verify only or publish when `publish=true`.
+6. Push a `v*.*.*` tag to run the release workflow. Publishing uses npm trusted publishing with GitHub OIDC; manual dispatch can verify only or publish when `publish=true`.
 
 Useful targeted checks:
 

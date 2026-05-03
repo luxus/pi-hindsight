@@ -54,11 +54,4 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v') ||
           (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "NPM_TOKEN secret is required to publish."
-            exit 1
-          fi
-          npm publish --provenance --access public
+        run: npm publish --provenance --access public
