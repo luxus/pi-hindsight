@@ -141,10 +141,12 @@ Recently completed release-hardening work:
 - roadmap/docs now match the implementation that already exists
 - focused Hindsight best-practice regression tests cover core memory invariants
 - documented configuration starts with memory profiles and minimal project config
-- outage, dead-letter, queue-lock, and append capability behavior is documented and tested
+- outage, dead-letter, queue-lock, malformed queue recovery, and append capability behavior is documented and tested
 - bank mission and observation-scope defaults are tuned for memory quality
-- historical import previews show document counts, update modes, checkpoint paths, and manifest behavior
-- packaging and live smoke-test paths are verified for release readiness
+- historical import previews show document counts, update modes, checkpoint paths, manifest behavior, and project-session cwd normalization
+- packaging, trusted publishing, audit signatures, dependency review, Dependabot, and live smoke-test paths are verified for release readiness
+- CI runs checks across Ubuntu, macOS, and Windows; critical-path coverage gates now include queue, lock, JSONL queue store, import, config, lifecycle, and transport Modules
+- memory router eval fixtures cover balanced project/global/both/skip cases without changing the default `explicit-only` global retain policy
 
 Intentionally deferred:
 
@@ -161,7 +163,7 @@ See [`docs/risky-memory-modes.md`](docs/risky-memory-modes.md) for why persisted
 
 See [`docs/next-opt-out-design.md`](docs/next-opt-out-design.md) for the implemented one-turn memory opt-out command design.
 
-Historical import supports importing the current Pi session, an explicit JSONL path, or all Pi session JSONL files in the current session directory that belong to the current repo/cwd. Imports write deterministic document IDs and update an import manifest that is summarized in `/hindsight`. Use `/hindsight:import --dry-run`, `/hindsight:import-project-sessions --dry-run`, or `hindsight_import` with `dryRun: true` to preview documents, message counts, content sizes, tags, update mode, and target bank without writing Hindsight memory or mutating the manifest. Add `--all-leaves` or `allLeaves: true` to preview/import every branch leaf instead of only the current branch. Project session discovery intentionally avoids broad history imports: it scans only the current session file's directory and keeps only `.jsonl` session files whose parsed `cwd` exactly matches the current repo/cwd. Imports maintain `.pi/hindsight/import-checkpoint.json` by default and resume completed documents without re-retaining them when `import.resume` is enabled.
+Historical import supports importing the current Pi session, an explicit JSONL path, or all Pi session JSONL files in the current session directory that belong to the current repo/cwd. Imports write deterministic document IDs and update an import manifest that is summarized in `/hindsight`. Use `/hindsight:import --dry-run`, `/hindsight:import-project-sessions --dry-run`, or `hindsight_import` with `dryRun: true` to preview documents, message counts, content sizes, tags, update mode, and target bank without writing Hindsight memory or mutating the manifest. Add `--all-leaves` or `allLeaves: true` to preview/import every branch leaf instead of only the current branch. Project session discovery intentionally avoids broad history imports: it scans only the current session file's directory and keeps only `.jsonl` session files whose parsed `cwd` normalizes to the current repo/cwd. Equivalent path forms such as trailing separators, `.` segments, `..` traversal back to the repo, and resolved absolute paths are treated as the same project. Imports maintain `.pi/hindsight/import-checkpoint.json` by default and resume completed documents without re-retaining them when `import.resume` is enabled.
 
 Historical import examples:
 
@@ -433,7 +435,7 @@ Pi window notifications are configurable under `notifications`. Startup bank sel
 
 ## Debug and smoke tests
 
-Critical-path coverage thresholds are configured in `vitest.config.ts` for queue, config, lifecycle, and transport modules. Run them with `npm run check:coverage`; CI runs this after the normal fast check.
+Critical-path coverage thresholds are configured in `vitest.config.ts` for queue, queue lock, JSONL queue store, import, config, lifecycle, and transport Modules. Run them with `npm run check:coverage`; CI runs this after the normal fast check.
 
 Use `/hindsight` inside Pi to inspect what the extension believes. The TUI status view includes memory health, selected banks, recent explicit retain receipts, retain queue path, import status, and key configuration state. Advanced one-off diagnostics remain available through tests and explicit tools rather than separate status/debug/doctor commands.
 

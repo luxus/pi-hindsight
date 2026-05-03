@@ -1,6 +1,6 @@
-# Architecture TODOs
+# Architecture Notes
 
-These are deferred deepening opportunities identified after the mission/global-memory work.
+These notes record deepening work completed after the mission/global-memory pass and the remaining conditions for reopening broader architecture changes.
 
 ## Memory routing
 

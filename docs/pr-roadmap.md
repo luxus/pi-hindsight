@@ -345,6 +345,6 @@ When an LLM agent continues this work:
 3. Preserve all Hindsight invariants above.
 4. Update README only for user-visible behavior.
 5. Add or update tests for memory routing, IDs, queueing, retain payloads, recall injection, or import behavior.
-6. Run `npm run check` and `npm run typecheck:tsc` before calling the PR done.
-7. If live Hindsight behavior changed, also run `npm run smoke:hindsight` when credentials are available.
+6. Run `npm run check`, `npm run check:coverage`, and `npm run typecheck:tsc` before calling the PR done.
+7. If memory-path behavior changed, prove the live path with `npm run smoke:hindsight` or a configured `Hindsight Integration` pass; an unconfigured skip is not proof.
 8. Do not add deferred ideas unless the user explicitly reopens scope.

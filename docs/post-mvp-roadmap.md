@@ -202,6 +202,24 @@ npm run typecheck:tsc
 npm run smoke:hindsight # when live behavior changes and server is available
 ```
 
+## Completed hardening follow-up
+
+After the MVP hardening pass and global review loop, a second small-PR hardening pass closed the remaining roadmap/report gaps without changing the default memory policy.
+
+Completed outcomes:
+
+- Cross-platform CI now runs normal checks on Ubuntu, macOS, and Windows.
+- Dependency review, Dependabot, npm audit signatures, trusted publishing, and GitHub default CodeQL cover the supply-chain/release path.
+- The release workflow publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC and no npm token in the workflow.
+- Live smoke covers the official Hindsight client, extension Adapter, memory operations service, import flow, GitHub step summary output, and successful temporary-bank cleanup.
+- Memory-path PRs must prove the live path with local smoke or a configured `Hindsight Integration` pass; an unconfigured skip is not proof.
+- Coverage gates were raised and now include queue, queue lock, JSONL queue store, import, config, lifecycle, and transport Modules.
+- Repeated stress tests cover queue lock contention, malformed queue recovery, retry/dead-letter rollover, and import project-cwd path normalization.
+- Config editing parse/default/patch behavior moved into the config editing registry so settings have better Locality.
+- Router evaluation fixtures now cover balanced project/global/both/skip cases while `globalRetain.mode = "explicit-only"` remains the default.
+
+Remaining explicit deferred ideas below still require a new design discussion before implementation.
+
 ## Explicitly deferred ideas
 
 These remain deferred and should not be implemented without a new design discussion.
