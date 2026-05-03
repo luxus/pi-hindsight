@@ -1,0 +1,85 @@
+name: Bug report
+description: Report incorrect pi-hindsight behavior
+title: "fix: "
+labels: [needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Use the vocabulary from `CONTEXT.md` when possible.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide exact steps, commands, config, and inputs. Redact secrets.
+      placeholder: |
+        1. Configure ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages, logs, or smoke-test JSON lines when available.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Recall
+        - Retain
+        - Retain Queue
+        - Import
+        - Bank selection
+        - Global Bank / Memory Router
+        - Config / setup TUI
+        - Hindsight Adapter
+        - Release / CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node, npm, OS, Pi version, pi-hindsight version or commit.
+      placeholder: |
+        Node:
+        npm:
+        OS:
+        Pi:
+        pi-hindsight:
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config
+      description: Paste relevant `.pi/hindsight.json` or env details with secrets redacted.
+      render: json
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety checks
+      options:
+        - label: I removed API keys, bearer tokens, cookies, and private URLs.
+          required: true
+        - label: This is not a private security vulnerability report.
+          required: true

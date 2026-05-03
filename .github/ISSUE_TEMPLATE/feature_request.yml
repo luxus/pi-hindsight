@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose a pi-hindsight improvement
+title: "feat: "
+labels: [needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please frame the request using `CONTEXT.md` terms where possible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or workflow you want.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Recall
+        - Retain
+        - Retain Queue
+        - Import
+        - Bank selection
+        - Global Bank / Memory Router
+        - Config / setup TUI
+        - Hindsight Adapter
+        - Release / CI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Memory invariants
+      description: Note how this preserves Retain, Recall, bank isolation, queue-first, and redaction rules.
+      placeholder: |
+        - Recall remains ephemeral because ...
+        - Project/Global Bank isolation is preserved because ...
+        - Queue-first behavior is unaffected because ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: verification
+    attributes:
+      label: Suggested verification
+      description: Tests, smoke checks, or manual steps that would prove this works.
