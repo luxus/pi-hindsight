@@ -126,9 +126,26 @@ describe("retain queue", () => {
     await expect(readRetainQueue(path)).rejects.toThrow();
   });
 
+  it("rejects valid JSON with invalid retain job shape in strict reads", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    writeFileSync(
+      path,
+      `${JSON.stringify({ id: "wrong-shape" })}\n${JSON.stringify(job)}\n`,
+      "utf8",
+    );
+
+    await expect(readRetainQueue(path)).rejects.toThrow(
+      `Malformed queue file ${path}: 1 invalid line(s)`,
+    );
+  });
+
   it("summarizes active and dead-letter queues without throwing on malformed lines", async () => {
     const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
-    writeFileSync(path, `{not json}\n${JSON.stringify(job)}\n`, "utf8");
+    writeFileSync(
+      path,
+      `{not json}\n${JSON.stringify({ id: "wrong-shape" })}\n${JSON.stringify(job)}\n`,
+      "utf8",
+    );
     writeFileSync(
       resolveDeadLetterQueuePath(path),
       `{bad}\n${JSON.stringify({ ...job, id: "dead" })}\n`,
@@ -138,7 +155,7 @@ describe("retain queue", () => {
     await expect(readRetainQueue(path)).rejects.toThrow();
     const summary = await summarizeRetainQueue(path);
 
-    expect(summary.active).toMatchObject({ path, valid: 1, malformed: 1, error: null });
+    expect(summary.active).toMatchObject({ path, valid: 1, malformed: 2, error: null });
     expect(summary.deadLetter).toMatchObject({
       path: resolveDeadLetterQueuePath(path),
       valid: 1,

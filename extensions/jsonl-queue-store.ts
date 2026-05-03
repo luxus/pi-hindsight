@@ -39,16 +39,13 @@ export class JsonlQueueStore<T> {
   }
 
   async readStrict(): Promise<T[]> {
-    try {
-      const text = await readFile(this.path, "utf8");
-      return text
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => JSON.parse(line) as T);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-      throw error;
+    const parsed = await this.readTolerant();
+    if (parsed.malformedLines.length > 0) {
+      throw new Error(
+        `Malformed queue file ${this.path}: ${parsed.malformedLines.length} invalid line(s)`,
+      );
     }
+    return parsed.jobs;
   }
 
   async readTolerant(): Promise<ParsedJsonlQueue<T>> {
@@ -81,8 +78,9 @@ export class JsonlQueueStore<T> {
       let malformed = 0;
       for (const line of text.split("\n").filter(Boolean)) {
         try {
-          JSON.parse(line) as T;
-          valid += 1;
+          const parsed = JSON.parse(line) as unknown;
+          if (this.isItem(parsed)) valid += 1;
+          else malformed += 1;
         } catch {
           malformed += 1;
         }
