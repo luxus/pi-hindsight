@@ -1,0 +1,45 @@
+name: Hindsight Integration
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: integration-hindsight-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --engine-strict
+
+      - name: Run live Hindsight smoke test when configured
+        env:
+          HINDSIGHT_INTEGRATION_ENABLED: ${{ vars.HINDSIGHT_INTEGRATION_ENABLED || 'false' }}
+          HINDSIGHT_BASE_URL: ${{ secrets.HINDSIGHT_BASE_URL }}
+          HINDSIGHT_API_KEY: ${{ secrets.HINDSIGHT_API_KEY }}
+          HINDSIGHT_SMOKE_ATTEMPTS: ${{ vars.HINDSIGHT_SMOKE_ATTEMPTS || '20' }}
+          PI_HINDSIGHT_SMOKE_BANK_ID: ${{ vars.PI_HINDSIGHT_SMOKE_BANK_ID }}
+        run: |
+          if [ "$HINDSIGHT_INTEGRATION_ENABLED" != "true" ]; then
+            echo "HINDSIGHT_INTEGRATION_ENABLED is not true; skipping live Hindsight smoke." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ -z "$HINDSIGHT_BASE_URL" ]; then
+            echo "HINDSIGHT_BASE_URL secret is required when HINDSIGHT_INTEGRATION_ENABLED=true." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          npm run smoke:hindsight

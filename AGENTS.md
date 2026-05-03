@@ -211,7 +211,7 @@ If live Hindsight integration behavior changed, also run the configured-server s
 npm run smoke:hindsight
 ```
 
-GitHub Actions has a manual `smoke-configured-server` job that uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets.
+GitHub Actions has a `Hindsight Integration` workflow that runs on PRs, nightly schedule, and manual dispatch. It runs live smoke only when `HINDSIGHT_INTEGRATION_ENABLED=true`; then it uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets. Otherwise it skips cleanly.
 
 ## Common mistakes to avoid
 

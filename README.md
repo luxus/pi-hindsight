@@ -448,15 +448,21 @@ export HINDSIGHT_BASE_URL=http://localhost:8888
 npm run check:release
 ```
 
-`check:release` runs the normal check suite, the secondary `tsc` typecheck, and the live smoke test. If no live server is available, run `npm run check` and `npm run typecheck:tsc`, then use the manual GitHub Actions `smoke-configured-server` job when credentials are available.
+`check:release` runs the normal check suite, the secondary `tsc` typecheck, and the live smoke test. If no live server is available, run `npm run check` and `npm run typecheck:tsc`; the GitHub live integration workflow will skip cleanly when no configured server secret exists.
 
-GitHub Actions runs normal checks on PRs/pushes. The live Hindsight smoke job is manual (`workflow_dispatch`) and requires repository secrets:
+GitHub Actions runs normal checks on PRs/pushes. The separate `Hindsight Integration` workflow runs on PRs, nightly schedule, and manual dispatch. It runs the live smoke test only when explicitly enabled, and records a clean skip in the step summary otherwise.
+
+Required repository variable to enable live smoke:
+
+- `HINDSIGHT_INTEGRATION_ENABLED=true`
+
+Required secret when enabled:
 
 - `HINDSIGHT_BASE_URL` — base URL of the Hindsight server, for example `https://h1.example.com`
-- `HINDSIGHT_API_KEY` — optional, only if the server requires an API key
 
-Optional repository variables:
+Optional secret and variables:
 
+- `HINDSIGHT_API_KEY` — only if the server requires an API key
 - `HINDSIGHT_SMOKE_ATTEMPTS` — recall retry attempts, default `20`
 - `PI_HINDSIGHT_SMOKE_BANK_ID` — fixed smoke bank ID; omit to use a timestamped bank
 
@@ -488,7 +494,7 @@ Before publishing or tagging a release:
 
 1. Ensure `main` is synced.
 2. Run `npm run check` and `npm run typecheck:tsc`.
-3. Run `npm run smoke:hindsight` or the manual `smoke-configured-server` workflow when a configured server is available.
+3. Run `npm run smoke:hindsight` locally when a configured server is available, or check the `Hindsight Integration` workflow result.
 4. Run `npm run changelog` after final Conventional Commits.
 5. Use `npm version <patch|minor|major>` so the version script stages the regenerated changelog.
 
