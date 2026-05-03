@@ -352,6 +352,137 @@ describe("Pi session import", () => {
     ]);
   });
 
+  it("includes repo/session/branch tags required for project recall for all-leaves import", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-tags", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "root",
+          parentId: null,
+          message: { role: "user", content: "root" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "leaf-a",
+          parentId: "root",
+          message: { role: "assistant", content: "leaf a" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "leaf-b",
+          parentId: "root",
+          message: { role: "assistant", content: "leaf b" },
+        }),
+      ].join("\n"),
+    );
+    const calls: unknown[][] = [];
+    await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config: {
+        ...DEFAULT_CONFIG,
+        import: { ...DEFAULT_CONFIG.import, includeBranches: "all-leaves" },
+      },
+      client: {
+        retain: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+    });
+    expect(calls).toHaveLength(2);
+    const leafAOptions = calls[0]?.[2] as { tags: string[] };
+    const leafBOptions = calls[1]?.[2] as { tags: string[] };
+    // Each leaf must carry all tags required for default project recall.
+    for (const [leafId, options] of [
+      ["leaf-a", leafAOptions],
+      ["leaf-b", leafBOptions],
+    ] as [string, { tags: string[] }][]) {
+      expect(options.tags).toEqual(
+        expect.arrayContaining([
+          "source:pi",
+          "import:historical",
+          "imported:true",
+          "session:session-tags",
+          `branch:${leafId}`,
+          "forked:true",
+          expect.stringMatching(/^repo:/),
+          expect.stringMatching(/^document:/),
+        ]),
+      );
+    }
+    // Each leaf carries its own branch tag, not the other leaf's.
+    expect(leafAOptions.tags).toContain("branch:leaf-a");
+    expect(leafAOptions.tags).not.toContain("branch:leaf-b");
+    expect(leafBOptions.tags).toContain("branch:leaf-b");
+    expect(leafBOptions.tags).not.toContain("branch:leaf-a");
+    // Both leaves share the same repo and session tags.
+    const repoTag = leafAOptions.tags.find((t) => t.startsWith("repo:"));
+    expect(repoTag).toBeDefined();
+    expect(leafBOptions.tags).toContain(repoTag);
+    expect(leafAOptions.tags).toContain("session:session-tags");
+    expect(leafBOptions.tags).toContain("session:session-tags");
+  });
+
+  it("includes repo/session/branch tags required for project recall for current-branch import", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-current-tags", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "root",
+          parentId: null,
+          message: { role: "user", content: "root" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "leaf",
+          parentId: "root",
+          message: { role: "assistant", content: "leaf" },
+        }),
+      ].join("\n"),
+    );
+    const calls: unknown[][] = [];
+    await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      client: {
+        retain: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+    });
+    expect(calls).toHaveLength(1);
+    const options = calls[0]?.[2] as { tags: string[] };
+    expect(options.tags).toEqual(
+      expect.arrayContaining([
+        "source:pi",
+        "import:historical",
+        "imported:true",
+        "session:session-current-tags",
+        "branch:leaf",
+        expect.stringMatching(/^repo:/),
+        expect.stringMatching(/^document:/),
+      ]),
+    );
+    // No global memory pollution: the single retain call targets the specified bank only.
+    expect(calls[0]?.[0]).toBe("bank");
+    expect(calls).toHaveLength(1);
+  });
+
   it("previews import without retaining or writing manifests", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
     mkdirSync(join(dir, ".git"));
@@ -408,7 +539,15 @@ describe("Pi session import", () => {
         leafId: "a",
         messageCount: 2,
         contentBytes: expect.any(Number),
-        tags: expect.arrayContaining(["import:historical", "forked:true"]),
+        tags: expect.arrayContaining([
+          "source:pi",
+          "import:historical",
+          "imported:true",
+          "session:session-preview",
+          "branch:a",
+          "forked:true",
+          expect.stringMatching(/^repo:/),
+        ]),
         updateMode: "replace",
         bankId: "bank",
         wouldWrite: false,
