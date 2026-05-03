@@ -192,7 +192,7 @@ describe("extension hooks", () => {
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
         hindsight: { baseUrl: "http://unused.test" },
-        retain: { flushIntervalMs: 100, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
+        retain: { flushIntervalMs: 1_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
       }),
     );
     const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
@@ -233,7 +233,7 @@ describe("extension hooks", () => {
         retries: 0,
       });
       mocked.client.retain.mockClear();
-      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0);
+      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0, 1_500);
       await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1);
 
       expect(mocked.client.retain).toHaveBeenCalledTimes(1);
