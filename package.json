@@ -37,11 +37,11 @@
     "typecheck:tsc": "tsc --noEmit",
     "lint": "oxlint --type-aware --type-check extensions tests",
     "lint:fix": "oxlint --type-aware --type-check --fix extensions tests",
-    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
-    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
+    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
+    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"README.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\"",
     "check": "npm run format && npm run lint && npm run typecheck && npm test",
     "check:ci": "npm run check && npm run check:coverage",
-    "check:release": "npm run check && npm run typecheck:tsc && npm run smoke:hindsight",
+    "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run pack:verify && npm run smoke:hindsight",
     "install-hooks": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "prepare": "npm run install-hooks",
     "precommit": "npm run check",
@@ -50,7 +50,9 @@
     "changelog": "node scripts/generate-changelog.mjs",
     "version": "npm run changelog && npm run format:fix && git add CHANGELOG.md",
     "test:coverage": "vitest run --coverage",
-    "check:coverage": "npm run test:coverage"
+    "check:coverage": "npm run test:coverage",
+    "pack:verify": "npm run release:verify && npm pack --dry-run && node scripts/install-smoke.mjs",
+    "release:verify": "node scripts/verify-release.mjs"
   },
   "dependencies": {
     "@vectorize-io/hindsight-client": "^0.5.4",
