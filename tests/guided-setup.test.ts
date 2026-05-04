@@ -317,7 +317,15 @@ describe("guided setup", () => {
       ctx,
       operations,
       setupProfile: "global-only",
-      appliedProfiles: new Set(["assistant-personal"]),
+      appliedTemplates: [
+        {
+          bank: "user-bank",
+          location: "User",
+          label: "Assistant / Personal",
+          profileId: "assistant-personal",
+          mentalModels: [],
+        },
+      ],
       cwd: "/repo",
       globalBankId: "user-bank",
     });
@@ -329,6 +337,276 @@ describe("guided setup", () => {
       dryRun: true,
     });
     expect(importGatewayTranscript).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers mental model refresh after successful setup import", async () => {
+    const confirm = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true);
+    const notify = vi.fn();
+    const ctx = {
+      ui: {
+        confirm,
+        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        notify,
+      },
+    } as never;
+    const importGatewayTranscript = vi
+      .fn()
+      .mockResolvedValueOnce({
+        bankId: "user-bank",
+        keptEventCount: 3,
+        retainedTurnCount: 1,
+        droppedEventCount: 2,
+        malformedLineCount: 0,
+        documentId: "doc",
+      })
+      .mockResolvedValueOnce({
+        bankId: "user-bank",
+        skipped: false,
+        documentId: "doc",
+      });
+    const refreshMentalModel = vi.fn().mockResolvedValueOnce({
+      bankId: "user-bank",
+      mentalModelId: "user-profile",
+      result: { operation_id: "op-123", status: "queued" },
+    });
+    const operations = {
+      importProjectSessions: vi.fn(),
+      importGatewayTranscript,
+      refreshMentalModel,
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "global-only",
+      appliedTemplates: [
+        {
+          bank: "user-bank",
+          location: "User",
+          label: "Assistant / Personal",
+          profileId: "assistant-personal",
+          mentalModels: [
+            {
+              id: "user-profile",
+              name: "User Profile",
+              source_query: "What do we know?",
+              tags: ["profile"],
+            },
+          ],
+        },
+      ],
+      cwd: "/repo",
+      globalBankId: "user-bank",
+    });
+
+    expect(refreshMentalModel).toHaveBeenCalledWith({
+      bank: "user-bank",
+      mentalModelId: "user-profile",
+    });
+    expect(confirm).toHaveBeenNthCalledWith(
+      3,
+      "Refresh 1 mental model for User bank user-bank?",
+      expect.stringContaining(
+        "User Profile uses tags [profile]; refresh only sees matching memories.",
+      ),
+    );
+    expect(notify).toHaveBeenCalledWith(
+      "Queued mental model refresh:\nUser Profile: op-123 / queued",
+      "info",
+    );
+  });
+
+  it("skips mental model refresh when user declines", async () => {
+    const confirm = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    const ctx = {
+      ui: {
+        confirm,
+        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importGatewayTranscript = vi
+      .fn()
+      .mockResolvedValueOnce({
+        bankId: "user-bank",
+        keptEventCount: 1,
+        retainedTurnCount: 1,
+        droppedEventCount: 0,
+        malformedLineCount: 0,
+        documentId: "doc",
+      })
+      .mockResolvedValueOnce({ bankId: "user-bank", skipped: false, documentId: "doc" });
+    const refreshMentalModel = vi.fn();
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations: {
+        importProjectSessions: vi.fn(),
+        importGatewayTranscript,
+        refreshMentalModel,
+      } as never,
+      setupProfile: "global-only",
+      appliedTemplates: [
+        {
+          bank: "user-bank",
+          location: "User",
+          label: "Assistant / Personal",
+          profileId: "assistant-personal",
+          mentalModels: [{ id: "user-profile", name: "User Profile", source_query: "q" }],
+        },
+      ],
+      cwd: "/repo",
+      globalBankId: "user-bank",
+    });
+
+    expect(refreshMentalModel).not.toHaveBeenCalled();
+  });
+
+  it("continues mental model refresh when one model fails", async () => {
+    const notify = vi.fn();
+    const ctx = {
+      ui: {
+        confirm: vi
+          .fn()
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(true),
+        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        notify,
+      },
+    } as never;
+    const refreshMentalModel = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("refresh failed"))
+      .mockResolvedValueOnce({ result: { operation_id: "op-2", status: "queued" } });
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations: {
+        importProjectSessions: vi.fn(),
+        importGatewayTranscript: vi
+          .fn()
+          .mockResolvedValueOnce({
+            bankId: "user-bank",
+            keptEventCount: 2,
+            retainedTurnCount: 1,
+            droppedEventCount: 0,
+            malformedLineCount: 0,
+            documentId: "doc",
+          })
+          .mockResolvedValueOnce({ bankId: "user-bank", skipped: false, documentId: "doc" }),
+        refreshMentalModel,
+      } as never,
+      setupProfile: "global-only",
+      appliedTemplates: [
+        {
+          bank: "user-bank",
+          location: "User",
+          label: "Assistant / Personal",
+          profileId: "assistant-personal",
+          mentalModels: [
+            { id: "first", name: "First", source_query: "q" },
+            { id: "second", name: "Second", source_query: "q" },
+          ],
+        },
+      ],
+      cwd: "/repo",
+      globalBankId: "user-bank",
+    });
+
+    expect(refreshMentalModel).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenCalledWith(
+      "Queued mental model refresh:\nSecond: op-2 / queued",
+      "info",
+    );
+    expect(notify).toHaveBeenCalledWith(
+      "Mental model refresh failed:\nFirst: refresh failed",
+      "warning",
+    );
+  });
+
+  it("refreshes only mental models for the imported setup location", async () => {
+    const confirm = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true);
+    const ctx = {
+      sessionManager: { getSessionFile: () => "/sessions/current.jsonl" },
+      ui: {
+        confirm,
+        select: vi.fn().mockResolvedValueOnce("Preview repo Pi sessions"),
+        input: vi.fn(),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importProjectSessions = vi
+      .fn()
+      .mockResolvedValueOnce({
+        bankId: "shared-bank",
+        sessionFiles: ["/sessions/current.jsonl"],
+        imported: [{ documents: [] }],
+        malformedLineCount: 0,
+        documentCount: 1,
+        messageCount: 2,
+      })
+      .mockResolvedValueOnce({
+        bankId: "shared-bank",
+        sessionFiles: ["/sessions/current.jsonl"],
+        documentCount: 1,
+        messageCount: 2,
+      });
+    const refreshMentalModel = vi.fn().mockResolvedValue({
+      bankId: "shared-bank",
+      result: { operation_id: "op-project" },
+    });
+    const operations = {
+      importProjectSessions,
+      importGatewayTranscript: vi.fn(),
+      refreshMentalModel,
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "project-global",
+      appliedTemplates: [
+        {
+          bank: "shared-bank",
+          location: "Project",
+          label: "Coding / Project",
+          profileId: "coding-project",
+          mentalModels: [{ id: "project-context", name: "Project Context", source_query: "q" }],
+        },
+        {
+          bank: "shared-bank",
+          location: "User",
+          label: "Assistant / Personal",
+          profileId: "assistant-personal",
+          mentalModels: [{ id: "user-profile", name: "User Profile", source_query: "q" }],
+        },
+      ],
+      cwd: "/repo",
+      projectBankId: "shared-bank",
+      globalBankId: "shared-bank",
+    });
+
+    expect(refreshMentalModel).toHaveBeenCalledTimes(1);
+    expect(refreshMentalModel).toHaveBeenCalledWith({
+      bank: "shared-bank",
+      mentalModelId: "project-context",
+    });
   });
 
   it("uses existing configured global bank ID when profile enables global memory", () => {

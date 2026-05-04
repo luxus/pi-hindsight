@@ -36,7 +36,7 @@ Gateway preview output includes kept event count, retained user-turn count, drop
 
 ## Guided setup import prompt
 
-Guided setup offers historical import after config/template setup. It always previews first. Project/coding setup offers repo-scoped Pi session import; user/assistant setup offers gateway transcript import. You can skip and run the tools later.
+Guided setup offers historical import after config/template setup. It always previews first. Project/coding setup offers repo-scoped Pi session import; user/assistant setup offers gateway transcript import. After a successful setup import, Pi can explicitly refresh the target mental models from the selected bank template and shows returned operation IDs/status. You can skip import or refresh and run the tools later.
 
 ## Import commands
 

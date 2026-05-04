@@ -24,6 +24,7 @@ import {
   getBuiltInBankTemplate,
   summarizeBankTemplateManifest,
   type BankTemplateManifest,
+  type BankTemplateMentalModel,
   type BankTemplateProfileId,
   type BankTemplateTarget,
 } from "./bank-template-catalog.js";
@@ -78,6 +79,14 @@ interface TemplateTarget {
   location: "Project" | "User";
   bank: string;
   defaultTemplateTarget: BankTemplateTarget;
+}
+
+interface AppliedTemplateTarget {
+  bank: string;
+  location: "Project" | "User";
+  label: string;
+  profileId?: BankTemplateProfileId;
+  mentalModels: BankTemplateMentalModel[];
 }
 
 export function enabledTemplateTargets(args: {
@@ -255,19 +264,19 @@ async function maybeImportBankTemplate(args: {
   setupProfile: SetupProfileChoice;
   projectBankId?: string;
   globalBankId?: string;
-}): Promise<Set<BankTemplateProfileId>> {
+}): Promise<AppliedTemplateTarget[]> {
   const targets = enabledTemplateTargets(args);
   if (targets.length === 0) {
     args.ctx.ui.notify("No enabled bank target for template import.", "warning");
-    return new Set();
+    return [];
   }
   const configure = await args.ctx.ui.confirm(
     "Configure Hindsight bank templates?",
     targets.map((target) => `${target.location}: ${target.bank}`).join("\n"),
   );
-  if (!configure) return new Set();
+  if (!configure) return [];
 
-  const appliedProfiles = new Set<BankTemplateProfileId>();
+  const appliedTemplates: AppliedTemplateTarget[] = [];
   const client = args.deps.getClient();
   for (const target of targets) {
     const selected = await selectTemplateManifest({ ctx: args.ctx, target });
@@ -318,9 +327,15 @@ async function maybeImportBankTemplate(args: {
       `Imported ${selected.label} template into ${applied.bankId}: ${summarizeBankTemplateImportResult(applied.result)}`,
       "info",
     );
-    if (selected.profileId) appliedProfiles.add(selected.profileId);
+    appliedTemplates.push({
+      bank: applied.bankId,
+      location: target.location,
+      label: selected.label,
+      ...(selected.profileId ? { profileId: selected.profileId } : {}),
+      mentalModels: editedManifest.mental_models ?? [],
+    });
   }
-  return appliedProfiles;
+  return appliedTemplates;
 }
 
 export function importChoicesForSetup(args: {
@@ -349,11 +364,74 @@ export function importChoicesForSetup(args: {
   return choices;
 }
 
+function operationSummary(result: unknown): string {
+  if (typeof result !== "object" || !result) return "operation accepted";
+  const fields = result as {
+    operation_id?: unknown;
+    operationId?: unknown;
+    id?: unknown;
+    status?: unknown;
+  };
+  const id = [fields.operation_id, fields.operationId, fields.id].find(
+    (value): value is string => typeof value === "string" && Boolean(value.trim()),
+  );
+  const status =
+    typeof fields.status === "string" && fields.status.trim() ? fields.status.trim() : undefined;
+  return [id?.trim(), status].filter(Boolean).join(" / ") || "operation accepted";
+}
+
+async function maybeOfferMentalModelRefreshForSetup(args: {
+  ctx: ExtensionCommandContext;
+  operations: MemoryOperations;
+  bankId: string;
+  location: "Project" | "User";
+  appliedTemplates?: AppliedTemplateTarget[];
+}): Promise<void> {
+  const mentalModels = (args.appliedTemplates ?? [])
+    .filter((template) => template.bank === args.bankId && template.location === args.location)
+    .flatMap((template) => template.mentalModels);
+  if (mentalModels.length === 0) return;
+  const warnings = mentalModels.flatMap((model) =>
+    model.tags?.length
+      ? [`${model.name} uses tags [${model.tags.join(", ")}]; refresh only sees matching memories.`]
+      : [],
+  );
+  const confirmed = await args.ctx.ui.confirm(
+    `Refresh ${mentalModels.length} mental model${mentalModels.length === 1 ? "" : "s"} for ${args.location} bank ${args.bankId}?`,
+    [
+      "Source import is complete. Refresh is explicit and does not replace retained source material.",
+      "Target mental models:",
+      ...mentalModels.map((model) => `- ${model.name} (${model.id})`),
+      ...(warnings.length ? ["Warnings:", ...warnings.map((warning) => `- ${warning}`)] : []),
+    ].join("\n"),
+  );
+  if (!confirmed) return;
+  const refreshed: string[] = [];
+  const failed: string[] = [];
+  for (const model of mentalModels) {
+    try {
+      const result = await args.operations.refreshMentalModel({
+        bank: args.bankId,
+        mentalModelId: model.id,
+      });
+      refreshed.push(`${model.name}: ${operationSummary(result.result)}`);
+    } catch (error) {
+      failed.push(`${model.name}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  if (refreshed.length) {
+    args.ctx.ui.notify(`Queued mental model refresh:\n${refreshed.join("\n")}`, "info");
+  }
+  if (failed.length) {
+    args.ctx.ui.notify(`Mental model refresh failed:\n${failed.join("\n")}`, "warning");
+  }
+}
+
 export async function maybeOfferHistoricalImportForSetup(args: {
   ctx: ExtensionCommandContext;
   operations: MemoryOperations;
   setupProfile: SetupProfileChoice;
-  appliedProfiles?: Set<BankTemplateProfileId>;
+  appliedTemplates?: AppliedTemplateTarget[];
   cwd: string;
   projectBankId?: string;
   globalBankId?: string;
@@ -363,11 +441,16 @@ export async function maybeOfferHistoricalImportForSetup(args: {
     "Imports always dry-run first. Project profiles use repo Pi sessions; user profiles can import gateway/chat transcripts.",
   );
   if (!proceed) return;
+  const appliedProfiles = new Set(
+    (args.appliedTemplates ?? [])
+      .map((template) => template.profileId)
+      .filter((profileId): profileId is BankTemplateProfileId => Boolean(profileId)),
+  );
   const choice = await args.ctx.ui.select(
     "Choose import source",
     importChoicesForSetup({
       setupProfile: args.setupProfile,
-      appliedProfiles: args.appliedProfiles ?? new Set(),
+      appliedProfiles,
       ...(args.projectBankId ? { projectBankId: args.projectBankId } : {}),
       ...(args.globalBankId ? { globalBankId: args.globalBankId } : {}),
     }),
@@ -401,6 +484,13 @@ export async function maybeOfferHistoricalImportForSetup(args: {
       `Imported repo Pi sessions into ${result.bankId}: sessions=${result.sessionFiles.length}; documents=${result.documentCount}; messages=${result.messageCount}`,
       "info",
     );
+    await maybeOfferMentalModelRefreshForSetup({
+      ctx: args.ctx,
+      operations: args.operations,
+      bankId: result.bankId,
+      location: "Project",
+      ...(args.appliedTemplates ? { appliedTemplates: args.appliedTemplates } : {}),
+    });
     return;
   }
 
@@ -429,6 +519,15 @@ export async function maybeOfferHistoricalImportForSetup(args: {
       : `Imported gateway transcript into ${result.bankId} as ${result.documentId}`,
     "info",
   );
+  if (!result.skipped) {
+    await maybeOfferMentalModelRefreshForSetup({
+      ctx: args.ctx,
+      operations: args.operations,
+      bankId: result.bankId,
+      location: "User",
+      ...(args.appliedTemplates ? { appliedTemplates: args.appliedTemplates } : {}),
+    });
+  }
 }
 
 export async function runGuidedSetup(args: {
@@ -488,7 +587,7 @@ export async function runGuidedSetup(args: {
   const result = await operations.configure(args.cwd, patch);
   args.ctx.ui.notify(`Wrote ${result.path}`, "info");
 
-  const appliedProfiles = await maybeImportBankTemplate({
+  const appliedTemplates = await maybeImportBankTemplate({
     ctx: args.ctx,
     deps: args.deps,
     operations,
@@ -501,7 +600,7 @@ export async function runGuidedSetup(args: {
     ctx: args.ctx,
     operations,
     setupProfile,
-    appliedProfiles,
+    appliedTemplates,
     cwd: args.cwd,
     ...(projectBankId !== undefined ? { projectBankId } : {}),
     ...(globalBankId !== undefined ? { globalBankId } : {}),
