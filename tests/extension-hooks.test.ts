@@ -237,8 +237,15 @@ describe("extension hooks", () => {
       });
       mocked.client.retain.mockClear();
       await vi.advanceTimersByTimeAsync(1_000);
-      await waitForCondition(() => mocked.client.retain.mock.calls.length > 0, 5_000);
-      await waitForCondition(async () => (await readRetainQueue(queuePath)).length === 1, 5_000);
+      const periodicFlushWaitMs = process.platform === "win32" ? 20_000 : 5_000;
+      await waitForCondition(async () => {
+        const queue = await readRetainQueue(queuePath);
+        return (
+          mocked.client.retain.mock.calls.length === 1 &&
+          queue.length === 1 &&
+          queue[0]?.id === "queued-2"
+        );
+      }, periodicFlushWaitMs);
 
       expect(mocked.client.retain).toHaveBeenCalledTimes(1);
       expect((await readRetainQueue(queuePath)).map((job) => job.id)).toEqual(["queued-2"]);
@@ -251,7 +258,7 @@ describe("extension hooks", () => {
       await handlers.session_shutdown?.[0]?.({}, ctx);
       vi.useRealTimers();
     }
-  }, 20_000);
+  }, 30_000);
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
