@@ -94,6 +94,7 @@ export interface ProjectConfigPatchInput {
   retainAsync?: boolean;
   retainUpdateMode?: "append" | "replace";
   queuePath?: string;
+  importMode?: "curated" | "raw" | "forensic";
   importIncludeBranches?: "current-only" | "all-leaves";
   importManifestPath?: string;
   importCheckpointPath?: string;
@@ -211,6 +212,7 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     };
   }
   if (
+    input.importMode ||
     input.importIncludeBranches ||
     input.importManifestPath ||
     input.importCheckpointPath ||
@@ -218,6 +220,7 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     input.importResume !== undefined
   ) {
     patch.import = {
+      ...(input.importMode ? { mode: input.importMode } : {}),
       ...(input.importIncludeBranches ? { includeBranches: input.importIncludeBranches } : {}),
       ...(input.importManifestPath ? { manifestPath: input.importManifestPath } : {}),
       ...(input.importCheckpointPath ? { checkpointPath: input.importCheckpointPath } : {}),

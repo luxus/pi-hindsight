@@ -10,6 +10,11 @@ export type ImportDocumentSummaryResult = {
     droppedToolResultCount?: number;
     droppedToolResultBytes?: number;
     topDroppedTools?: Array<{ name: string; count: number; bytes: number }>;
+    keptToolErrorCount?: number;
+    keptToolErrorBytes?: number;
+    estimatedDocumentCount?: number;
+    estimatedChunkCount?: number;
+    importMode?: "curated" | "raw" | "forensic";
   }[];
   malformedLineCount?: number;
 };
@@ -57,9 +62,23 @@ export function importDocumentSummary(result: ImportDocumentSummaryResult): stri
     (count, document) => count + (document.projectedBytes ?? 0),
     0,
   );
+  const keptErrors = result.documents.reduce(
+    (count, document) => count + (document.keptToolErrorCount ?? 0),
+    0,
+  );
+  const estimatedChunks = result.documents.reduce(
+    (count, document) => count + (document.estimatedChunkCount ?? 0),
+    0,
+  );
+  const importModes = [
+    ...new Set(result.documents.map((document) => document.importMode).filter(Boolean)),
+  ].join(",");
+  const forensicWarning = importModes.includes("forensic")
+    ? "; WARNING forensic mode preserves recalled memory blocks for audit-only use"
+    : "";
   const quality =
     rawMessages || droppedToolResults || rawBytes || projectedBytes
-      ? `; projected=${projectedMessages}/${rawMessages || projectedMessages} messages; droppedToolResults=${droppedToolResults}; bytes=${projectedBytes}/${rawBytes}`
+      ? `; mode=${importModes || "unknown"}; projected=${projectedMessages}/${rawMessages || projectedMessages} messages; droppedToolResults=${droppedToolResults}; keptToolErrors=${keptErrors}; estimatedChunks=${estimatedChunks}; bytes=${projectedBytes}/${rawBytes}${forensicWarning}`
       : "";
   return `documents=${result.documents.length}; update=${modes || "n/a"}; status=${statuses || "n/a"}${malformed}${quality}`;
 }

@@ -23,6 +23,7 @@ export type FieldId =
   | "retainEnabled"
   | "retainAsync"
   | "queuePath"
+  | "importMode"
   | "importBranches"
   | "importManifest"
   | "importCheckpoint"
@@ -61,6 +62,7 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   retainEnabled: ["retain", "enabled"],
   retainAsync: ["retain", "async"],
   queuePath: ["retain", "queuePath"],
+  importMode: ["import", "mode"],
   importBranches: ["import", "includeBranches"],
   importManifest: ["import", "manifestPath"],
   importCheckpoint: ["import", "checkpointPath"],
@@ -143,6 +145,7 @@ export const CONFIG_RESET_PATHS = {
   "retain.enabled": [["retain", "enabled"]],
   "retain.async": [["retain", "async"]],
   "retain.queuePath": [["retain", "queuePath"]],
+  "import.mode": [["import", "mode"]],
   "import.includeBranches": [["import", "includeBranches"]],
   "import.manifestPath": [["import", "manifestPath"]],
   "import.checkpointPath": [["import", "checkpointPath"]],
@@ -184,6 +187,7 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   retainEnabled: "retain.enabled",
   retainAsync: "retain.async",
   queuePath: "retain.queuePath",
+  importMode: "import.mode",
   importBranches: "import.includeBranches",
   importManifest: "import.manifestPath",
   importCheckpoint: "import.checkpointPath",

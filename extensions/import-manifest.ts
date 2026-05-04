@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
-import type { UpdateMode } from "./types.js";
+import type { ImportMode, UpdateMode } from "./types.js";
 
 export interface ImportManifestEntry {
   documentId: string;
@@ -14,6 +14,7 @@ export interface ImportManifestEntry {
   sessionId: string;
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
+  importMode?: ImportMode;
   updateMode: UpdateMode;
 }
 
@@ -53,6 +54,10 @@ function isImportManifestEntry(value: unknown): value is ImportManifestEntry {
     typeof value.sessionId === "string" &&
     typeof value.cwd === "string" &&
     (value.includeBranches === "current-only" || value.includeBranches === "all-leaves") &&
+    (value.importMode === undefined ||
+      value.importMode === "curated" ||
+      value.importMode === "raw" ||
+      value.importMode === "forensic") &&
     (value.updateMode === "append" || value.updateMode === "replace")
   );
 }

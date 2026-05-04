@@ -93,6 +93,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     shutdownFlushTimeoutMs: 2_000,
   },
   import: {
+    mode: "curated",
     includeBranches: "current-only",
     replaceExistingImportedDocs: true,
     manifestPath: ".pi/hindsight/import-manifest.json",

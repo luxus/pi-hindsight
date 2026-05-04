@@ -336,6 +336,17 @@ export function buildBaseConfigEditingFields(
       advanced: true,
     }),
     selectField({
+      id: "importMode",
+      tab: "Import",
+      label: "Import mode",
+      description:
+        "Curated drops noisy successful tool results from preview metrics; raw keeps current raw branch import behavior; forensic preserves recall blocks too.",
+      value: config.import.mode,
+      defaultValue: defaults.import.mode,
+      resetKey: "import.mode",
+      choices: ["curated", "raw", "forensic"],
+    }),
+    selectField({
       id: "importBranches",
       tab: "Import",
       label: "Historical import scope",
@@ -457,6 +468,7 @@ export const PROJECT_ONLY_FIELD_IDS = new Set<FieldId>([
   "projectBankId",
   "memoryProfile",
   "queuePath",
+  "importMode",
   "importBranches",
   "importManifest",
   "importCheckpoint",
@@ -587,6 +599,8 @@ export function patchForConfigEditingField(
       return { retainAsync: value === "Enable" };
     case "queuePath":
       return { queuePath: value.trim() };
+    case "importMode":
+      return { importMode: value as "curated" | "raw" | "forensic" };
     case "importBranches":
       return { importIncludeBranches: value as "current-only" | "all-leaves" };
     case "importManifest":

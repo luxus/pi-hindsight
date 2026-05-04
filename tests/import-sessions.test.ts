@@ -108,12 +108,74 @@ describe("Pi session import", () => {
       messageCount: 5,
       projectedMessageCount: 3,
       droppedToolResultCount: 2,
+      keptToolErrorCount: 1,
+      keptToolErrorBytes: expect.any(Number),
+      estimatedDocumentCount: 1,
+      estimatedChunkCount: expect.any(Number),
+      importMode: "curated",
       topDroppedTools: expect.arrayContaining([
         { name: "read", count: 1, bytes: expect.any(Number) },
         { name: "unknown", count: 1, bytes: expect.any(Number) },
       ]),
       wouldWrite: false,
     });
+  });
+
+  it("supports raw and forensic import modes as explicit escape hatches", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-mode-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-mode", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          parentId: null,
+          message: { role: "user", content: "hi" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "recall-memory",
+          parentId: "u1",
+          message: { role: "assistant", content: "<hindsight-memory>recall</hindsight-memory>" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "tool1",
+          parentId: "recall-memory",
+          message: { role: "toolResult", name: "read", content: "successful output" },
+        }),
+      ].join("\n"),
+    );
+
+    const raw = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config: { ...DEFAULT_CONFIG, import: { ...DEFAULT_CONFIG.import, mode: "raw" } },
+      dryRun: true,
+      client: { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
+    });
+    const forensic = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config: { ...DEFAULT_CONFIG, import: { ...DEFAULT_CONFIG.import, mode: "forensic" } },
+      dryRun: true,
+      client: { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
+    });
+
+    expect(raw.documents[0]).toMatchObject({
+      rawMessageCount: 2,
+      projectedMessageCount: 2,
+      droppedToolResultCount: 0,
+    });
+    expect(forensic.documents[0]).toMatchObject({
+      rawMessageCount: 3,
+      projectedMessageCount: 3,
+      droppedToolResultCount: 0,
+    });
+    expect(raw.documentId).toBe(forensic.documentId);
   });
 
   it("retains current branch import with repo tags, provenance, deterministic branch document id, and replace mode", async () => {

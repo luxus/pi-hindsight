@@ -369,6 +369,7 @@ describe("resolveConfig", () => {
     expect(config.retain.periodicFlushTimeoutMs).toBe(2_000);
     expect(config.retain.shutdownFlushMaxJobs).toBe(10);
     expect(config.retain.shutdownFlushTimeoutMs).toBe(2_000);
+    expect(config.import.mode).toBe("curated");
     expect(config.import.includeBranches).toBe("current-only");
     expect(config.import.checkpointPath).toBe(".pi/hindsight/import-checkpoint.json");
     expect(config.import.resume).toBe(true);

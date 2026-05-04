@@ -13,6 +13,7 @@ export type StatusDetail = "minimal" | "project" | "activity" | "verbose";
 export type RecallRole = "user" | "assistant" | "tool" | "system";
 export type RecallInjectionPosition = "prepend" | "append";
 export type GlobalRetainMode = "explicit-only" | "router";
+export type ImportMode = "curated" | "raw" | "forensic";
 
 export interface BankMissionSettings {
   retainMission?: string;
@@ -98,6 +99,7 @@ export interface ResolvedConfig {
     shutdownFlushTimeoutMs: number;
   };
   import: {
+    mode: ImportMode;
     includeBranches: "current-only" | "all-leaves";
     replaceExistingImportedDocs: boolean;
     manifestPath: string;

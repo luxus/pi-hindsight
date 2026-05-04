@@ -33,6 +33,11 @@ export interface ImportDocumentPreview {
   droppedToolResultCount?: number;
   droppedToolResultBytes?: number;
   topDroppedTools?: Array<{ name: string; count: number; bytes: number }>;
+  keptToolErrorCount?: number;
+  keptToolErrorBytes?: number;
+  estimatedDocumentCount?: number;
+  estimatedChunkCount?: number;
+  importMode?: ResolvedConfig["import"]["mode"];
   contentHash: string;
   contentBytes: number;
   tags: string[];
@@ -107,11 +112,24 @@ function buildCuratedImportProjection(
   droppedToolResultCount: number;
   droppedToolResultBytes: number;
   topDroppedTools: Array<{ name: string; count: number; bytes: number }>;
+  keptToolErrorCount: number;
+  keptToolErrorBytes: number;
+  estimatedChunkCount: number;
 } {
   const droppedTools = new Map<string, { count: number; bytes: number }>();
+  let keptToolErrorCount = 0;
+  let keptToolErrorBytes = 0;
   const projected = messages.flatMap((message) => {
     const stableMessage = stableProjectionMessage(message.data);
     const projectedMessage = projectMessages([stableMessage as never], config);
+    if (
+      projectedMessage.length &&
+      stableMessage.role === "toolResult" &&
+      stableMessage.isError === true
+    ) {
+      keptToolErrorCount += 1;
+      keptToolErrorBytes += byteLength(stableMessage);
+    }
     if (!projectedMessage.length && stableMessage.role === "toolResult") {
       const name = toolName(stableMessage);
       const bytes = byteLength(stableMessage);
@@ -132,6 +150,9 @@ function buildCuratedImportProjection(
       (total, tool) => total + tool.bytes,
       0,
     ),
+    keptToolErrorCount,
+    keptToolErrorBytes,
+    estimatedChunkCount: Math.max(1, Math.ceil(byteLength(projected) / 8_000)),
     topDroppedTools: [...droppedTools]
       .map(([name, value]) => ({ name, ...value }))
       .sort(
@@ -147,10 +168,34 @@ function buildCuratedImportProjection(
 function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranchBuildResult {
   const leafId = args.branch.leafId;
   const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
-  const branchMessages = args.branch.messages.filter(
-    (message) => !isInjectedHindsightMemory(message.data),
-  );
-  const projection = buildCuratedImportProjection(branchMessages, args.config);
+  const mode = args.config.import.mode;
+  const branchMessages =
+    mode === "forensic"
+      ? args.branch.messages
+      : args.branch.messages.filter((message) => !isInjectedHindsightMemory(message.data));
+  const projection =
+    mode === "curated"
+      ? buildCuratedImportProjection(branchMessages, args.config)
+      : {
+          messages: branchMessages.map((message) => stableProjectionMessage(message.data)),
+          rawBytes: branchMessages.reduce((total, message) => total + byteLength(message.data), 0),
+          projectedBytes: byteLength(branchMessages.map((message) => message.data)),
+          droppedToolResultCount: 0,
+          droppedToolResultBytes: 0,
+          topDroppedTools: [],
+          keptToolErrorCount: branchMessages.filter(
+            (message) => message.data.role === "toolResult" && message.data.isError === true,
+          ).length,
+          keptToolErrorBytes: branchMessages
+            .filter(
+              (message) => message.data.role === "toolResult" && message.data.isError === true,
+            )
+            .reduce((total, message) => total + byteLength(message.data), 0),
+          estimatedChunkCount: Math.max(
+            1,
+            Math.ceil(byteLength(branchMessages.map((message) => message.data)) / 8_000),
+          ),
+        };
   const documentId = importDocumentId(args.sessionId, leafId);
   const updateMode = args.config.import.replaceExistingImportedDocs ? "replace" : "append";
   const contentRaw = JSON.stringify(
@@ -164,7 +209,12 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
         ? { parentSessionFile: args.parsed.parentSessionFile }
         : {}),
       branchLeafId: leafId,
-      projection: "raw-with-curated-preview-v1",
+      projection:
+        mode === "curated"
+          ? "raw-with-curated-preview-v1"
+          : mode === "forensic"
+            ? "forensic-raw-v1"
+            : "raw-v1",
       projectedMessageCount: projection.messages.length,
       messages: branchMessages.map((message) => message.data),
     },
@@ -200,6 +250,11 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
     droppedToolResultCount: projection.droppedToolResultCount,
     droppedToolResultBytes: projection.droppedToolResultBytes,
     topDroppedTools: projection.topDroppedTools,
+    keptToolErrorCount: projection.keptToolErrorCount,
+    keptToolErrorBytes: projection.keptToolErrorBytes,
+    estimatedDocumentCount: 1,
+    estimatedChunkCount: projection.estimatedChunkCount,
+    importMode: mode,
     contentHash,
     contentBytes: Buffer.byteLength(content, "utf8"),
     tags,
@@ -219,6 +274,7 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
     sessionId: args.sessionId,
     cwd: args.cwd,
     includeBranches: args.config.import.includeBranches,
+    importMode: mode,
     updateMode,
   };
   return {
@@ -258,6 +314,7 @@ export async function retainImportBranch(args: ImportRetainArgs): Promise<Import
         ? { parent_session_file: args.parsed.parentSessionFile }
         : {}),
       branch_leaf_id: built.document.leafId,
+      import_mode: args.config.import.mode,
       include_branches: args.config.import.includeBranches,
       ...(args.parsed.sessionTimestamp ? { session_timestamp: args.parsed.sessionTimestamp } : {}),
     },

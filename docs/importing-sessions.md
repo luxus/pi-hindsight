@@ -28,7 +28,7 @@ Tool equivalent:
 hindsight_import({ dryRun: true })
 ```
 
-Preview output includes document count, raw message count, curated projection count, dropped non-error tool-result count, byte counts, update mode, target bank, checkpoint path, and manifest path. The curated projection metrics show likely import noise without replacing the raw structured source payload.
+Preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise without replacing the raw structured source payload.
 
 ## Import commands
 
@@ -91,6 +91,14 @@ To rebuild from historical sessions after clearing a Hindsight bank, remove or m
 
 Then rerun the import. Use `--dry-run` first.
 
+## Import modes
+
+The default import mode is `curated`. It keeps deterministic raw historical documents as the retained source payload, then computes projection metrics using the live retain filter so previews show how much successful tool-output noise is likely irrelevant.
+
+Use `raw` when you want the previous branch-document behavior without curated drop metrics. Raw mode still filters Hindsight recall blocks to avoid re-retaining injected memory.
+
+Use `forensic` only for audit/recovery. It preserves recall blocks and other normally filtered records, so preview output includes an explicit warning.
+
 ## Safety
 
-Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Recalled memory blocks injected by this extension are filtered so they are not retained back into Hindsight. Import previews also compute curated projection metrics using the live retain filter so you can see how much tool-output noise future curated import modes could drop.
+Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Recalled memory blocks injected by this extension are filtered in `curated` and `raw` modes so they are not retained back into Hindsight. Import previews compute curated projection metrics using the live retain filter.

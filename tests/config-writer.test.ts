@@ -75,6 +75,7 @@ describe("config writer", () => {
         recallStoreLast: true,
         recallStoreFailures: true,
         retainAsync: false,
+        importMode: "raw",
         importIncludeBranches: "all-leaves",
         importManifestPath: ".pi/custom-manifest.json",
         importCheckpointPath: ".pi/custom-checkpoint.json",
@@ -97,6 +98,7 @@ describe("config writer", () => {
       },
       retain: { async: false },
       import: {
+        mode: "raw",
         includeBranches: "all-leaves",
         manifestPath: ".pi/custom-manifest.json",
         checkpointPath: ".pi/custom-checkpoint.json",

@@ -298,6 +298,11 @@ export function normalizeConfig(
       ),
     },
     import: {
+      mode: enumValue(
+        config.import?.mode,
+        ["curated", "raw", "forensic"],
+        DEFAULT_CONFIG.import.mode,
+      ),
       includeBranches: enumValue(
         config.import?.includeBranches,
         ["current-only", "all-leaves"],
