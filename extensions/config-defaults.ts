@@ -94,6 +94,8 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   },
   import: {
     mode: "curated",
+    turnsPerDocument: 12,
+    maxDocumentBytes: 80_000,
     includeBranches: "current-only",
     replaceExistingImportedDocs: true,
     manifestPath: ".pi/hindsight/import-manifest.json",

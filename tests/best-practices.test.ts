@@ -182,7 +182,9 @@ describe("Hindsight best-practice invariants", () => {
       dryRun: true,
     });
 
-    expect(first.documentId).toBe("pi-import:session-import:leaf:leaf");
+    expect(first.documentId).toBe(
+      "pi-import:session-import:leaf:leaf:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
+    );
     expect(second.documentId).toBe(first.documentId);
     expect(first.documents[0]).toMatchObject({
       documentId: first.documentId,

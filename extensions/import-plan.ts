@@ -52,6 +52,7 @@ export function buildImportPlan(args: {
     bankId: args.bankId,
     sessionId,
     includeBranches,
+    importMode: args.config.import.mode,
     updateMode,
   });
   return {

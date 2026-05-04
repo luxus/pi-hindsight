@@ -121,6 +121,101 @@ describe("Pi session import", () => {
     });
   });
 
+  it("chunks curated import documents by user turns with deterministic IDs and checkpoint metadata", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-chunks-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-chunks", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          parentId: null,
+          message: { role: "user", content: "one" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          parentId: "u1",
+          message: { role: "assistant", content: "answer one" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "u2",
+          parentId: "a1",
+          message: { role: "user", content: "two" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a2",
+          parentId: "u2",
+          message: { role: "assistant", content: "answer two" },
+        }),
+      ].join("\n"),
+    );
+    const calls: unknown[][] = [];
+    const config = {
+      ...DEFAULT_CONFIG,
+      import: { ...DEFAULT_CONFIG.import, turnsPerDocument: 1, maxDocumentBytes: 100_000 },
+    };
+
+    const result = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config,
+      client: {
+        retain: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+    });
+    const checkpoint = await readImportCheckpoint(result.checkpointPath);
+    const manifest = await readImportManifest(result.manifestPath);
+
+    expect(result.documents).toHaveLength(2);
+    expect(result.documents.map((document) => document.documentId)).toEqual([
+      "pi-import:session-chunks:leaf:a2:turns-1-bytes-100000:curated-turns-v1:chunk-0-0-1",
+      "pi-import:session-chunks:leaf:a2:turns-1-bytes-100000:curated-turns-v1:chunk-1-2-3",
+    ]);
+    expect(result.documents[0]).toMatchObject({
+      messageCount: 2,
+      importMode: "curated",
+      projectionVersion: "curated-turns-v1",
+      importProfile: "turns-1-bytes-100000",
+      chunkIndex: 0,
+      messageRange: { start: 0, end: 1 },
+      estimatedDocumentCount: 2,
+    });
+    expect(Object.values(checkpoint?.documents ?? {})).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          documentId:
+            "pi-import:session-chunks:leaf:a2:turns-1-bytes-100000:curated-turns-v1:chunk-1-2-3",
+          importMode: "curated",
+          projectionVersion: "curated-turns-v1",
+          importProfile: "turns-1-bytes-100000",
+          chunkIndex: 1,
+          messageRange: { start: 2, end: 3 },
+        }),
+      ]),
+    );
+    expect(
+      manifest.imports[
+        "pi-import:session-chunks:leaf:a2:turns-1-bytes-100000:curated-turns-v1:chunk-0-0-1"
+      ],
+    ).toMatchObject({
+      importMode: "curated",
+      projectionVersion: "curated-turns-v1",
+      chunkIndex: 0,
+      messageRange: { start: 0, end: 1 },
+    });
+    expect(calls).toHaveLength(2);
+  });
+
   it("supports raw and forensic import modes as explicit escape hatches", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-mode-"));
     mkdirSync(join(dir, ".git"));
@@ -260,10 +355,13 @@ describe("Pi session import", () => {
     });
     expect(result.messageCount).toBe(2);
     expect(result.malformedLineCount).toBe(1);
-    expect(result.documentId).toBe("pi-import:session-1:leaf:current");
+    expect(result.documentId).toBe(
+      "pi-import:session-1:leaf:current:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
+    );
     expect(result.documents).toEqual([
       expect.objectContaining({
-        documentId: "pi-import:session-1:leaf:current",
+        documentId:
+          "pi-import:session-1:leaf:current:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
         leafId: "current",
         messageCount: 2,
         contentHash: expect.any(String),
@@ -368,7 +466,7 @@ describe("Pi session import", () => {
 
     expect(calls.map((call) => (call[2] as { documentId: string }).documentId)).toEqual([
       "existing-doc",
-      "pi-import:session-backlog:leaf:root",
+      "pi-import:session-backlog:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0",
     ]);
     expect(await readRetainQueue(queuePath)).toEqual([]);
     expect(result.documents[0]?.status).toBe("completed");
@@ -409,10 +507,20 @@ describe("Pi session import", () => {
     const checkpoint = await readImportCheckpoint(
       join(dir, ".pi/hindsight/import-checkpoint.json"),
     );
-    expect(checkpoint?.documents["pi-import:session-queued:leaf:root"]?.status).toBe("queued");
-    expect(checkpoint?.documents["pi-import:session-queued:leaf:root"]?.error).toContain("queued");
+    expect(
+      checkpoint?.documents[
+        "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0"
+      ]?.status,
+    ).toBe("queued");
+    expect(
+      checkpoint?.documents[
+        "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0"
+      ]?.error,
+    ).toContain("queued");
     const queue = await readRetainQueue(resolveQueuePath(dir, DEFAULT_CONFIG.retain.queuePath));
-    expect(queue.map((job) => job.documentId)).toEqual(["pi-import:session-queued:leaf:root"]);
+    expect(queue.map((job) => job.documentId)).toEqual([
+      "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0",
+    ]);
   });
 
   it("imports all leaves only when includeBranches is all-leaves", async () => {
@@ -461,13 +569,13 @@ describe("Pi session import", () => {
     });
     expect(result.documents).toEqual([
       expect.objectContaining({
-        documentId: "pi-import:session-2:leaf:a",
+        documentId: "pi-import:session-2:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
         leafId: "a",
         messageCount: 2,
         contentHash: expect.any(String),
       }),
       expect.objectContaining({
-        documentId: "pi-import:session-2:leaf:b",
+        documentId: "pi-import:session-2:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
         leafId: "b",
         messageCount: 2,
         contentHash: expect.any(String),
@@ -475,8 +583,8 @@ describe("Pi session import", () => {
     ]);
     expect(calls).toHaveLength(2);
     expect(calls.map((call) => (call[2] as { documentId: string }).documentId)).toEqual([
-      "pi-import:session-2:leaf:a",
-      "pi-import:session-2:leaf:b",
+      "pi-import:session-2:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
+      "pi-import:session-2:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
     ]);
   });
 
@@ -663,7 +771,8 @@ describe("Pi session import", () => {
     await expect(readImportCheckpoint(result.checkpointPath)).resolves.toBeUndefined();
     expect(result.documents).toEqual([
       expect.objectContaining({
-        documentId: "pi-import:session-preview:leaf:a",
+        documentId:
+          "pi-import:session-preview:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
         leafId: "a",
         messageCount: 2,
         contentBytes: expect.any(Number),
@@ -681,7 +790,8 @@ describe("Pi session import", () => {
         wouldWrite: false,
       }),
       expect.objectContaining({
-        documentId: "pi-import:session-preview:leaf:b",
+        documentId:
+          "pi-import:session-preview:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
         leafId: "b",
         messageCount: 2,
         wouldWrite: false,
@@ -781,8 +891,16 @@ describe("Pi session import", () => {
     const checkpoint = await readImportCheckpoint(
       join(dir, ".pi/hindsight/import-checkpoint.json"),
     );
-    expect(checkpoint?.documents["pi-import:session-resume:leaf:a"]?.status).toBe("completed");
-    expect(checkpoint?.documents["pi-import:session-resume:leaf:b"]?.status).toBe("queued");
+    expect(
+      checkpoint?.documents[
+        "pi-import:session-resume:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1"
+      ]?.status,
+    ).toBe("completed");
+    expect(
+      checkpoint?.documents[
+        "pi-import:session-resume:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1"
+      ]?.status,
+    ).toBe("queued");
 
     const secondCalls: unknown[][] = [];
     const result = await importPiSession({
@@ -801,22 +919,28 @@ describe("Pi session import", () => {
 
     expect(secondCalls).toHaveLength(1);
     const retainedOptions = secondCalls[0]?.[2] as { documentId: string };
-    expect(retainedOptions.documentId).toBe("pi-import:session-resume:leaf:b");
+    expect(retainedOptions.documentId).toBe(
+      "pi-import:session-resume:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
+    );
     expect(result.documents.map((document) => [document.leafId, document.status])).toEqual([
       ["a", "skipped"],
       ["b", "completed"],
     ]);
     const resumedCheckpoint = await readImportCheckpoint(result.checkpointPath);
-    expect(resumedCheckpoint?.documents["pi-import:session-resume:leaf:a"]?.status).toBe(
-      "completed",
-    );
-    expect(resumedCheckpoint?.documents["pi-import:session-resume:leaf:b"]?.status).toBe(
-      "completed",
-    );
+    expect(
+      resumedCheckpoint?.documents[
+        "pi-import:session-resume:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1"
+      ]?.status,
+    ).toBe("completed");
+    expect(
+      resumedCheckpoint?.documents[
+        "pi-import:session-resume:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1"
+      ]?.status,
+    ).toBe("completed");
     const manifest = await readImportManifest(result.manifestPath);
     expect(Object.keys(manifest.imports).sort()).toEqual([
-      "pi-import:session-resume:leaf:a",
-      "pi-import:session-resume:leaf:b",
+      "pi-import:session-resume:leaf:a:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
+      "pi-import:session-resume:leaf:b:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-1",
     ]);
   });
 
@@ -903,7 +1027,9 @@ describe("Pi session import", () => {
         },
       });
 
-      expect(result.documents[0]?.documentId).toBe("pi-import:session-normalized:leaf:root");
+      expect(result.documents[0]?.documentId).toBe(
+        "pi-import:session-normalized:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0",
+      );
     },
   );
 
@@ -1117,7 +1243,9 @@ describe("Pi session import", () => {
 
     expect(secondCalls).toHaveLength(1);
     const retainedOptions = secondCalls[0]?.[2] as { documentId: string };
-    expect(retainedOptions.documentId).toBe("pi-import:second:leaf:1");
+    expect(retainedOptions.documentId).toBe(
+      "pi-import:second:leaf:1:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0",
+    );
     expect(result.imported.map((item) => [item.sessionFile, item.documents[0]?.status])).toEqual([
       [first, "skipped"],
       [second, "completed"],

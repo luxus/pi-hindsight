@@ -15,6 +15,10 @@ export interface ImportManifestEntry {
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
   importMode?: ImportMode;
+  projectionVersion?: string;
+  importProfile?: string;
+  chunkIndex?: number;
+  messageRange?: { start: number; end: number };
   updateMode: UpdateMode;
 }
 

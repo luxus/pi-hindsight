@@ -100,6 +100,8 @@ export interface ResolvedConfig {
   };
   import: {
     mode: ImportMode;
+    turnsPerDocument: number;
+    maxDocumentBytes: number;
     includeBranches: "current-only" | "all-leaves";
     replaceExistingImportedDocs: boolean;
     manifestPath: string;

@@ -19,6 +19,11 @@ export interface ImportSessionDocumentResult {
   documentId: string;
   leafId: string;
   messageCount: number;
+  importMode?: "curated" | "raw" | "forensic";
+  projectionVersion?: string;
+  importProfile?: string;
+  chunkIndex?: number;
+  messageRange?: { start: number; end: number };
   contentHash: string;
   contentBytes: number;
   tags: string[];
@@ -69,6 +74,7 @@ export async function executeImportPlan(args: {
           sessionId,
           cwd,
           includeBranches,
+          importMode: importConfig.import.mode,
           updateMode,
           now,
         });
@@ -86,72 +92,113 @@ export async function executeImportPlan(args: {
       leaves,
       branch,
     };
-    const preview = previewImportBranch(common);
-    const previous = checkpoint.documents[preview.document.documentId];
-    const canSkip =
-      !args.dryRun &&
-      importConfig.import.resume &&
-      previous?.status === "completed" &&
-      previous.contentHash === preview.document.contentHash;
-    if (args.dryRun || canSkip) {
-      results.push({
-        ...preview,
-        document: {
-          ...preview.document,
-          wouldWrite: false,
-          status: canSkip ? ("skipped" as const) : preview.document.status,
-        },
-      });
-      continue;
-    }
+    const previews = previewImportBranch(common);
+    for (const preview of previews) {
+      const previous = checkpoint.documents[preview.document.documentId];
+      const canSkip =
+        !args.dryRun &&
+        importConfig.import.resume &&
+        previous?.status === "completed" &&
+        previous.contentHash === preview.document.contentHash;
+      if (args.dryRun || canSkip) {
+        results.push({
+          ...preview,
+          document: {
+            ...preview.document,
+            wouldWrite: false,
+            status: canSkip ? ("skipped" as const) : preview.document.status,
+          },
+        });
+        continue;
+      }
 
-    checkpoint.documents[preview.document.documentId] = {
-      documentId: preview.document.documentId,
-      leafId: preview.document.leafId,
-      contentHash: preview.document.contentHash,
-      messageCount: preview.document.messageCount,
-      status: "pending",
-      updatedAt: new Date().toISOString(),
-    };
-    await writeImportCheckpoint(checkpointPath, checkpoint);
-
-    try {
-      const retained = await retainImportBranch({ ...common, client: args.client });
-      const completedAt = new Date().toISOString();
-      checkpoint.documents[retained.document.documentId] = {
-        documentId: retained.document.documentId,
-        leafId: retained.document.leafId,
-        contentHash: retained.document.contentHash,
-        messageCount: retained.document.messageCount,
-        status: "completed",
-        updatedAt: completedAt,
-      };
-      checkpoint.updatedAt = completedAt;
-      await writeImportCheckpoint(checkpointPath, checkpoint);
-      results.push({
-        ...retained,
-        document: { ...retained.document, status: "completed" as const },
-      });
-    } catch (error) {
-      const failedAt = new Date().toISOString();
-      const message = redactError(error);
-      const status = isImportRetainQueuedError(error) ? "queued" : "failed";
       checkpoint.documents[preview.document.documentId] = {
         documentId: preview.document.documentId,
         leafId: preview.document.leafId,
         contentHash: preview.document.contentHash,
         messageCount: preview.document.messageCount,
-        status,
-        updatedAt: failedAt,
-        error: message,
+        ...(preview.document.importMode ? { importMode: preview.document.importMode } : {}),
+        ...(preview.document.projectionVersion
+          ? { projectionVersion: preview.document.projectionVersion }
+          : {}),
+        ...(preview.document.importProfile
+          ? { importProfile: preview.document.importProfile }
+          : {}),
+        ...(preview.document.chunkIndex !== undefined
+          ? { chunkIndex: preview.document.chunkIndex }
+          : {}),
+        ...(preview.document.messageRange ? { messageRange: preview.document.messageRange } : {}),
+        status: "pending",
+        updatedAt: new Date().toISOString(),
       };
-      checkpoint.updatedAt = failedAt;
       await writeImportCheckpoint(checkpointPath, checkpoint);
-      results.push({
-        ...preview,
-        document: { ...preview.document, status, error: message },
-      });
-      throw error;
+
+      try {
+        const retained = await retainImportBranch({
+          ...common,
+          client: args.client,
+          documentId: preview.document.documentId,
+        });
+        const completedAt = new Date().toISOString();
+        checkpoint.documents[retained.document.documentId] = {
+          documentId: retained.document.documentId,
+          leafId: retained.document.leafId,
+          contentHash: retained.document.contentHash,
+          messageCount: retained.document.messageCount,
+          ...(retained.document.importMode ? { importMode: retained.document.importMode } : {}),
+          ...(retained.document.projectionVersion
+            ? { projectionVersion: retained.document.projectionVersion }
+            : {}),
+          ...(retained.document.importProfile
+            ? { importProfile: retained.document.importProfile }
+            : {}),
+          ...(retained.document.chunkIndex !== undefined
+            ? { chunkIndex: retained.document.chunkIndex }
+            : {}),
+          ...(retained.document.messageRange
+            ? { messageRange: retained.document.messageRange }
+            : {}),
+          status: "completed",
+          updatedAt: completedAt,
+        };
+        checkpoint.updatedAt = completedAt;
+        await writeImportCheckpoint(checkpointPath, checkpoint);
+        results.push({
+          ...retained,
+          document: { ...retained.document, status: "completed" as const },
+        });
+      } catch (error) {
+        const failedAt = new Date().toISOString();
+        const message = redactError(error);
+        const status = isImportRetainQueuedError(error) ? "queued" : "failed";
+        checkpoint.documents[preview.document.documentId] = {
+          documentId: preview.document.documentId,
+          leafId: preview.document.leafId,
+          contentHash: preview.document.contentHash,
+          messageCount: preview.document.messageCount,
+          ...(preview.document.importMode ? { importMode: preview.document.importMode } : {}),
+          ...(preview.document.projectionVersion
+            ? { projectionVersion: preview.document.projectionVersion }
+            : {}),
+          ...(preview.document.importProfile
+            ? { importProfile: preview.document.importProfile }
+            : {}),
+          ...(preview.document.chunkIndex !== undefined
+            ? { chunkIndex: preview.document.chunkIndex }
+            : {}),
+          ...(preview.document.messageRange ? { messageRange: preview.document.messageRange } : {}),
+          status,
+          updatedAt: failedAt,
+          error: message,
+        };
+        checkpoint.updatedAt = failedAt;
+        await writeImportCheckpoint(checkpointPath, checkpoint);
+        results.push({
+          ...preview,
+          document: { ...preview.document, status, error: message },
+        });
+        throw error;
+      }
     }
   }
 

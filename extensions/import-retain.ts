@@ -38,6 +38,10 @@ export interface ImportDocumentPreview {
   estimatedDocumentCount?: number;
   estimatedChunkCount?: number;
   importMode?: ResolvedConfig["import"]["mode"];
+  projectionVersion?: string;
+  importProfile?: string;
+  chunkIndex?: number;
+  messageRange?: { start: number; end: number };
   contentHash: string;
   contentBytes: number;
   tags: string[];
@@ -165,7 +169,86 @@ function buildCuratedImportProjection(
   };
 }
 
-function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranchBuildResult {
+const CURATED_PROJECTION_VERSION = "curated-turns-v1";
+
+interface ImportChunk {
+  index: number;
+  messages: Array<{ message: ImportBranch["messages"][number]; originalIndex: number }>;
+  start: number;
+  end: number;
+}
+
+function chunkCuratedMessages(
+  messages: ImportBranch["messages"],
+  config: ResolvedConfig,
+): ImportChunk[] {
+  const indexed = messages.map((message, originalIndex) => ({ message, originalIndex }));
+  const turns: ImportChunk[] = [];
+  let current: ImportChunk["messages"] = [];
+  for (const entry of indexed) {
+    if (entry.message.data.role === "user" && current.length) {
+      turns.push({
+        index: turns.length,
+        messages: current,
+        start: current[0]!.originalIndex,
+        end: current.at(-1)!.originalIndex,
+      });
+      current = [];
+    }
+    current.push(entry);
+  }
+  if (current.length)
+    turns.push({
+      index: turns.length,
+      messages: current,
+      start: current[0]!.originalIndex,
+      end: current.at(-1)!.originalIndex,
+    });
+  const chunks: ImportChunk[] = [];
+  let chunk: ImportChunk["messages"] = [];
+  let turnCount = 0;
+  const flush = () => {
+    if (!chunk.length) return;
+    chunks.push({
+      index: chunks.length,
+      messages: chunk,
+      start: chunk[0]!.originalIndex,
+      end: chunk.at(-1)!.originalIndex,
+    });
+    chunk = [];
+    turnCount = 0;
+  };
+  for (const turn of turns) {
+    const nextMessages = [...chunk, ...turn.messages];
+    const wouldOverflowTurns = turnCount >= config.import.turnsPerDocument;
+    const wouldOverflowBytes =
+      chunk.length > 0 &&
+      byteLength(nextMessages.map((entry) => entry.message.data)) > config.import.maxDocumentBytes;
+    if (wouldOverflowTurns || wouldOverflowBytes) flush();
+    chunk.push(...turn.messages);
+    turnCount += 1;
+  }
+  flush();
+  return chunks.length ? chunks : [{ index: 0, messages: [], start: 0, end: 0 }];
+}
+
+function curatedImportProfile(config: ResolvedConfig): string {
+  return `turns-${config.import.turnsPerDocument}-bytes-${config.import.maxDocumentBytes}`;
+}
+
+function importChunkDocumentId(args: {
+  sessionId: string;
+  leafId: string;
+  mode: ResolvedConfig["import"]["mode"];
+  profile?: string;
+  chunk?: ImportChunk;
+}): string {
+  if (args.mode !== "curated" || !args.chunk || !args.profile)
+    return importDocumentId(args.sessionId, args.leafId);
+  return `${importDocumentId(args.sessionId, args.leafId)}:${args.profile}:${CURATED_PROJECTION_VERSION}:chunk-${args.chunk.index}-${args.chunk.start}-${args.chunk.end}`;
+}
+
+function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranchBuildResult[] {
   const leafId = args.branch.leafId;
   const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
   const mode = args.config.import.mode;
@@ -173,64 +256,18 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
     mode === "forensic"
       ? args.branch.messages
       : args.branch.messages.filter((message) => !isInjectedHindsightMemory(message.data));
-  const projection =
+  const chunks =
     mode === "curated"
-      ? buildCuratedImportProjection(branchMessages, args.config)
-      : {
-          messages: branchMessages.map((message) => stableProjectionMessage(message.data)),
-          rawBytes: branchMessages.reduce((total, message) => total + byteLength(message.data), 0),
-          projectedBytes: byteLength(branchMessages.map((message) => message.data)),
-          droppedToolResultCount: 0,
-          droppedToolResultBytes: 0,
-          topDroppedTools: [],
-          keptToolErrorCount: branchMessages.filter(
-            (message) => message.data.role === "toolResult" && message.data.isError === true,
-          ).length,
-          keptToolErrorBytes: branchMessages
-            .filter(
-              (message) => message.data.role === "toolResult" && message.data.isError === true,
-            )
-            .reduce((total, message) => total + byteLength(message.data), 0),
-          estimatedChunkCount: Math.max(
-            1,
-            Math.ceil(byteLength(branchMessages.map((message) => message.data)) / 8_000),
-          ),
-        };
-  const documentId = importDocumentId(args.sessionId, leafId);
+      ? chunkCuratedMessages(branchMessages, args.config)
+      : [
+          {
+            index: 0,
+            messages: branchMessages.map((message, originalIndex) => ({ message, originalIndex })),
+            start: 0,
+            end: Math.max(0, branchMessages.length - 1),
+          },
+        ];
   const updateMode = args.config.import.replaceExistingImportedDocs ? "replace" : "append";
-  const contentRaw = JSON.stringify(
-    {
-      source: "pi-session-import",
-      sessionFile: args.sessionFile,
-      cwd: args.parsed.cwd,
-      sessionId: args.sessionId,
-      ...(parentSessionId ? { parentSessionId } : {}),
-      ...(args.parsed.parentSessionFile
-        ? { parentSessionFile: args.parsed.parentSessionFile }
-        : {}),
-      branchLeafId: leafId,
-      projection:
-        mode === "curated"
-          ? "raw-with-curated-preview-v1"
-          : mode === "forensic"
-            ? "forensic-raw-v1"
-            : "raw-v1",
-      projectedMessageCount: projection.messages.length,
-      messages: branchMessages.map((message) => message.data),
-    },
-    null,
-    2,
-  );
-  const content = args.config.retain.redactSecrets ? redactSecrets(contentRaw) : contentRaw;
-  const contentHash = hashImportContent(content);
-  const tags = [
-    ...baseTags(args.cwd, args.sessionId, leafId),
-    "import:historical",
-    "imported:true",
-    `document:${documentId}`,
-  ];
-  if (parentSessionId) tags.push(`parent:${parentSessionId}`);
-  if (args.leaves.length > 1) tags.push("forked:true");
   const identity = createMemoryIdentity(args.cwd, args.config, args.sessionFile);
   const observationScopes = args.config.observations.enabled
     ? expandObservationScopes(args.config.observations.scopes, {
@@ -239,60 +276,145 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
         projectBankId: args.bankId,
       })
     : [];
-  const document: ImportDocumentPreview = {
-    documentId,
-    leafId,
-    messageCount: branchMessages.length,
-    rawMessageCount: branchMessages.length,
-    projectedMessageCount: projection.messages.length,
-    rawBytes: projection.rawBytes,
-    projectedBytes: projection.projectedBytes,
-    droppedToolResultCount: projection.droppedToolResultCount,
-    droppedToolResultBytes: projection.droppedToolResultBytes,
-    topDroppedTools: projection.topDroppedTools,
-    keptToolErrorCount: projection.keptToolErrorCount,
-    keptToolErrorBytes: projection.keptToolErrorBytes,
-    estimatedDocumentCount: 1,
-    estimatedChunkCount: projection.estimatedChunkCount,
-    importMode: mode,
-    contentHash,
-    contentBytes: Buffer.byteLength(content, "utf8"),
-    tags,
-    updateMode,
-    bankId: args.bankId,
-    wouldWrite: true,
-    status: "pending" as const,
-  };
-  const manifestEntry: ImportManifestEntry = {
-    documentId,
-    bankId: args.bankId,
-    sourceFile: args.sessionFile,
-    importedAt: new Date().toISOString(),
-    contentHash,
-    messageCount: branchMessages.length,
-    leafId,
-    sessionId: args.sessionId,
-    cwd: args.cwd,
-    includeBranches: args.config.import.includeBranches,
-    importMode: mode,
-    updateMode,
-  };
-  return {
-    document,
-    manifestEntry,
-    content,
-    context: `Historical Pi session import from ${args.sessionFile}, branch ${leafId}`,
-    observationScopes,
-  };
+
+  return chunks.map((chunk) => {
+    const chunkMessages = chunk.messages.map((entry) => entry.message);
+    const projection =
+      mode === "curated"
+        ? buildCuratedImportProjection(chunkMessages, args.config)
+        : {
+            messages: chunkMessages.map((message) => stableProjectionMessage(message.data)),
+            rawBytes: chunkMessages.reduce((total, message) => total + byteLength(message.data), 0),
+            projectedBytes: byteLength(chunkMessages.map((message) => message.data)),
+            droppedToolResultCount: 0,
+            droppedToolResultBytes: 0,
+            topDroppedTools: [],
+            keptToolErrorCount: chunkMessages.filter(
+              (message) => message.data.role === "toolResult" && message.data.isError === true,
+            ).length,
+            keptToolErrorBytes: chunkMessages
+              .filter(
+                (message) => message.data.role === "toolResult" && message.data.isError === true,
+              )
+              .reduce((total, message) => total + byteLength(message.data), 0),
+            estimatedChunkCount: Math.max(
+              1,
+              Math.ceil(byteLength(chunkMessages.map((message) => message.data)) / 8_000),
+            ),
+          };
+    const importProfile = mode === "curated" ? curatedImportProfile(args.config) : undefined;
+    const documentId = importChunkDocumentId({
+      sessionId: args.sessionId,
+      leafId,
+      mode,
+      ...(importProfile ? { profile: importProfile } : {}),
+      chunk,
+    });
+    const projectionVersion = mode === "curated" ? CURATED_PROJECTION_VERSION : undefined;
+    const messageRange = { start: chunk.start, end: chunk.end };
+    const contentRaw = JSON.stringify(
+      {
+        source: "pi-session-import",
+        sessionFile: args.sessionFile,
+        cwd: args.parsed.cwd,
+        sessionId: args.sessionId,
+        ...(parentSessionId ? { parentSessionId } : {}),
+        ...(args.parsed.parentSessionFile
+          ? { parentSessionFile: args.parsed.parentSessionFile }
+          : {}),
+        branchLeafId: leafId,
+        projection:
+          mode === "curated"
+            ? projectionVersion
+            : mode === "forensic"
+              ? "forensic-raw-v1"
+              : "raw-v1",
+        ...(mode === "curated" ? { chunkIndex: chunk.index, messageRange } : {}),
+        projectedMessageCount: projection.messages.length,
+        messages: chunkMessages.map((message) => message.data),
+      },
+      null,
+      2,
+    );
+    const content = args.config.retain.redactSecrets ? redactSecrets(contentRaw) : contentRaw;
+    const contentHash = hashImportContent(content);
+    const tags = [
+      ...baseTags(args.cwd, args.sessionId, leafId),
+      "import:historical",
+      "imported:true",
+      `document:${documentId}`,
+    ];
+    if (parentSessionId) tags.push(`parent:${parentSessionId}`);
+    if (args.leaves.length > 1) tags.push("forked:true");
+    const document: ImportDocumentPreview = {
+      documentId,
+      leafId,
+      messageCount: chunkMessages.length,
+      rawMessageCount: chunkMessages.length,
+      projectedMessageCount: projection.messages.length,
+      rawBytes: projection.rawBytes,
+      projectedBytes: projection.projectedBytes,
+      droppedToolResultCount: projection.droppedToolResultCount,
+      droppedToolResultBytes: projection.droppedToolResultBytes,
+      topDroppedTools: projection.topDroppedTools,
+      keptToolErrorCount: projection.keptToolErrorCount,
+      keptToolErrorBytes: projection.keptToolErrorBytes,
+      estimatedDocumentCount: chunks.length,
+      estimatedChunkCount: projection.estimatedChunkCount,
+      importMode: mode,
+      ...(projectionVersion ? { projectionVersion } : {}),
+      ...(importProfile ? { importProfile } : {}),
+      ...(mode === "curated" ? { chunkIndex: chunk.index, messageRange } : {}),
+      contentHash,
+      contentBytes: Buffer.byteLength(content, "utf8"),
+      tags,
+      updateMode,
+      bankId: args.bankId,
+      wouldWrite: true,
+      status: "pending" as const,
+    };
+    const manifestEntry: ImportManifestEntry = {
+      documentId,
+      bankId: args.bankId,
+      sourceFile: args.sessionFile,
+      importedAt: new Date().toISOString(),
+      contentHash,
+      messageCount: chunkMessages.length,
+      leafId,
+      sessionId: args.sessionId,
+      cwd: args.cwd,
+      includeBranches: args.config.import.includeBranches,
+      importMode: mode,
+      ...(projectionVersion ? { projectionVersion } : {}),
+      ...(importProfile ? { importProfile } : {}),
+      ...(mode === "curated" ? { chunkIndex: chunk.index, messageRange } : {}),
+      updateMode,
+    };
+    return {
+      document,
+      manifestEntry,
+      content,
+      context: `Historical Pi session import from ${args.sessionFile}, branch ${leafId}, chunk ${chunk.index}`,
+      observationScopes,
+    };
+  });
 }
 
-export function previewImportBranch(args: Omit<ImportRetainArgs, "client">): ImportRetainResult {
-  const built = buildImportBranch(args);
-  return { document: { ...built.document, wouldWrite: false }, manifestEntry: built.manifestEntry };
+export function previewImportBranch(args: Omit<ImportRetainArgs, "client">): ImportRetainResult[] {
+  return buildImportBranch(args).map((built) => ({
+    document: { ...built.document, wouldWrite: false },
+    manifestEntry: built.manifestEntry,
+  }));
 }
 
-export async function retainImportBranch(args: ImportRetainArgs): Promise<ImportRetainResult> {
-  const built = buildImportBranch(args);
+export async function retainImportBranch(
+  args: ImportRetainArgs & { documentId: string },
+): Promise<ImportRetainResult> {
+  const built = buildImportBranch(args).find(
+    (candidate) => candidate.document.documentId === args.documentId,
+  );
+  if (!built)
+    throw new Error(`Import document ${args.documentId} no longer exists in import plan.`);
   const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
   const retainResult = await deliverImportRetain({
     cwd: args.cwd,
@@ -315,6 +437,20 @@ export async function retainImportBranch(args: ImportRetainArgs): Promise<Import
         : {}),
       branch_leaf_id: built.document.leafId,
       import_mode: args.config.import.mode,
+      ...(built.document.projectionVersion
+        ? { projection_version: built.document.projectionVersion }
+        : {}),
+      ...(built.document.importProfile ? { import_profile: built.document.importProfile } : {}),
+      ...(built.document.chunkIndex !== undefined
+        ? { chunk_index: String(built.document.chunkIndex) }
+        : {}),
+      ...(built.document.messageRange
+        ? {
+            message_range_start: String(built.document.messageRange.start),
+            message_range_end: String(built.document.messageRange.end),
+          }
+        : {}),
+      content_hash: built.document.contentHash,
       include_branches: args.config.import.includeBranches,
       ...(args.parsed.sessionTimestamp ? { session_timestamp: args.parsed.sessionTimestamp } : {}),
     },

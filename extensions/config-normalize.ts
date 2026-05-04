@@ -303,6 +303,14 @@ export function normalizeConfig(
         ["curated", "raw", "forensic"],
         DEFAULT_CONFIG.import.mode,
       ),
+      turnsPerDocument: positiveInt(
+        config.import?.turnsPerDocument,
+        DEFAULT_CONFIG.import.turnsPerDocument,
+      ),
+      maxDocumentBytes: positiveInt(
+        config.import?.maxDocumentBytes,
+        DEFAULT_CONFIG.import.maxDocumentBytes,
+      ),
       includeBranches: enumValue(
         config.import?.includeBranches,
         ["current-only", "all-leaves"],

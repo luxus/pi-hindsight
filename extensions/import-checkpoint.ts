@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
-import type { UpdateMode } from "./types.js";
+import type { ImportMode, UpdateMode } from "./types.js";
 
 export type ImportDocumentStatus = "pending" | "queued" | "completed" | "failed" | "skipped";
 
@@ -9,6 +9,11 @@ export interface ImportCheckpointDocument {
   leafId: string;
   contentHash: string;
   messageCount: number;
+  importMode?: ImportMode;
+  projectionVersion?: string;
+  importProfile?: string;
+  chunkIndex?: number;
+  messageRange?: { start: number; end: number };
   status: ImportDocumentStatus;
   updatedAt: string;
   error?: string;
@@ -22,6 +27,8 @@ export interface ImportCheckpoint {
   sessionId: string;
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
+  importMode?: ImportMode;
+  importProfile?: string;
   updateMode: UpdateMode;
   startedAt: string;
   updatedAt: string;
@@ -43,6 +50,7 @@ export function importRunId(args: {
   bankId: string;
   sessionId: string;
   includeBranches: "current-only" | "all-leaves";
+  importMode?: ImportMode;
   updateMode: UpdateMode;
 }): string {
   return [
@@ -50,6 +58,7 @@ export function importRunId(args: {
     args.bankId,
     args.sessionId,
     args.includeBranches,
+    args.importMode ?? "legacy",
     args.updateMode,
     args.sourceFile,
   ]
@@ -127,6 +136,7 @@ export function createImportCheckpoint(args: {
   sessionId: string;
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
+  importMode?: ImportMode;
   updateMode: UpdateMode;
   now: string;
 }): ImportCheckpoint {
@@ -138,6 +148,7 @@ export function createImportCheckpoint(args: {
     sessionId: args.sessionId,
     cwd: args.cwd,
     includeBranches: args.includeBranches,
+    ...(args.importMode ? { importMode: args.importMode } : {}),
     updateMode: args.updateMode,
     startedAt: args.now,
     updatedAt: args.now,
