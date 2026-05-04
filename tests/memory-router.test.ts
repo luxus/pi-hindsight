@@ -15,6 +15,8 @@ interface RouterEvalFixture {
   context?: string;
   expectedRoute: MemoryRoute;
   expectedSignals: MemoryRouteSignal[];
+  minConfidence: number;
+  expectedSafetyNotes: string[];
 }
 
 const routerEvalFixtures = JSON.parse(
@@ -23,7 +25,7 @@ const routerEvalFixtures = JSON.parse(
 
 describe("memory router", () => {
   it("keeps eval fixtures balanced across all route outcomes", () => {
-    expect(routerEvalFixtures).toHaveLength(12);
+    expect(routerEvalFixtures).toHaveLength(16);
     expect(new Set(routerEvalFixtures.map((fixture) => fixture.name)).size).toBe(
       routerEvalFixtures.length,
     );
@@ -31,12 +33,16 @@ describe("memory router", () => {
       "both",
       "both",
       "both",
+      "both",
+      "both",
       "global",
       "global",
       "global",
       "project",
       "project",
       "project",
+      "project",
+      "skip",
       "skip",
       "skip",
       "skip",
@@ -45,7 +51,7 @@ describe("memory router", () => {
 
   it.each(routerEvalFixtures)(
     "classifies eval fixture: $name",
-    ({ content, context, expectedRoute, expectedSignals }) => {
+    ({ content, context, expectedRoute, expectedSignals, minConfidence, expectedSafetyNotes }) => {
       const decision = routeMemoryCandidate({
         content,
         ...(context ? { context } : {}),
@@ -53,9 +59,17 @@ describe("memory router", () => {
       });
 
       expect(decision.route).toBe(expectedRoute);
+      expect(decision.confidence).toBeGreaterThanOrEqual(minConfidence);
       expect(decision.signals).toEqual(expect.arrayContaining(expectedSignals));
       expect(decision.matchedSignals.length).toBeGreaterThanOrEqual(expectedSignals.length);
+      for (const note of expectedSafetyNotes) {
+        expect(decision.safetyNotes.some((actual) => actual.includes(note))).toBe(true);
+      }
+      expect(decision.safetyNotes).toContain(
+        "dry-run only; no automatic writes in explicit-only mode",
+      );
       expect(decision.writes).toEqual([]);
+      expect(decision.targets.every((target) => !target.willWrite)).toBe(true);
     },
   );
 
@@ -96,6 +110,36 @@ describe("memory router", () => {
       expect.arrayContaining(["preference", "cross-project workflow/style"]),
     );
   });
+
+  it.each(routerEvalFixtures)(
+    "describes router-mode writes for eval fixture: $name",
+    ({ content, context, expectedRoute }) => {
+      const decision = routeMemoryCandidate({
+        content,
+        ...(context ? { context } : {}),
+        config: {
+          ...DEFAULT_CONFIG,
+          globalRetain: { mode: "router" },
+          banks: {
+            ...DEFAULT_CONFIG.banks,
+            project: { ...DEFAULT_CONFIG.banks.project, bankId: "project-bank" },
+            global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+          },
+        },
+      });
+
+      const expectedWrites =
+        expectedRoute === "both"
+          ? ["project", "global"]
+          : expectedRoute === "skip"
+            ? []
+            : [expectedRoute];
+      expect(decision.writes).toEqual(expectedWrites);
+      expect(
+        decision.targets.filter((target) => target.willWrite).map((target) => target.bankRole),
+      ).toEqual(expectedWrites);
+    },
+  );
 
   it("can describe router writes when router mode is enabled", () => {
     const decision = routeMemoryCandidate({

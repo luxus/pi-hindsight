@@ -4,83 +4,207 @@
     "content": "User prefers terse caveman-style replies across projects and wants that remembered globally.",
     "context": "Explicit long-term preference from user.",
     "expectedRoute": "global",
-    "expectedSignals": ["global"]
+    "expectedSignals": [
+      "global"
+    ],
+    "minConfidence": 0.8,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "global identity preference",
     "content": "Kai's nickname is Jadorey and pronouns should be remembered for future sessions.",
     "context": "Stable user identity across sessions.",
     "expectedRoute": "global",
-    "expectedSignals": ["global"]
+    "expectedSignals": [
+      "global"
+    ],
+    "minConfidence": 0.8,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "cross-project workflow habit",
     "content": "User always wants small reviewed work chunks handled autonomously everywhere unless risky.",
     "context": "Durable workflow preference for all workspaces.",
     "expectedRoute": "global",
-    "expectedSignals": ["global"]
+    "expectedSignals": [
+      "global"
+    ],
+    "minConfidence": 0.8,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "project implementation decision",
     "content": "In this repo, import delivery should preserve deterministic document IDs and use replace mode for historical reimports.",
     "context": "Architecture decision for pi-hindsight importer implementation.",
     "expectedRoute": "project",
-    "expectedSignals": ["project"]
+    "expectedSignals": [
+      "project"
+    ],
+    "minConfidence": 0.75,
+    "expectedSafetyNotes": []
   },
   {
     "name": "project bug fix",
     "content": "Fix the queue lock stale-owner check in queue-lock.ts so the waiter age does not decide lock expiry.",
     "context": "Bug fix scoped to this repository implementation.",
     "expectedRoute": "project",
-    "expectedSignals": ["project"]
+    "expectedSignals": [
+      "project"
+    ],
+    "minConfidence": 0.75,
+    "expectedSafetyNotes": []
   },
   {
     "name": "project delivery state",
     "content": "PR 109 raised coverage gates for queue, lock, JSONL store, and import Modules.",
     "context": "Repository delivery state from current work.",
     "expectedRoute": "project",
-    "expectedSignals": ["project"]
+    "expectedSignals": [
+      "project"
+    ],
+    "minConfidence": 0.75,
+    "expectedSafetyNotes": []
   },
   {
     "name": "project-specific user preference",
     "content": "User always wants this repo's /hindsight status to hide long bank names and show activity instead.",
     "context": "Preference scoped to the current project TUI implementation.",
     "expectedRoute": "both",
-    "expectedSignals": ["global", "project"]
+    "expectedSignals": [
+      "global",
+      "project"
+    ],
+    "minConfidence": 0.6,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "global style constrained to repo config",
     "content": "User prefers terse status notifications for this extension config and TUI workflow.",
     "context": "Preference plus project implementation context.",
     "expectedRoute": "both",
-    "expectedSignals": ["global", "project"]
+    "expectedSignals": [
+      "global",
+      "project"
+    ],
+    "minConfidence": 0.6,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "identity inside project issue",
     "content": "User nickname Jadorey should appear in this repo's import issue template examples.",
     "context": "Identity-like fact appears inside project delivery context.",
     "expectedRoute": "both",
-    "expectedSignals": ["global", "project"]
+    "expectedSignals": [
+      "global",
+      "project"
+    ],
+    "minConfidence": 0.6,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   },
   {
     "name": "temporary screenshot artifact",
     "content": "Temporary screenshot saved under /var/folders/abc/Screenshot 2026-05-02.png while debugging UI.",
     "context": "Ephemeral artifact path, not durable memory.",
     "expectedRoute": "skip",
-    "expectedSignals": ["skip"]
+    "expectedSignals": [
+      "skip"
+    ],
+    "minConfidence": 0.85,
+    "expectedSafetyNotes": [
+      "skip candidate"
+    ]
   },
   {
     "name": "temporary command scratch",
     "content": "Temporary debug note: npm test output was pasted only to inspect a transient failure.",
     "context": "Ephemeral troubleshooting scratch, not durable memory.",
     "expectedRoute": "skip",
-    "expectedSignals": ["skip"]
+    "expectedSignals": [
+      "skip"
+    ],
+    "minConfidence": 0.85,
+    "expectedSafetyNotes": [
+      "skip candidate"
+    ]
   },
   {
     "name": "screenshot only note",
     "content": "Screenshot shows a modal during one-off UI debugging.",
     "context": "Short-lived visual artifact.",
     "expectedRoute": "skip",
-    "expectedSignals": ["skip"]
+    "expectedSignals": [
+      "skip"
+    ],
+    "minConfidence": 0.85,
+    "expectedSafetyNotes": [
+      "skip candidate"
+    ]
+  },
+  {
+    "name": "secret-like bearer token",
+    "content": "Temporary outage note contained bearer token abc123 from a local debug command.",
+    "context": "Credential-like transient troubleshooting detail.",
+    "expectedRoute": "skip",
+    "expectedSignals": [
+      "skip"
+    ],
+    "minConfidence": 0.85,
+    "expectedSafetyNotes": [
+      "review/redact before retain",
+      "skip candidate"
+    ]
+  },
+  {
+    "name": "private URL in project bug",
+    "content": "Fix project webhook config after the private URL https://internal.example/token/abc failed during this repo test.",
+    "context": "Project bug mixed with private URL-like data.",
+    "expectedRoute": "project",
+    "expectedSignals": [
+      "project"
+    ],
+    "minConfidence": 0.75,
+    "expectedSafetyNotes": [
+      "review/redact before retain"
+    ]
+  },
+  {
+    "name": "ambiguous preference without scope",
+    "content": "User prefers shorter status labels.",
+    "context": "No repository or cross-project scope supplied.",
+    "expectedRoute": "both",
+    "expectedSignals": [
+      "global",
+      "project"
+    ],
+    "minConfidence": 0.6,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
+  },
+  {
+    "name": "ambiguous repo workflow preference",
+    "content": "User prefers shorter status labels for this repo workflow and TUI screen.",
+    "context": "Preference plus current repository implementation detail.",
+    "expectedRoute": "both",
+    "expectedSignals": [
+      "global",
+      "project"
+    ],
+    "minConfidence": 0.6,
+    "expectedSafetyNotes": [
+      "global memory candidate"
+    ]
   }
 ]
