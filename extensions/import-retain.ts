@@ -27,6 +27,7 @@ export interface ImportDocumentPreview {
   leafId: string;
   messageCount: number;
   rawMessageCount?: number;
+  projectedMessageCount?: number;
   rawBytes?: number;
   projectedBytes?: number;
   droppedToolResultCount?: number;
@@ -163,9 +164,9 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
         ? { parentSessionFile: args.parsed.parentSessionFile }
         : {}),
       branchLeafId: leafId,
-      projection: "curated-v1",
-      rawMessageCount: branchMessages.length,
-      messages: projection.messages,
+      projection: "raw-with-curated-preview-v1",
+      projectedMessageCount: projection.messages.length,
+      messages: branchMessages.map((message) => message.data),
     },
     null,
     2,
@@ -191,8 +192,9 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
   const document: ImportDocumentPreview = {
     documentId,
     leafId,
-    messageCount: projection.messages.length,
+    messageCount: branchMessages.length,
     rawMessageCount: branchMessages.length,
+    projectedMessageCount: projection.messages.length,
     rawBytes: projection.rawBytes,
     projectedBytes: projection.projectedBytes,
     droppedToolResultCount: projection.droppedToolResultCount,
@@ -212,7 +214,7 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
     sourceFile: args.sessionFile,
     importedAt: new Date().toISOString(),
     contentHash,
-    messageCount: projection.messages.length,
+    messageCount: branchMessages.length,
     leafId,
     sessionId: args.sessionId,
     cwd: args.cwd,

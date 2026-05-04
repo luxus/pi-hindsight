@@ -28,7 +28,7 @@ Tool equivalent:
 hindsight_import({ dryRun: true })
 ```
 
-Preview output includes document count, message count, content size, tags, update mode, target bank, checkpoint path, and manifest path.
+Preview output includes document count, raw message count, curated projection count, dropped non-error tool-result count, byte counts, update mode, target bank, checkpoint path, and manifest path. The curated projection metrics show likely import noise without replacing the raw structured source payload.
 
 ## Import commands
 
@@ -93,4 +93,4 @@ Then rerun the import. Use `--dry-run` first.
 
 ## Safety
 
-Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Recalled memory blocks injected by this extension are filtered so they are not retained back into Hindsight.
+Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Recalled memory blocks injected by this extension are filtered so they are not retained back into Hindsight. Import previews also compute curated projection metrics using the live retain filter so you can see how much tool-output noise future curated import modes could drop.

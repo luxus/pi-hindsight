@@ -62,7 +62,7 @@ describe("Pi session import", () => {
           type: "message",
           id: "u1",
           parentId: null,
-          message: { role: "user", content: "remember architecture" },
+          message: { role: "user", content: "remember architecture", timestamp: 1 },
         }),
         JSON.stringify({
           type: "message",
@@ -78,9 +78,19 @@ describe("Pi session import", () => {
         }),
         JSON.stringify({
           type: "message",
-          id: "a1",
+          id: "tool3",
           parentId: "tool2",
-          message: { role: "assistant", content: "decision recorded" },
+          message: { role: "toolResult", content: "other successful output" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          parentId: "tool3",
+          message: {
+            role: "assistant",
+            content: "decision recorded",
+            timestamp: "2026-01-02T03:04:05.000Z",
+          },
         }),
       ].join("\n"),
     );
@@ -94,10 +104,14 @@ describe("Pi session import", () => {
     });
 
     expect(result.documents[0]).toMatchObject({
-      rawMessageCount: 4,
-      messageCount: 3,
-      droppedToolResultCount: 1,
-      topDroppedTools: [{ name: "read", count: 1, bytes: expect.any(Number) }],
+      rawMessageCount: 5,
+      messageCount: 5,
+      projectedMessageCount: 3,
+      droppedToolResultCount: 2,
+      topDroppedTools: expect.arrayContaining([
+        { name: "read", count: 1, bytes: expect.any(Number) },
+        { name: "unknown", count: 1, bytes: expect.any(Number) },
+      ]),
       wouldWrite: false,
     });
   });

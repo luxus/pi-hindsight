@@ -4,6 +4,7 @@ export type ImportDocumentSummaryResult = {
     status: string;
     rawMessageCount?: number;
     messageCount?: number;
+    projectedMessageCount?: number;
     rawBytes?: number;
     projectedBytes?: number;
     droppedToolResultCount?: number;
@@ -41,7 +42,7 @@ export function importDocumentSummary(result: ImportDocumentSummaryResult): stri
     0,
   );
   const projectedMessages = result.documents.reduce(
-    (count, document) => count + (document.messageCount ?? 0),
+    (count, document) => count + (document.projectedMessageCount ?? document.messageCount ?? 0),
     0,
   );
   const droppedToolResults = result.documents.reduce(
