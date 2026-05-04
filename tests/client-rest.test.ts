@@ -3,6 +3,8 @@ import {
   assertHealthResponse,
   assertReflectResponse,
   bankConfigPath,
+  bankTemplateExportPath,
+  bankTemplateImportPath,
   createMentalModelRequestBody,
   encodeBankPath,
   mentalModelCollectionPath,
@@ -37,6 +39,10 @@ describe("Hindsight REST transport helpers", () => {
   it("encodes bank ids in REST paths", () => {
     expect(encodeBankPath("bank/id", "/reflect")).toBe("/v1/default/banks/bank%2Fid/reflect");
     expect(bankConfigPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/config");
+    expect(bankTemplateImportPath("bank/id", { dryRun: true })).toBe(
+      "/v1/default/banks/bank%2Fid/import?dry_run=true",
+    );
+    expect(bankTemplateExportPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/export");
     expect(
       updateBankConfigRequestBody({ retain_custom_instructions: "Extract carefully" }),
     ).toEqual({

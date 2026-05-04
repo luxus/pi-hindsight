@@ -8,6 +8,7 @@ function client(): HindsightLikeClient {
     retain: async () => undefined,
     recall: async () => [],
     reflect: async () => ({}),
+    exportBankTemplate: async () => ({ version: "1" }),
   };
 }
 
@@ -27,6 +28,7 @@ describe("operation catalog", () => {
       "hindsight_route_memory",
       "hindsight_delete_document",
       "hindsight_configure",
+      "hindsight_export_bank_template",
       "hindsight_import",
       "hindsight_reflect",
     ]);

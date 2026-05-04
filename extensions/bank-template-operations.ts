@@ -18,6 +18,19 @@ export function parseBankTemplateManifestJson(input: string): BankTemplateManife
   return parsed as unknown as BankTemplateManifest;
 }
 
+export function summarizeBankTemplateManifestValue(manifest: unknown): string {
+  if (!isRecord(manifest)) return JSON.stringify(manifest, null, 2);
+  const bank = isRecord(manifest.bank) ? manifest.bank : undefined;
+  const mentalModels = Array.isArray(manifest.mental_models) ? manifest.mental_models : [];
+  const directives = Array.isArray(manifest.directives) ? manifest.directives : [];
+  return [
+    `version: ${JSON.stringify(manifest.version ?? "unknown")}`,
+    `bank_overrides: ${bank ? Object.keys(bank).length : 0}`,
+    `mental_models: ${mentalModels.length}`,
+    `directives: ${directives.length}`,
+  ].join("\n");
+}
+
 export function summarizeBankTemplateImportResult(result: unknown): string {
   if (!isRecord(result)) return JSON.stringify(result, null, 2);
   const preferred = [
@@ -37,6 +50,19 @@ export function summarizeBankTemplateImportResult(result: unknown): string {
 
 export function createBankTemplateOperations(deps: MemoryOperationsDeps) {
   return {
+    async exportBankTemplate(args: { bank?: string }) {
+      const client = deps.getClient();
+      if (!client.exportBankTemplate)
+        throw new Error("Hindsight client does not support bank template export.");
+      const bankId = resolveOperationBank({
+        requestedBank: args.bank,
+        config: deps.getConfig(),
+        projectBankId: deps.getProjectBankId(),
+      });
+      const manifest = await client.exportBankTemplate(bankId);
+      return { bankId, manifest };
+    },
+
     async importBankTemplate(args: {
       bank?: string;
       manifest: BankTemplateManifest;

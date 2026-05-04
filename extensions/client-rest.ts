@@ -102,6 +102,14 @@ export function bankConfigPath(bankId: string): string {
   return encodeBankPath(bankId, "/config");
 }
 
+export function bankTemplateImportPath(bankId: string, options: { dryRun?: boolean } = {}): string {
+  return `${encodeBankPath(bankId, "/import")}${options.dryRun ? "?dry_run=true" : ""}`;
+}
+
+export function bankTemplateExportPath(bankId: string): string {
+  return encodeBankPath(bankId, "/export");
+}
+
 export function updateBankConfigRequestBody(
   updates: Record<string, unknown>,
 ): Record<string, unknown> {

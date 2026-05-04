@@ -10,6 +10,9 @@ export type RouteMemoryToolResult = ReturnType<MemoryOperations["routeMemory"]>;
 export type DeleteDocumentToolResult = Awaited<ReturnType<MemoryOperations["deleteDocument"]>>;
 export type ConfigureToolResult = Awaited<ReturnType<MemoryOperations["configure"]>>;
 export type ImportToolResult = Awaited<ReturnType<MemoryOperations["importSession"]>>;
+export type ExportBankTemplateToolResult = Awaited<
+  ReturnType<MemoryOperations["exportBankTemplate"]>
+>;
 export type RetainReceiptListResult = Awaited<ReturnType<MemoryOperations["listRetainReceipts"]>>;
 
 export function retainToolResponse(result: RetainToolResult): ToolTextResponse<RetainToolResult> {
@@ -86,6 +89,45 @@ export function importToolResponse(result: ImportToolResult): ToolTextResponse<I
     ? `Import preview: ${result.messageCount} messages would write ${result.documents.length} ${documentLabel} to ${result.bankId}. First document: ${result.documentId}. Manifest unchanged: ${result.manifestPath}.`
     : `Imported ${result.messageCount} messages into ${result.bankId} as ${result.documentId}. Manifest: ${result.manifestPath}.`;
   return { content: [{ type: "text", text }], details: result };
+}
+
+function manifestCounts(manifest: unknown): {
+  bankOverrideCount: number;
+  mentalModelCount: number;
+  directiveCount: number;
+} {
+  if (typeof manifest !== "object" || !manifest || Array.isArray(manifest)) {
+    return { bankOverrideCount: 0, mentalModelCount: 0, directiveCount: 0 };
+  }
+  const record = manifest as Record<string, unknown>;
+  const bank = record.bank;
+  return {
+    bankOverrideCount:
+      typeof bank === "object" && bank !== null && !Array.isArray(bank)
+        ? Object.keys(bank).length
+        : 0,
+    mentalModelCount: Array.isArray(record.mental_models) ? record.mental_models.length : 0,
+    directiveCount: Array.isArray(record.directives) ? record.directives.length : 0,
+  };
+}
+
+export function exportBankTemplateToolResponse(
+  result: ExportBankTemplateToolResult,
+): ToolTextResponse<ExportBankTemplateToolResult> {
+  const counts = manifestCounts(result.manifest);
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Exported bank template from ${result.bankId}.`,
+          `Bank overrides: ${counts.bankOverrideCount}; mental models: ${counts.mentalModelCount}; directives: ${counts.directiveCount}`,
+          JSON.stringify(result.manifest, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
 }
 
 export function retainReceiptListToolResponse(

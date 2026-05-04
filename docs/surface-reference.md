@@ -79,6 +79,14 @@ Write project Hindsight config (.pi/hindsight.json), including project bank over
 | `enabled`          | boolean | no       | Enable or disable Hindsight extension.                           |
 | `queuePath`        | string  | no       | Retain queue path. Defaults to .pi/hindsight/retain-queue.jsonl. |
 
+### `hindsight_export_bank_template`
+
+Export a portable Hindsight bank template manifest for reuse in another project or bank.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+
 ### `hindsight_import`
 
 Import a historical Pi session JSONL file into Hindsight with deterministic document ID.

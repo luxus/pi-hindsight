@@ -10,6 +10,7 @@ import { runHindsightSetupTui } from "./setup-tui.js";
 import {
   configureToolResponse,
   deleteDocumentToolResponse,
+  exportBankTemplateToolResponse,
   importToolResponse,
   retainReceiptListToolResponse,
   retainToolResponse,
@@ -224,6 +225,24 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         useCwd(ctx.cwd);
         const result = await operations.configure(ctx.cwd, params);
         return configureToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_export_bank_template",
+      label: "Hindsight Export Bank Template",
+      description:
+        "Export a portable Hindsight bank template manifest for reuse in another project or bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.exportBankTemplate(
+          params.bank ? { bank: params.bank } : {},
+        );
+        return exportBankTemplateToolResponse(result);
       },
     }),
     defineCatalogTool({

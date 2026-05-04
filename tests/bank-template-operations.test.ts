@@ -3,12 +3,18 @@ import {
   createBankTemplateOperations,
   parseBankTemplateManifestJson,
   summarizeBankTemplateImportResult,
+  summarizeBankTemplateManifestValue,
 } from "../extensions/bank-template-operations.js";
 import { DEFAULT_CONFIG } from "../extensions/config-defaults.js";
 import type { MemoryOperationsDeps } from "../extensions/memory-operation-types.js";
 
 function deps() {
   const importBankTemplate = vi.fn(async () => ({ dry_run: true, config_applied: true }));
+  const exportBankTemplate = vi.fn(async () => ({
+    version: "1" as const,
+    bank: { retain_mission: "Remember useful facts" },
+    mental_models: [{ id: "profile", name: "Profile", source_query: "What matters?" }],
+  }));
   const config = {
     ...DEFAULT_CONFIG,
     banks: {
@@ -18,12 +24,14 @@ function deps() {
   };
   return {
     importBankTemplate,
+    exportBankTemplate,
     deps: {
       getClient: () => ({
         retain: vi.fn(),
         recall: vi.fn(),
         reflect: vi.fn(),
         importBankTemplate,
+        exportBankTemplate,
       }),
       getConfig: () => config,
       getProjectBankId: () => "project-bank",
@@ -58,7 +66,22 @@ describe("bank template operations", () => {
     );
   });
 
-  it("formats dry-run summaries", () => {
+  it("exports bank templates through resolved bank aliases", async () => {
+    const fixture = deps();
+    const operations = createBankTemplateOperations(fixture.deps);
+
+    await expect(operations.exportBankTemplate({ bank: "global" })).resolves.toEqual({
+      bankId: "global-luxus",
+      manifest: {
+        version: "1",
+        bank: { retain_mission: "Remember useful facts" },
+        mental_models: [{ id: "profile", name: "Profile", source_query: "What matters?" }],
+      },
+    });
+    expect(fixture.exportBankTemplate).toHaveBeenCalledWith("global-luxus");
+  });
+
+  it("formats dry-run and manifest summaries", () => {
     expect(
       summarizeBankTemplateImportResult({
         dry_run: true,
@@ -68,5 +91,13 @@ describe("bank template operations", () => {
       }),
     ).toContain("mental_models_created: 2");
     expect(summarizeBankTemplateImportResult("ok")).toBe('"ok"');
+    expect(
+      summarizeBankTemplateManifestValue({
+        version: "1",
+        bank: { retain_mission: "Retain" },
+        mental_models: [{}],
+        directives: [{ name: "Rule" }],
+      }),
+    ).toContain("mental_models: 1");
   });
 });

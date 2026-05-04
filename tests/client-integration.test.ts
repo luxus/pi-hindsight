@@ -63,6 +63,10 @@ describe("Hindsight client adapter integration", () => {
         sendJson(res, 200, { dry_run: true, config_applied: true });
         return;
       }
+      if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/export") {
+        sendJson(res, 200, { version: "1", bank: { retain_mission: "Exported" } });
+        return;
+      }
       if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/config") {
         sendJson(res, 200, { config: { retain_custom_instructions: "Read from db" } });
         return;
@@ -172,6 +176,7 @@ describe("Hindsight client adapter integration", () => {
       { version: "1", bank: { retain_mission: "Retain useful facts." } },
       { dryRun: true },
     );
+    const exportedTemplate = await client.exportBankTemplate?.("test-bank");
     const bankConfig = await client.getBankConfig?.("test-bank");
     const bankConfigUpdate = await client.updateBankConfig?.("test-bank", {
       retain_custom_instructions: "Write to db",
@@ -201,6 +206,7 @@ describe("Hindsight client adapter integration", () => {
     expect(recall).toEqual({ results: [{ text: "remembered fact" }] });
     expect(reflection).toEqual({ text: "reflection" });
     expect(templateDryRun).toEqual({ dry_run: true, config_applied: true });
+    expect(exportedTemplate).toEqual({ version: "1", bank: { retain_mission: "Exported" } });
     expect(bankConfig).toEqual({ config: { retain_custom_instructions: "Read from db" } });
     expect(bankConfigUpdate).toEqual({ updated: true });
     expect(models).toEqual({ items: [{ id: "model-1", name: "Model" }] });
@@ -219,6 +225,7 @@ describe("Hindsight client adapter integration", () => {
       "POST /v1/default/banks/test-bank/memories/recall",
       "POST /v1/default/banks/test-bank/reflect",
       "POST /v1/default/banks/test-bank/import?dry_run=true",
+      "GET /v1/default/banks/test-bank/export",
       "GET /v1/default/banks/test-bank/config",
       "PATCH /v1/default/banks/test-bank/config",
       "GET /v1/default/banks/test-bank/mental-models?tags=source%3Api&tags_match=all&detail=metadata&limit=10&offset=2",
@@ -275,15 +282,15 @@ describe("Hindsight client adapter integration", () => {
       version: "1",
       bank: { retain_mission: "Retain useful facts." },
     });
-    expect(requests[8]?.body).toEqual({
+    expect(requests[9]?.body).toEqual({
       updates: { retain_custom_instructions: "Write to db" },
     });
-    expect(requests[11]?.body).toEqual({
+    expect(requests[12]?.body).toEqual({
       name: "Model",
       source_query: "What should recur?",
       tags: ["source:pi"],
       max_tokens: 256,
     });
-    expect(requests[12]?.body).toEqual({ source_query: "Updated query", tags: null });
+    expect(requests[13]?.body).toEqual({ source_query: "Updated query", tags: null });
   });
 });
