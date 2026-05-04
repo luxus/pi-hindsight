@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     storeLastRecallFailures: false,
     lastRecallPath: ".pi/hindsight/last-recall.json",
     topK: 8,
-    timeoutMs: 10_000,
+    timeoutMs: 40_000,
     injectionMode: "context",
     injectionPosition: "append",
     includeFactsInDebug: false,

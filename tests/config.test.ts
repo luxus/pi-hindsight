@@ -259,7 +259,7 @@ describe("resolveConfig", () => {
     expect(config.recall.storeLastRecallFailures).toBe(false);
     expect(config.recall.lastRecallPath).toBe(".pi/hindsight/last-recall.json");
     expect(config.recall.topK).toBe(8);
-    expect(config.recall.timeoutMs).toBe(10_000);
+    expect(config.recall.timeoutMs).toBe(40_000);
     expect(config.recall.injectionPosition).toBe("append");
     expect(config.recall.queryTimestamp).toBeUndefined();
     expect(config.globalRetain.mode).toBe("explicit-only");
