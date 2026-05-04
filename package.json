@@ -27,7 +27,8 @@
     "docs/post-mvp-roadmap.md",
     "docs/risky-memory-modes.md",
     "docs/next-opt-out-design.md",
-    "docs/surface-reference.md"
+    "docs/surface-reference.md",
+    "docs/starter-mental-model-suggestions.md"
   ],
   "type": "module",
   "publishConfig": {
