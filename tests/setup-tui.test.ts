@@ -46,6 +46,8 @@ describe("setup TUI receipt facts", () => {
       () => undefined,
     );
 
-    expect(component.render(100).join("\n")).toContain("Extract durable project");
+    const rendered = component.render(100).join("\n");
+    expect(rendered).toContain("Extract durable project");
+    expect(rendered).toContain("f flush");
   });
 });

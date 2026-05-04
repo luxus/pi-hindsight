@@ -1,6 +1,7 @@
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import type { FieldId } from "./config-editing-model.js";
-import type { MemoryOperationsDeps } from "./memory-operation-service.js";
+import { createMemoryOperations, type MemoryOperationsDeps } from "./memory-operation-service.js";
+import { flushRetainQueueNotifyLevel, formatFlushRetainQueueResult } from "./flush-presenter.js";
 import { hasProjectHindsightConfig, runGuidedSetup } from "./guided-setup.js";
 import { buildSetupTabs } from "./setup-tui-facts.js";
 import { createSetupComponent } from "./setup-tui-render.js";
@@ -69,7 +70,10 @@ export async function runHindsightSetupTui(
     try {
       if (action === "choose-deployment") await handleDeployment(ctx, deps, config);
       else if (action === "guided-setup") await runGuidedSetup({ ctx, deps, cwd: ctx.cwd });
-      else if (action === "toggle-advanced") {
+      else if (action === "flush-queue") {
+        const result = await createMemoryOperations(deps).flush(ctx.cwd);
+        ctx.ui.notify(formatFlushRetainQueueResult(result), flushRetainQueueNotifyLevel(result));
+      } else if (action === "toggle-advanced") {
         state.showAdvanced = !state.showAdvanced;
         state.selectedByTab = {};
       } else if (action.startsWith("reset:")) {

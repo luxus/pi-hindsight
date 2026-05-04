@@ -45,6 +45,7 @@ Current keyboard controls:
 - `j`/`k`: move between settings
 - `Enter`: edit selected setting
 - `r`: remove the selected setting's active override
+- `f`: flush queued retain jobs
 - `d`: deployment setup
 - `g`: rerun guided setup
 

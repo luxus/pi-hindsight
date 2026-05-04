@@ -5,6 +5,7 @@ export type SetupActionId =
   | `reset:${FieldId}`
   | "choose-deployment"
   | "guided-setup"
+  | "flush-queue"
   | "toggle-advanced"
   | "done";
 

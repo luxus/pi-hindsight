@@ -8,6 +8,7 @@ import {
   firstNonFlagArg,
   sessionFile,
 } from "./command-utils.js";
+import { flushRetainQueueNotifyLevel, formatFlushRetainQueueResult } from "./flush-presenter.js";
 
 type Operations = ReturnType<typeof createMemoryOperations>;
 
@@ -106,10 +107,7 @@ export function maintenanceCommandOperations(operations: Operations): CommandOpe
         description: "Flush queued retain jobs.",
         handler: async (_args, ctx) => {
           const result = await operations.flush(ctx.cwd);
-          ctx.ui.notify(
-            `Hindsight flushed ${result.sent}; dead-lettered ${result.deadLettered}; remaining ${result.remaining}`,
-            result.remaining || result.deadLettered ? "warning" : "info",
-          );
+          ctx.ui.notify(formatFlushRetainQueueResult(result), flushRetainQueueNotifyLevel(result));
         },
       },
     },

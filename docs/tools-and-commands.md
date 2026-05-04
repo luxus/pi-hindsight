@@ -8,7 +8,7 @@
 /hindsight
 ```
 
-Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. It also exposes setup/config editing actions.
+Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI.
 
 ## Setup and config
 
