@@ -14,7 +14,12 @@ export type SetupStep = "config" | "profile" | "banks" | "template" | "review" |
 
 export type SetupProfileChoice = "project-only" | "project-global" | "global-only";
 
-export type SetupTemplateChoice = "none" | "paste-json";
+export type SetupTemplateChoice =
+  | "none"
+  | "coding-project"
+  | "assistant-personal"
+  | "general-user"
+  | "paste-json";
 
 export type SetupUiState = {
   step?: SetupStep;

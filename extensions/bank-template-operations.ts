@@ -1,8 +1,9 @@
 import { resolveOperationBank } from "./bank-selection.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 import { isRecord } from "./client-rest.js";
+import type { BankTemplateManifest } from "./bank-template-catalog.js";
 
-export type BankTemplateManifest = Record<string, unknown>;
+export type { BankTemplateManifest } from "./bank-template-catalog.js";
 
 export function parseBankTemplateManifestJson(input: string): BankTemplateManifest {
   let parsed: unknown;
@@ -13,7 +14,8 @@ export function parseBankTemplateManifestJson(input: string): BankTemplateManife
     throw new Error(`Invalid bank template JSON: ${message}`);
   }
   if (!isRecord(parsed)) throw new Error("Invalid bank template JSON: manifest must be an object.");
-  return parsed;
+  if (parsed.version !== "1") throw new Error('Invalid bank template JSON: version must be "1".');
+  return parsed as unknown as BankTemplateManifest;
 }
 
 export function summarizeBankTemplateImportResult(result: unknown): string {

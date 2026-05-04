@@ -36,6 +36,7 @@ describe("bank template operations", () => {
     expect(parseBankTemplateManifestJson('{"version":"1"}')).toEqual({ version: "1" });
     expect(() => parseBankTemplateManifestJson("not json")).toThrow("Invalid bank template JSON");
     expect(() => parseBankTemplateManifestJson("[]")).toThrow("manifest must be an object");
+    expect(() => parseBankTemplateManifestJson("{}")).toThrow('version must be "1"');
   });
 
   it("resolves bank aliases before dry-run import", async () => {

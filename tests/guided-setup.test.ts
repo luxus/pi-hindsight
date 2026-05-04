@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config-defaults.js";
 import {
   buildGuidedSetupPatch,
+  enabledTemplateTargets,
   hasProjectHindsightConfig,
   setupProfileChoiceToMemoryProfile,
 } from "../extensions/guided-setup.js";
@@ -74,6 +75,29 @@ describe("guided setup", () => {
         config: DEFAULT_CONFIG,
       }),
     ).toEqual({ memoryProfile: "global-only", globalBankId: "global-luxus" });
+  });
+
+  it("builds template targets with concrete project and user bank locations", () => {
+    expect(
+      enabledTemplateTargets({
+        setupProfile: "project-global",
+        projectBankId: "project-bank",
+        globalBankId: "global-luxus",
+      }),
+    ).toEqual([
+      {
+        label: "Project bank (project-bank)",
+        location: "Project",
+        bank: "project-bank",
+        defaultTemplateTarget: "project",
+      },
+      {
+        label: "User bank (global-luxus)",
+        location: "User",
+        bank: "global-luxus",
+        defaultTemplateTarget: "user",
+      },
+    ]);
   });
 
   it("uses existing configured global bank ID when profile enables global memory", () => {

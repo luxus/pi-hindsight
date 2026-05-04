@@ -1,3 +1,5 @@
+import type { BankTemplateManifest } from "./bank-template-catalog.js";
+
 export type Budget = "low" | "mid" | "high";
 export type UpdateMode = "append" | "replace";
 export type RetainUserContent = "text";
@@ -286,7 +288,7 @@ export interface HindsightLikeClient {
   deleteDocument?(bankId: string, documentId: string): Promise<unknown>;
   importBankTemplate?(
     bankId: string,
-    manifest: Record<string, unknown>,
+    manifest: BankTemplateManifest,
     options?: { dryRun?: boolean },
   ): Promise<unknown>;
   listMentalModels?(bankId: string, options?: ListMentalModelsOptions): Promise<unknown>;
