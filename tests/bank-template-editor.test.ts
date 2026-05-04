@@ -106,6 +106,64 @@ describe("bank template editor", () => {
     ]);
   });
 
+  it("updates mental model fields while preserving other manifest data", () => {
+    const manifest = {
+      version: "1" as const,
+      directives: [{ name: "Keep", content: "Preserve me" }],
+      mental_models: [
+        {
+          id: "profile",
+          name: "Profile",
+          source_query: "What matters?",
+          max_tokens: 1024,
+          trigger: { mode: "full" },
+        },
+      ],
+    };
+
+    const updated = updateBankTemplateField(
+      manifest,
+      "mental_models.0.tags",
+      "profile:user, stable",
+    );
+    const withTrigger = updateBankTemplateField(
+      updated,
+      "mental_models.0.trigger.refresh_after_consolidation",
+      "true",
+    );
+
+    expect(withTrigger.directives).toEqual(manifest.directives);
+    expect(withTrigger.mental_models?.[0]).toEqual({
+      id: "profile",
+      name: "Profile",
+      source_query: "What matters?",
+      max_tokens: 1024,
+      tags: ["profile:user", "stable"],
+      trigger: { mode: "full", refresh_after_consolidation: true },
+    });
+  });
+
+  it("validates mental model trigger and tag element shape", () => {
+    expect(
+      validateBankTemplateManifestForEditing({
+        version: "1",
+        mental_models: [
+          {
+            id: "profile",
+            name: "Profile",
+            source_query: "What matters?",
+            tags: ["ok", 42] as never,
+            trigger: { mode: "fast", refresh_after_consolidation: "yes" },
+          },
+        ],
+      }),
+    ).toEqual([
+      "Mental model profile tags must be an array of strings.",
+      "Mental model profile trigger refresh_after_consolidation must be boolean.",
+      "Mental model profile trigger mode must be full or incremental.",
+    ]);
+  });
+
   it("warns when mental model tags constrain refresh source memories", () => {
     expect(
       mentalModelTagWarnings({

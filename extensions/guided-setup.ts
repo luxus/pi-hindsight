@@ -6,6 +6,13 @@ import {
   summarizeBankTemplateImportResult,
 } from "./bank-template-operations.js";
 import {
+  buildBankTemplateEditorFields,
+  mentalModelTagWarnings,
+  updateBankTemplateField,
+  validateBankTemplateManifestForEditing,
+  type BankTemplateEditorField,
+} from "./bank-template-editor.js";
+import {
   createMemoryOperations,
   type MemoryOperations,
   type MemoryOperationsDeps,
@@ -143,11 +150,69 @@ function templateChoiceFromLabel(label: string): BankTemplateProfileId | undefin
 
 function bankTemplateReview(manifest: BankTemplateManifest): string {
   const summary = summarizeBankTemplateManifest(manifest);
+  const warnings = mentalModelTagWarnings(manifest);
   return [
     `Bank overrides: ${summary.bankOverrideCount}`,
     `Mental models: ${summary.mentalModelCount}`,
     `Directives: ${summary.directiveCount}`,
+    ...(warnings.length ? ["Warnings:", ...warnings.map((warning) => `- ${warning}`)] : []),
   ].join("\n");
+}
+
+function templateFieldOption(field: BankTemplateEditorField): string {
+  const advanced = field.advanced ? " (advanced)" : "";
+  const value = field.value ? `: ${field.value}` : "";
+  return `${field.label}${advanced}${value}`;
+}
+
+function fieldFromOption(
+  fields: BankTemplateEditorField[],
+  option: string,
+): BankTemplateEditorField | undefined {
+  return fields.find((field) => templateFieldOption(field) === option);
+}
+
+function editedValueFallback(field: BankTemplateEditorField): string {
+  if (field.kind === "boolean" && field.value !== "true" && field.value !== "false") return "false";
+  return field.value;
+}
+
+export async function editTemplateManifestForSetup(args: {
+  ctx: ExtensionCommandContext;
+  label: string;
+  manifest: BankTemplateManifest;
+}): Promise<BankTemplateManifest | undefined> {
+  let manifest = cloneBankTemplateManifest(args.manifest);
+  while (true) {
+    const errors = validateBankTemplateManifestForEditing(manifest);
+    const body = [
+      `Template: ${args.label}`,
+      bankTemplateReview(manifest),
+      ...(errors.length ? ["", "Validation errors:", ...errors.map((error) => `- ${error}`)] : []),
+    ].join("\n");
+    const action = await args.ctx.ui.select(`Review or edit bank template\n${body}`, [
+      ...(errors.length === 0 ? ["Use template"] : []),
+      "Edit bank field",
+      "Cancel",
+    ]);
+    if (!action || action === "Cancel") return undefined;
+    if (action === "Use template") return manifest;
+
+    const fields = buildBankTemplateEditorFields(manifest);
+    const fieldOption = await args.ctx.ui.select(body, fields.map(templateFieldOption));
+    if (!fieldOption) continue;
+    const field = fieldFromOption(fields, fieldOption);
+    if (!field) continue;
+    const value = field.choices
+      ? await args.ctx.ui.select(`Set ${field.label}`, field.choices)
+      : await args.ctx.ui.input(`Set ${field.label}`, editedValueFallback(field));
+    if (value === undefined) continue;
+    try {
+      manifest = updateBankTemplateField(manifest, field.id, value);
+    } catch (error) {
+      args.ctx.ui.notify(error instanceof Error ? error.message : String(error), "warning");
+    }
+  }
 }
 
 async function selectTemplateManifest(args: {
@@ -218,15 +283,16 @@ async function maybeImportBankTemplate(args: {
       if (!continueWithoutCheck) continue;
     }
 
-    const reviewed = await args.ctx.ui.confirm(
-      `Review template for ${target.label}`,
-      `Template: ${selected.label}\n${bankTemplateReview(selected.manifest)}`,
-    );
-    if (!reviewed) continue;
+    const editedManifest = await editTemplateManifestForSetup({
+      ctx: args.ctx,
+      label: `${selected.label} for ${target.label}`,
+      manifest: selected.manifest,
+    });
+    if (!editedManifest) continue;
 
     const dryRun = await args.operations.importBankTemplate({
       bank: target.bank,
-      manifest: selected.manifest,
+      manifest: editedManifest,
       dryRun: true,
     });
     const dryRunSummary = summarizeBankTemplateImportResult(dryRun.result);
@@ -237,7 +303,7 @@ async function maybeImportBankTemplate(args: {
     if (!confirmed) continue;
     const applied = await args.operations.importBankTemplate({
       bank: target.bank,
-      manifest: selected.manifest,
+      manifest: editedManifest,
       dryRun: false,
     });
     args.ctx.ui.notify(
