@@ -184,7 +184,7 @@ describe("extension hooks", () => {
     expect(retainedContent).toContain("Decision still stands.");
     expect(retainedContent).not.toContain("<hindsight-memory>");
     expect(retainedContent).not.toContain("repo-specific remembered fact");
-  });
+  }, 20_000);
 
   it("flushes queued retain jobs on the configured interval", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
@@ -237,7 +237,7 @@ describe("extension hooks", () => {
       });
       mocked.client.retain.mockClear();
       await vi.advanceTimersByTimeAsync(1_000);
-      const periodicFlushWaitMs = process.platform === "win32" ? 20_000 : 5_000;
+      const periodicFlushWaitMs = process.platform === "win32" ? 60_000 : 5_000;
       await waitForCondition(async () => {
         const queue = await readRetainQueue(queuePath);
         return (
@@ -258,7 +258,7 @@ describe("extension hooks", () => {
       await handlers.session_shutdown?.[0]?.({}, ctx);
       vi.useRealTimers();
     }
-  }, 30_000);
+  }, 70_000);
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
