@@ -11,6 +11,7 @@ import {
   configureToolResponse,
   deleteDocumentToolResponse,
   exportBankTemplateToolResponse,
+  gatewayImportToolResponse,
   importToolResponse,
   retainReceiptListToolResponse,
   retainToolResponse,
@@ -277,6 +278,29 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
             : {}),
         });
         return importToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_import_gateway",
+      label: "Hindsight Import Gateway Transcript",
+      description:
+        "Import a gateway/chat transcript JSONL file into the configured user memory bank. Explicit separate path from Pi session import.",
+      parameters: Type.Object({
+        sourceFile: Type.String({ description: "Gateway transcript JSONL path." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to configured user bank." }),
+        ),
+        dryRun: Type.Optional(Type.Boolean({ description: "Preview import without writing." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.importGatewayTranscript({
+          sourceFile: params.sourceFile,
+          cwd: ctx.cwd,
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+        });
+        return gatewayImportToolResponse(result);
       },
     }),
     defineCatalogTool({

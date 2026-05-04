@@ -9,8 +9,9 @@ The extension supports:
 - current Pi session
 - explicit JSONL session file
 - all repo-scoped JSONL sessions in the current session directory
+- explicit gateway/chat transcript JSONL files for user memory
 
-Imports write deterministic document IDs and update an import manifest summarized in `/hindsight`.
+Pi session imports write deterministic document IDs and update an import manifest summarized in `/hindsight`. Gateway transcript imports use a separate explicit tool path and do not share the repo-session import flow.
 
 ## Preview first
 
@@ -22,13 +23,16 @@ Preview imports before writing memory:
 /hindsight:import-project-sessions --dry-run
 ```
 
-Tool equivalent:
+Tool equivalents:
 
 ```text
 hindsight_import({ dryRun: true })
+hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
 ```
 
-Preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise without replacing the raw structured source payload.
+Pi session preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise without replacing the raw structured source payload.
+
+Gateway preview output includes kept event count, retained user-turn count, dropped event count/type totals, malformed-line count, target user bank, content hash, and byte count.
 
 ## Import commands
 
@@ -46,6 +50,26 @@ Preview output includes document count, import mode, raw message count, curated 
 Use `--all-leaves` only when you explicitly want every fork leaf. The default imports only the current branch.
 
 Non-dry-run import commands announce the start and require confirmation because they write memory and update local checkpoint/manifest files.
+
+## Gateway transcript import
+
+Gateway import is explicit and separate from Pi session import:
+
+```text
+hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
+```
+
+By default it targets the configured user bank. Pass `bank` only when intentionally importing into a different bank.
+
+Accepted event type keys are `type`, `event`, `event_type`, and `kind`. High-signal events retained as source material are:
+
+- `user_message`
+- `assistant_reply`
+- `process_end`
+
+Streaming/UI/process noise such as `message_update` and `extension_ui_request` is dropped by default and counted in dry-run metrics. Gateway provenance is preserved with tags/metadata when present: `channel`, `channel_id`, `session_id`, `sessionId`, `conversation_id`, `conversationId`, and `thread_id`. Raw provenance values stay in metadata; tag values are normalized.
+
+If no high-signal events are found, gateway import skips writing instead of creating an empty memory document.
 
 ## Project session discovery
 

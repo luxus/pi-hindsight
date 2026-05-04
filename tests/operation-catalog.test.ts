@@ -30,6 +30,7 @@ describe("operation catalog", () => {
       "hindsight_configure",
       "hindsight_export_bank_template",
       "hindsight_import",
+      "hindsight_import_gateway",
       "hindsight_reflect",
     ]);
 

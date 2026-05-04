@@ -1,4 +1,5 @@
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
+import { importGatewayTranscript } from "./import-gateway-transcript.js";
 import { importPiSession, importProjectSessions } from "./import-sessions.js";
 import { resolveOperationBank } from "./bank-selection.js";
 
@@ -33,6 +34,30 @@ export async function importMemorySession(
     ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
   });
   return { bankId, ...result };
+}
+
+export async function importMemoryGatewayTranscript(
+  args: {
+    sourceFile: string;
+    cwd: string;
+    bank?: string;
+    dryRun?: boolean;
+  },
+  deps: ImportOperationDeps,
+) {
+  const bankId = resolveOperationBank({
+    requestedBank: args.bank ?? "global",
+    config: deps.getConfig(),
+    projectBankId: deps.getProjectBankId(),
+  });
+  return importGatewayTranscript({
+    sourceFile: args.sourceFile,
+    cwd: args.cwd,
+    bankId,
+    client: deps.getClient(),
+    config: deps.getConfig(),
+    ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+  });
 }
 
 export async function importMemoryProjectSessions(
