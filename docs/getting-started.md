@@ -37,7 +37,7 @@ In Pi, run:
 
 The setup TUI shows memory status, selected banks, retain queue state, import state, recent retain receipts, and editable configuration fields.
 
-If the repository has no project config yet, `/hindsight` offers guided setup before opening the advanced setup TUI. Guided setup can also be rerun later from the TUI with `g`.
+If the repository has no project config yet, `/hindsight` offers guided setup before opening the advanced setup TUI. Guided setup can also be rerun later from the TUI with `g`. During guided setup, you can paste an official Hindsight bank template JSON manifest; Pi Hindsight dry-runs it first, shows the result, and applies it only after confirmation. The same manifest can also be used with `POST /v1/default/banks/{bank_id}/import` or pasted in the Hindsight control plane bank creation dialog.
 
 Current keyboard controls:
 

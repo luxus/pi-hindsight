@@ -1,7 +1,15 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
-import { createMemoryOperations, type MemoryOperationsDeps } from "./memory-operation-service.js";
+import {
+  parseBankTemplateManifestJson,
+  summarizeBankTemplateImportResult,
+} from "./bank-template-operations.js";
+import {
+  createMemoryOperations,
+  type MemoryOperations,
+  type MemoryOperationsDeps,
+} from "./memory-operation-service.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "./config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
 import type { ResolvedConfig } from "./types.js";
@@ -45,6 +53,75 @@ async function askBankId(args: {
   const value = await args.ctx.ui.input(args.title, args.fallback);
   if (value === undefined) return undefined;
   return value.trim() || args.fallback;
+}
+
+function enabledTemplateTargets(args: {
+  setupProfile: SetupProfileChoice;
+  projectBankId?: string;
+  globalBankId?: string;
+}): Array<{ label: string; bank: string }> {
+  return [
+    ...(args.setupProfile !== "global-only" && args.projectBankId
+      ? [{ label: `project (${args.projectBankId})`, bank: args.projectBankId }]
+      : []),
+    ...(args.setupProfile !== "project-only" && args.globalBankId
+      ? [{ label: `global (${args.globalBankId})`, bank: args.globalBankId }]
+      : []),
+  ];
+}
+
+async function maybeImportBankTemplate(args: {
+  ctx: ExtensionCommandContext;
+  operations: MemoryOperations;
+  setupProfile: SetupProfileChoice;
+  projectBankId?: string;
+  globalBankId?: string;
+}): Promise<void> {
+  const choice = await args.ctx.ui.select("Import Hindsight bank template JSON?", [
+    "Skip",
+    "Paste JSON manifest",
+  ]);
+  if (choice !== "Paste JSON manifest") return;
+
+  const targets = enabledTemplateTargets(args);
+  if (targets.length === 0) {
+    args.ctx.ui.notify("No enabled bank target for template import.", "warning");
+    return;
+  }
+  const targetLabel =
+    targets.length === 1
+      ? targets[0]!.label
+      : await args.ctx.ui.select(
+          "Choose template import target bank",
+          targets.map((target) => target.label),
+        );
+  if (!targetLabel) return;
+  const target = targets.find((candidate) => candidate.label === targetLabel);
+  if (!target) return;
+
+  const rawManifest = await args.ctx.ui.input("Paste bank template JSON", '{"version":"1"}');
+  if (rawManifest === undefined) return;
+  const manifest = parseBankTemplateManifestJson(rawManifest);
+  const dryRun = await args.operations.importBankTemplate({
+    bank: target.bank,
+    manifest,
+    dryRun: true,
+  });
+  const dryRunSummary = summarizeBankTemplateImportResult(dryRun.result);
+  const confirmed = await args.ctx.ui.confirm(
+    `Apply template to ${dryRun.bankId}?`,
+    `Dry run result:\n${dryRunSummary}`,
+  );
+  if (!confirmed) return;
+  const applied = await args.operations.importBankTemplate({
+    bank: target.bank,
+    manifest,
+    dryRun: false,
+  });
+  args.ctx.ui.notify(
+    `Imported bank template into ${applied.bankId}: ${summarizeBankTemplateImportResult(applied.result)}`,
+    "info",
+  );
 }
 
 export async function runGuidedSetup(args: {
@@ -100,7 +177,16 @@ export async function runGuidedSetup(args: {
   const confirmed = await args.ctx.ui.confirm("Write Pi Hindsight config?", summary);
   if (!confirmed) return false;
 
-  const result = await createMemoryOperations(args.deps).configure(args.cwd, patch);
+  const operations = createMemoryOperations(args.deps);
+  const result = await operations.configure(args.cwd, patch);
   args.ctx.ui.notify(`Wrote ${result.path}`, "info");
+
+  await maybeImportBankTemplate({
+    ctx: args.ctx,
+    operations,
+    setupProfile,
+    ...(projectBankId !== undefined ? { projectBankId } : {}),
+    ...(globalBankId !== undefined ? { globalBankId } : {}),
+  });
   return true;
 }

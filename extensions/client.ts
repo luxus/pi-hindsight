@@ -90,6 +90,17 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
           signal,
         }),
       ),
+    importBankTemplate: (bankId, manifest, options) =>
+      withTimeout("hindsight importBankTemplate", timeoutMs, (signal) =>
+        rest.request(
+          `${encodeBankPath(bankId, "/import")}${options?.dryRun ? "?dry_run=true" : ""}`,
+          {
+            method: "POST",
+            signal,
+            body: JSON.stringify(manifest),
+          },
+        ),
+      ),
   };
 }
 

@@ -59,6 +59,10 @@ describe("Hindsight client adapter integration", () => {
         sendJson(res, 200, { text: "reflection" });
         return;
       }
+      if (req.method === "POST" && req.url === "/v1/default/banks/test-bank/import?dry_run=true") {
+        sendJson(res, 200, { dry_run: true, config_applied: true });
+        return;
+      }
       sendJson(res, 404, { detail: `unexpected ${req.method} ${req.url}` });
     });
 
@@ -108,9 +112,15 @@ describe("Hindsight client adapter integration", () => {
       budget: "low",
       responseSchema: { type: "object", properties: { answer: { type: "string" } } },
     });
+    const templateDryRun = await client.importBankTemplate?.(
+      "test-bank",
+      { version: "1", bank: { retain_mission: "Retain useful facts." } },
+      { dryRun: true },
+    );
 
     expect(recall).toEqual({ results: [{ text: "remembered fact" }] });
     expect(reflection).toEqual({ text: "reflection" });
+    expect(templateDryRun).toEqual({ dry_run: true, config_applied: true });
 
     expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
       "GET /v1/default/banks/test-bank/profile",
@@ -119,6 +129,7 @@ describe("Hindsight client adapter integration", () => {
       "POST /v1/default/banks/test-bank/memories",
       "POST /v1/default/banks/test-bank/memories/recall",
       "POST /v1/default/banks/test-bank/reflect",
+      "POST /v1/default/banks/test-bank/import?dry_run=true",
     ]);
 
     expect(requests[2]?.body).toMatchObject({
@@ -161,6 +172,10 @@ describe("Hindsight client adapter integration", () => {
       query: "query",
       budget: "low",
       response_schema: { type: "object", properties: { answer: { type: "string" } } },
+    });
+    expect(requests[6]?.body).toEqual({
+      version: "1",
+      bank: { retain_mission: "Retain useful facts." },
     });
   });
 });
