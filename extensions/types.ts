@@ -280,6 +280,8 @@ export interface HindsightLikeClient {
   ): Promise<unknown>;
   getBankProfile?(bankId: string): Promise<unknown>;
   getBankStats?(bankId: string): Promise<unknown>;
+  getBankConfig?(bankId: string): Promise<unknown>;
+  updateBankConfig?(bankId: string, updates: Record<string, unknown>): Promise<unknown>;
   health?(): Promise<unknown>;
   deleteDocument?(bankId: string, documentId: string): Promise<unknown>;
   importBankTemplate?(

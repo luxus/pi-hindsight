@@ -46,6 +46,38 @@ function bankRoutes(config: ResolvedConfig, projectBankId: string): BankRoute[] 
   ];
 }
 
+function textField(value: unknown, key: string): string | undefined {
+  return isRecord(value) && typeof value[key] === "string" ? value[key] : undefined;
+}
+
+function nestedRecord(value: unknown, key: string): Record<string, unknown> | undefined {
+  return isRecord(value) && isRecord(value[key]) ? value[key] : undefined;
+}
+
+function missionSummary(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return value.length > 90 ? `${value.slice(0, 87)}...` : value;
+}
+
+function formatMissionConfig(configResponse: unknown): string | undefined {
+  const config = nestedRecord(configResponse, "config");
+  const overrides = nestedRecord(configResponse, "overrides");
+  const retain =
+    textField(overrides, "retain_custom_instructions") ??
+    textField(overrides, "retain_mission") ??
+    textField(config, "retain_custom_instructions") ??
+    textField(config, "retain_mission");
+  const reflect = textField(overrides, "reflect_mission") ?? textField(config, "reflect_mission");
+  const observations =
+    textField(overrides, "observations_mission") ?? textField(config, "observations_mission");
+  const parts = [
+    retain ? `retain ${missionSummary(retain)}` : undefined,
+    reflect ? `reflect ${missionSummary(reflect)}` : undefined,
+    observations ? `observations ${missionSummary(observations)}` : undefined,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
 function formatStats(stats: unknown): string | undefined {
   const memories = numberField(stats, "total_nodes");
   const documents = numberField(stats, "total_documents");
@@ -72,6 +104,18 @@ async function bankFact(client: HindsightLikeClient, route: BankRoute): Promise<
     const name =
       isRecord(profile) && typeof profile.name === "string" ? profile.name : route.bankId;
     const facts: StatusHealthFacts = [[route.label, `reachable · ${name}`]];
+    if (client.getBankConfig) {
+      try {
+        const config = await withStatusTimeout(
+          client.getBankConfig(route.bankId),
+          `${route.label} config`,
+        );
+        const summary = formatMissionConfig(config);
+        if (summary) facts.push([`${route.label} missions`, `db · ${summary}`]);
+      } catch (error) {
+        facts.push([`${route.label} missions`, `unavailable · ${redactError(error)}`]);
+      }
+    }
     if (client.getBankStats) {
       try {
         const stats = await withStatusTimeout(

@@ -59,22 +59,18 @@ Deployment choices cover Hindsight Cloud, an existing local/external API, and lo
 
 ## Advanced project config example
 
+Bank missions are intentionally absent from this JSON example. Hindsight bank configuration/database is the source of truth for retain, reflect, and observation mission text; Pi JSON should only select banks and extension behavior. Existing mission fields in older configs are treated as legacy fallbacks.
+
 ```json
 {
   "banks": {
     "project": {
       "bankId": "pi-project-my-repo",
-      "derive": "manual",
-      "retainMission": "Extract architecture decisions, bugs, fixes, constraints, durable preferences, and project continuity. Ignore chatter, secrets, and repeated recalled memory.",
-      "reflectMission": "Help a Pi coding agent use project memory for current architecture, decisions, constraints, bugs, fixes, and continuity.",
-      "observationsMission": "Identify durable project patterns, recurring constraints, and contradictions across Pi coding sessions."
+      "derive": "manual"
     },
     "global": {
       "enabled": false,
-      "bankId": "global-luxus",
-      "retainMission": "Extract durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior.",
-      "reflectMission": "Help recall durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior.",
-      "observationsMission": "Identify durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior patterns."
+      "bankId": "global-luxus"
     }
   },
   "recall": {

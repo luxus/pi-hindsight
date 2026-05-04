@@ -15,6 +15,13 @@ describe("status health", () => {
         bank_id: bankId,
         name: `${bankId} name`,
       })),
+      getBankConfig: vi.fn(async () => ({
+        config: {
+          retain_custom_instructions: "Extract from db",
+          reflect_mission: "Reflect from db",
+        },
+        overrides: { retain_custom_instructions: "Override retain from db" },
+      })),
       getBankStats: vi.fn(async () => ({
         total_nodes: 3,
         total_documents: 2,
@@ -41,6 +48,7 @@ describe("status health", () => {
         ["Server", "reachable"],
         ["Project bank", "reachable · project-bank name"],
         ["Global bank", "reachable · global-bank name"],
+        ["Project bank missions", "db · retain Override retain from db · reflect Reflect from db"],
         ["Project bank stats", "memories 3 · docs 2 · observations 1 · pending 4 · failed 0"],
       ]),
     );

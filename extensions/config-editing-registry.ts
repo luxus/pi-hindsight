@@ -8,7 +8,6 @@ import {
   type ProjectConfigPatchInput,
 } from "./config-writer.js";
 import type { ConfigEditingField, FieldId } from "./config-editing-types.js";
-import { defaultGlobalBankMissions, defaultProjectBankMissions } from "./bank-operations.js";
 import { CONFIG_FIELD_PATHS, CONFIG_FIELD_RESET_KEYS } from "./config-field-paths.js";
 export { CONFIG_FIELD_PATHS, CONFIG_FIELD_RESET_KEYS } from "./config-field-paths.js";
 
@@ -154,8 +153,6 @@ export function buildBaseConfigEditingFields(
   const defaults = DEFAULT_CONFIG;
   const profile = memoryProfileLabel(config);
   const defaultProfile = memoryProfileLabel(defaults);
-  const projectMissionDefaults = defaultProjectBankMissions();
-  const globalMissionDefaults = defaultGlobalBankMissions();
   const globalBankId = config.banks.global.bankId ?? "not set";
   const defaultGlobalBankId = defaults.banks.global.bankId ?? "not set";
   return [
@@ -229,39 +226,6 @@ export function buildBaseConfigEditingFields(
       changed: Boolean(config.banks.project.bankId),
       resetKey: "banks.project.bankId",
     }),
-    textField({
-      id: "projectRetainMission",
-      tab: "Banks",
-      label: "Project retain mission",
-      description: `Advanced. Overrides what project retain extracts. Built-in default: ${projectMissionDefaults.retainMission}`,
-      value: config.banks.project.retainMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.project.retainMission),
-      resetKey: "banks.project.retainMission",
-      advanced: true,
-    }),
-    textField({
-      id: "projectReflectMission",
-      tab: "Banks",
-      label: "Project reflect mission",
-      description: `Advanced. Overrides how project reflect uses memories. Built-in default: ${projectMissionDefaults.reflectMission}`,
-      value: config.banks.project.reflectMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.project.reflectMission),
-      resetKey: "banks.project.reflectMission",
-      advanced: true,
-    }),
-    textField({
-      id: "projectObservationsMission",
-      tab: "Banks",
-      label: "Project observations mission",
-      description: `Advanced. Overrides what project observation consolidation synthesizes. Built-in default: ${projectMissionDefaults.observationsMission}`,
-      value: config.banks.project.observationsMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.project.observationsMission),
-      resetKey: "banks.project.observationsMission",
-      advanced: true,
-    }),
     booleanField({
       id: "globalBankEnabled",
       tab: "Banks",
@@ -279,39 +243,6 @@ export function buildBaseConfigEditingFields(
       value: globalBankId,
       defaultValue: defaultGlobalBankId,
       resetKey: "banks.global.bankId",
-    }),
-    textField({
-      id: "globalRetainMission",
-      tab: "Banks",
-      label: "Global retain mission",
-      description: `Advanced. Overrides what global retain extracts. Built-in default: ${globalMissionDefaults.retainMission}`,
-      value: config.banks.global.retainMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.global.retainMission),
-      resetKey: "banks.global.retainMission",
-      advanced: true,
-    }),
-    textField({
-      id: "globalReflectMission",
-      tab: "Banks",
-      label: "Global reflect mission",
-      description: `Advanced. Overrides how global reflect uses memories. Built-in default: ${globalMissionDefaults.reflectMission}`,
-      value: config.banks.global.reflectMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.global.reflectMission),
-      resetKey: "banks.global.reflectMission",
-      advanced: true,
-    }),
-    textField({
-      id: "globalObservationsMission",
-      tab: "Banks",
-      label: "Global observations mission",
-      description: `Advanced. Overrides what global observation consolidation synthesizes. Built-in default: ${globalMissionDefaults.observationsMission}`,
-      value: config.banks.global.observationsMission ?? "built-in default",
-      defaultValue: "built-in default",
-      changed: Boolean(config.banks.global.observationsMission),
-      resetKey: "banks.global.observationsMission",
-      advanced: true,
     }),
     booleanField({
       id: "recallEnabled",
@@ -524,9 +455,6 @@ export function buildBaseConfigEditingFields(
 }
 export const PROJECT_ONLY_FIELD_IDS = new Set<FieldId>([
   "projectBankId",
-  "projectRetainMission",
-  "projectReflectMission",
-  "projectObservationsMission",
   "memoryProfile",
   "queuePath",
   "importBranches",
@@ -734,11 +662,6 @@ export function inputDefaultForConfigEditingField(
   }
 }
 
-function missionSummary(mission: string | undefined): string {
-  if (!mission) return "built-in default";
-  return mission.length > 80 ? `${mission.slice(0, 77)}...` : mission;
-}
-
 export function buildStatusFacts(
   config: ResolvedConfig,
   projectBankId: string,
@@ -754,12 +677,26 @@ export function buildStatusFacts(
       "Global bank",
       config.banks.global.enabled ? (config.banks.global.bankId ?? "missing id") : "disabled",
     ],
-    ["Project retain mission", missionSummary(config.banks.project.retainMission)],
-    ["Project reflect mission", missionSummary(config.banks.project.reflectMission)],
-    ["Project observations mission", missionSummary(config.banks.project.observationsMission)],
-    ["Global retain mission", missionSummary(config.banks.global.retainMission)],
-    ["Global reflect mission", missionSummary(config.banks.global.reflectMission)],
-    ["Global observations mission", missionSummary(config.banks.global.observationsMission)],
+    ...(config.banks.project.retainMission ||
+    config.banks.project.reflectMission ||
+    config.banks.project.observationsMission
+      ? [
+          ["Project mission overrides", "legacy local config; prefer Hindsight bank config"] as [
+            string,
+            string,
+          ],
+        ]
+      : []),
+    ...(config.banks.global.retainMission ||
+    config.banks.global.reflectMission ||
+    config.banks.global.observationsMission
+      ? [
+          ["Global mission overrides", "legacy local config; prefer Hindsight bank config"] as [
+            string,
+            string,
+          ],
+        ]
+      : []),
     ["Global retain mode", config.globalRetain.mode],
     ["Recall", enabledDisabled(config.recall.enabled)],
     ["Retain", enabledDisabled(config.retain.enabled)],

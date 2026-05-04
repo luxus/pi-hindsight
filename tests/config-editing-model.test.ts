@@ -31,9 +31,7 @@ describe("config editing model", () => {
     expect(fields.find((field) => field.id === "projectBankId")?.editableScopes).toEqual([
       "project",
     ]);
-    expect(fields.find((field) => field.id === "projectRetainMission")?.editableScopes).toEqual([
-      "project",
-    ]);
+    expect(fields.find((field) => field.id === "projectRetainMission")).toBeUndefined();
     expect(fields.find((field) => field.id === "memoryProfile")?.editableScopes).toEqual([
       "project",
     ]);
@@ -74,10 +72,7 @@ describe("config editing model", () => {
       "project",
       "global",
     ]);
-    expect(fields.find((field) => field.id === "globalRetainMission")?.editableScopes).toEqual([
-      "project",
-      "global",
-    ]);
+    expect(fields.find((field) => field.id === "globalRetainMission")).toBeUndefined();
   });
 
   it("builds registry-backed field metadata for edits", () => {
@@ -90,11 +85,7 @@ describe("config editing model", () => {
       choices: ["project-only", "project+global", "global-only"],
     });
     expect(queuePath).toMatchObject({ kind: "text" });
-    expect(fields.find((field) => field.id === "projectRetainMission")).toMatchObject({
-      kind: "text",
-      value: "built-in default",
-      defaultValue: "built-in default",
-    });
+    expect(fields.find((field) => field.id === "projectRetainMission")).toBeUndefined();
     expect(fields.find((field) => field.id === "apiKeyDirect")).toMatchObject({
       kind: "text",
       advanced: true,
@@ -159,20 +150,27 @@ describe("config editing model", () => {
     }).find((tab) => tab.id === "Recall");
 
     expect(basicBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
-    expect(advancedBanks?.fields.map((field) => field.id)).toContain("projectRetainMission");
+    expect(advancedBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
     expect(basicRecall?.fields.map((field) => field.id)).not.toContain("recallStoreFailures");
     expect(advancedRecall?.fields.map((field) => field.id)).toContain("recallStoreFailures");
   });
 
-  it("shows built-in mission text in mission field details", () => {
+  it("hides local mission editors because missions are Hindsight bank config", () => {
     const fields = buildConfigEditingFields(DEFAULT_CONFIG, "bank", layers());
 
-    expect(fields.find((field) => field.id === "projectRetainMission")?.description).toContain(
-      "Built-in default: Extract durable project memory",
+    expect(fields.map((field) => field.id)).not.toEqual(
+      expect.arrayContaining([
+        "projectRetainMission",
+        "projectReflectMission",
+        "projectObservationsMission",
+        "globalRetainMission",
+        "globalReflectMission",
+        "globalObservationsMission",
+      ]),
     );
   });
 
-  it("shows mission summaries in status facts", () => {
+  it("shows legacy local mission overrides as status warnings", () => {
     expect(
       buildStatusFacts(
         {
@@ -191,8 +189,8 @@ describe("config editing model", () => {
       ),
     ).toEqual(
       expect.arrayContaining([
-        ["Project retain mission", "Project retain mission"],
-        ["Global retain mission", "Global retain mission"],
+        ["Project mission overrides", "legacy local config; prefer Hindsight bank config"],
+        ["Global mission overrides", "legacy local config; prefer Hindsight bank config"],
       ]),
     );
   });

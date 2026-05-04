@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertHealthResponse,
   assertReflectResponse,
+  bankConfigPath,
   createMentalModelRequestBody,
   encodeBankPath,
   mentalModelCollectionPath,
@@ -9,6 +10,7 @@ import {
   mentalModelItemPath,
   mentalModelRefreshPath,
   reflectRequestBody,
+  updateBankConfigRequestBody,
   updateMentalModelRequestBody,
 } from "../extensions/client-rest.js";
 
@@ -34,6 +36,12 @@ describe("Hindsight REST transport helpers", () => {
 
   it("encodes bank ids in REST paths", () => {
     expect(encodeBankPath("bank/id", "/reflect")).toBe("/v1/default/banks/bank%2Fid/reflect");
+    expect(bankConfigPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/config");
+    expect(
+      updateBankConfigRequestBody({ retain_custom_instructions: "Extract carefully" }),
+    ).toEqual({
+      updates: { retain_custom_instructions: "Extract carefully" },
+    });
   });
 
   it("maps mental model paths and query options to Hindsight REST shape", () => {

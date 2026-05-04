@@ -98,6 +98,16 @@ export function encodeBankPath(bankId: string, suffix: string): string {
   return `/v1/default/banks/${encodeURIComponent(bankId)}${suffix}`;
 }
 
+export function bankConfigPath(bankId: string): string {
+  return encodeBankPath(bankId, "/config");
+}
+
+export function updateBankConfigRequestBody(
+  updates: Record<string, unknown>,
+): Record<string, unknown> {
+  return { updates };
+}
+
 export function mentalModelCollectionPath(
   bankId: string,
   options: ListMentalModelsOptions = {},

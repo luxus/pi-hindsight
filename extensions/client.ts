@@ -4,6 +4,7 @@ import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
 import {
   assertHealthResponse,
   assertReflectResponse,
+  bankConfigPath,
   createHindsightRestTransport,
   createMentalModelRequestBody,
   encodeBankPath,
@@ -12,6 +13,7 @@ import {
   mentalModelItemPath,
   mentalModelRefreshPath,
   reflectRequestBody,
+  updateBankConfigRequestBody,
   updateMentalModelRequestBody,
 } from "./client-rest.js";
 import { withTimeout } from "./timeout.js";
@@ -84,6 +86,18 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
     getBankStats: (bankId) =>
       withTimeout("hindsight getBankStats", timeoutMs, (signal) =>
         rest.request(encodeBankPath(bankId, "/stats"), { signal }),
+      ),
+    getBankConfig: (bankId) =>
+      withTimeout("hindsight getBankConfig", timeoutMs, (signal) =>
+        rest.request(bankConfigPath(bankId), { signal }),
+      ),
+    updateBankConfig: (bankId, updates) =>
+      withTimeout("hindsight updateBankConfig", timeoutMs, (signal) =>
+        rest.request(bankConfigPath(bankId), {
+          method: "PATCH",
+          signal,
+          body: JSON.stringify(updateBankConfigRequestBody(updates)),
+        }),
       ),
     health: () =>
       withTimeout("hindsight health", timeoutMs, async (signal) =>

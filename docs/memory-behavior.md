@@ -81,13 +81,9 @@ Shutdown flushing is bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdo
 
 ## Banks and missions
 
-Project and global banks can define Hindsight's three supported mission fields:
+Project and global bank missions live in Hindsight's bank configuration/database, not as normal Pi JSON settings. Pi's local JSON should identify which banks to use; Hindsight owns the extraction, reflection, and observation instructions for those banks.
 
-- `retainMission`
-- `reflectMission`
-- `observationsMission`
-
-There is no generic bank `mission` field.
+Pi still understands legacy local mission fields (`retainMission`, `reflectMission`, and `observationsMission`) so existing configs do not break. Treat them as migration/fallback inputs. New mission edits should go through Hindsight bank configuration/profile APIs and the Hindsight web interface.
 
 Project banks focus on repo architecture, decisions, constraints, bugs, fixes, TODOs, conventions, and project-local preferences. Global banks focus on durable user preferences, recurring workflows, coding habits, and stable assistant behavior while excluding repo-specific code facts by default.
 
