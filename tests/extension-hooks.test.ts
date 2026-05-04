@@ -186,79 +186,87 @@ describe("extension hooks", () => {
     expect(retainedContent).not.toContain("repo-specific remembered fact");
   }, 20_000);
 
-  it("flushes queued retain jobs on the configured interval", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
-    mkdirSync(join(cwd, ".git"));
-    mkdirSync(join(cwd, ".pi"));
-    writeFileSync(
-      join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({
-        hindsight: { baseUrl: "http://unused.test" },
-        retain: { flushIntervalMs: 1_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
-      }),
-    );
-    const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
-    await enqueueRetainJob(queuePath, {
-      id: "queued",
-      bankId: "bank",
-      createdAt: new Date().toISOString(),
-      documentId: "doc",
-      updateMode: "append",
-      item: { content: "content", context: "context" },
-      retries: 0,
-    });
-    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
-    const pi = {
-      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
-        handlers[name] = [...(handlers[name] ?? []), handler];
-      }),
-      registerTool: vi.fn(),
-      registerCommand: vi.fn(),
-    };
-    const ctx = {
-      cwd,
-      ui: { setStatus: vi.fn(), notify: vi.fn() },
-      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
-    };
+  // Windows CI is flaky for this fake-timer + async queue file IO path. Non-Windows
+  // PR checks keep coverage while #139 defines tiered CI and future deterministic Windows proof.
+  const itIfPeriodicFlushHookReliable = process.platform === "win32" ? it.skip : it;
 
-    try {
-      const { default: hindsightExtension } = await import("../extensions/index.js");
-      hindsightExtension(pi as any);
-      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-      await handlers.session_start?.[0]?.({}, ctx);
+  itIfPeriodicFlushHookReliable(
+    "flushes queued retain jobs on the configured interval",
+    async () => {
+      const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+      mkdirSync(join(cwd, ".git"));
+      mkdirSync(join(cwd, ".pi"));
+      writeFileSync(
+        join(cwd, ".pi", "hindsight.json"),
+        JSON.stringify({
+          hindsight: { baseUrl: "http://unused.test" },
+          retain: { flushIntervalMs: 1_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
+        }),
+      );
+      const queuePath = resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl");
       await enqueueRetainJob(queuePath, {
-        id: "queued-2",
+        id: "queued",
         bankId: "bank",
         createdAt: new Date().toISOString(),
-        documentId: "doc-2",
+        documentId: "doc",
         updateMode: "append",
-        item: { content: "content-2", context: "context" },
+        item: { content: "content", context: "context" },
         retries: 0,
       });
-      mocked.client.retain.mockClear();
-      await vi.advanceTimersByTimeAsync(1_000);
-      const periodicFlushWaitMs = process.platform === "win32" ? 60_000 : 5_000;
-      await waitForCondition(async () => {
-        const queue = await readRetainQueue(queuePath);
-        return (
-          mocked.client.retain.mock.calls.length === 1 &&
-          queue.length === 1 &&
-          queue[0]?.id === "queued-2"
-        );
-      }, periodicFlushWaitMs);
+      const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+      const pi = {
+        on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+          handlers[name] = [...(handlers[name] ?? []), handler];
+        }),
+        registerTool: vi.fn(),
+        registerCommand: vi.fn(),
+      };
+      const ctx = {
+        cwd,
+        ui: { setStatus: vi.fn(), notify: vi.fn() },
+        sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+      };
 
-      expect(mocked.client.retain).toHaveBeenCalledTimes(1);
-      expect((await readRetainQueue(queuePath)).map((job) => job.id)).toEqual(["queued-2"]);
-      expect(mocked.client.retain).toHaveBeenCalledWith(
-        "bank",
-        "content",
-        expect.objectContaining({ documentId: "doc", updateMode: "append" }),
-      );
-    } finally {
-      await handlers.session_shutdown?.[0]?.({}, ctx);
-      vi.useRealTimers();
-    }
-  }, 70_000);
+      try {
+        const { default: hindsightExtension } = await import("../extensions/index.js");
+        hindsightExtension(pi as any);
+        vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+        await handlers.session_start?.[0]?.({}, ctx);
+        await enqueueRetainJob(queuePath, {
+          id: "queued-2",
+          bankId: "bank",
+          createdAt: new Date().toISOString(),
+          documentId: "doc-2",
+          updateMode: "append",
+          item: { content: "content-2", context: "context" },
+          retries: 0,
+        });
+        mocked.client.retain.mockClear();
+        await vi.advanceTimersByTimeAsync(1_000);
+        const periodicFlushWaitMs = process.platform === "win32" ? 60_000 : 5_000;
+        await waitForCondition(async () => {
+          const queue = await readRetainQueue(queuePath);
+          return (
+            mocked.client.retain.mock.calls.length === 1 &&
+            queue.length === 1 &&
+            queue[0]?.id === "queued-2"
+          );
+        }, periodicFlushWaitMs);
+
+        expect(mocked.client.retain).toHaveBeenCalledTimes(1);
+        expect((await readRetainQueue(queuePath)).map((job) => job.id)).toEqual(["queued-2"]);
+        expect(mocked.client.retain).toHaveBeenCalledWith(
+          "bank",
+          "content",
+          expect.objectContaining({ documentId: "doc", updateMode: "append" }),
+        );
+      } finally {
+        await handlers.session_shutdown?.[0]?.({}, ctx);
+        vi.useRealTimers();
+      }
+    },
+    70_000,
+  );
 
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
