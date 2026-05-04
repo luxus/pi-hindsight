@@ -128,4 +128,4 @@ Per-session governance is stored outside provider-visible messages under `.pi/hi
 
 `hindsight_retain_global` is the preferred tool for durable global user identity, preferences, and cross-project workflows.
 
-`hindsight_route_memory` is a dry-run classifier for `project`, `global`, `both`, or `skip`. In `explicit-only` mode, routing suggestions do not write global memory automatically.
+`hindsight_route_memory` is a dry-run classifier for `project`, `global`, `both`, or `skip`. In `explicit-only` mode, routing suggestions do not write global memory automatically. ADR 002 documents the explicit routing strategy seam and safety policy for future richer bank topologies.
