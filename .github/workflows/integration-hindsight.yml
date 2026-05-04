@@ -3,6 +3,7 @@ name: Hindsight Integration
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
@@ -12,8 +13,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  impact:
+    name: classify memory-path impact
+    runs-on: ubuntu-latest
+    outputs:
+      live_smoke: ${{ steps.classify.outputs.live_smoke }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          live_smoke=false
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            live_smoke=true
+          elif [[ ",$LABELS," == *",ci:live-smoke,"* ]] || [[ ",$LABELS," == *",memory-path,"* ]]; then
+            live_smoke=true
+          else
+            git fetch origin "$BASE_REF" --depth=1
+            changed=$(git diff --name-only "origin/$BASE_REF"...HEAD)
+            echo "Changed files:" >> "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "$changed" >> "$GITHUB_STEP_SUMMARY"
+
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              case "$path" in
+                extensions/client*|extensions/recall*|extensions/retain*|extensions/queue*|extensions/import*|extensions/memory-lifecycle*|extensions/memory-*operations.ts|extensions/bank*|extensions/config*|extensions/smoke-*|scripts/smoke-*|scripts/install-smoke.mjs|scripts/verify-release.mjs|package.json|package-lock.json|.github/workflows/integration-hindsight.yml|.github/workflows/release.yml)
+                  live_smoke=true
+                  ;;
+              esac
+            done <<< "$changed"
+          fi
+
+          echo "live_smoke=$live_smoke" >> "$GITHUB_OUTPUT"
+          echo "live_smoke=$live_smoke" >> "$GITHUB_STEP_SUMMARY"
+
   live-smoke:
     runs-on: ubuntu-latest
+    needs: impact
+    if: needs.impact.outputs.live_smoke == 'true'
     steps:
       - uses: actions/checkout@v6
 

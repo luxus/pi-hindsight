@@ -208,13 +208,20 @@ Minimum expected coverage:
 - tool registration and schemas
 - recall injection formatting
 
-Before merging or considering a task done, run:
+Before merging or considering a task done, always run:
 
 ```bash
 npm run check
+```
+
+Also run coverage and compiler fallback for source, tests, critical paths, or full-CI work:
+
+```bash
 npm run check:coverage
 npm run typecheck:tsc
 ```
+
+GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Runtime-sensitive paths, queue/import/memory-path changes, package/release changes, workflow changes, and `ci:full` run the full Ubuntu/macOS/Windows matrix. Package/release changes and `ci:package` also run package verification. Manual `workflow_dispatch` can run the full matrix for any PR.
 
 If release or package dependencies changed, also run:
 
@@ -230,7 +237,7 @@ Preferred proof is a configured-server smoke test:
 npm run smoke:hindsight
 ```
 
-GitHub Actions has a `Hindsight Integration` workflow that runs on PRs, nightly schedule, and manual dispatch. It runs live smoke only when `HINDSIGHT_INTEGRATION_ENABLED=true`; then it uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets. Otherwise it skips cleanly. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
+GitHub Actions has a `Hindsight Integration` workflow that runs for memory-path changes, `memory-path`/`ci:live-smoke` labels, nightly schedule, and manual dispatch. It runs live smoke only when `HINDSIGHT_INTEGRATION_ENABLED=true`; then it uses `HINDSIGHT_BASE_URL` and optional `HINDSIGHT_API_KEY` secrets. Otherwise it skips cleanly. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
 
 ## Common mistakes to avoid
 

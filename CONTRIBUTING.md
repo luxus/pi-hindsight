@@ -76,13 +76,20 @@ If a change intentionally reopens one of these invariants, document the contradi
 
 ## Tests and verification
 
-Run the relevant targeted tests while developing, then run the full checks before considering the work done:
+Run the relevant targeted tests while developing, then run the checks required by the change impact before considering the work done:
 
 ```bash
 npm run check
+```
+
+Run these for source, tests, critical paths, or full-CI work:
+
+```bash
 npm run check:coverage
 npm run typecheck:tsc
 ```
+
+GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Runtime-sensitive paths, queue/import/memory-path changes, package/release changes, workflow changes, and `ci:full` run the full Ubuntu/macOS/Windows matrix. Package/release changes and `ci:package` also run package verification. Manual `workflow_dispatch` can run the full matrix for any PR.
 
 For release-path or packaging changes, also run:
 
@@ -98,7 +105,7 @@ Preferred proof is a configured smoke test:
 npm run smoke:hindsight
 ```
 
-The GitHub `Hindsight Integration` workflow skips cleanly unless `HINDSIGHT_INTEGRATION_ENABLED=true` is configured. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
+The GitHub `Hindsight Integration` workflow runs automatically for memory-path changes, `memory-path`/`ci:live-smoke` labels, nightly schedule, and manual dispatch. It still skips cleanly unless `HINDSIGHT_INTEGRATION_ENABLED=true` is configured. For memory-path PRs, do not treat an unconfigured skip as proof; either run the smoke test locally with credentials, confirm a configured workflow pass, or document why live proof is unavailable and what lower-level checks cover the risk.
 
 ## Commit messages
 
@@ -143,8 +150,9 @@ Before opening or marking a PR ready:
 - [ ] I updated README/docs when user-visible behavior changed.
 - [ ] I updated `AGENTS.md` and `CONTRIBUTING.md` together when source-of-truth order, workflow, verification, or definition-of-done guidance changed.
 - [ ] I ran `npm run check`.
-- [ ] I ran `npm run check:coverage` when touching critical paths.
-- [ ] I ran `npm run typecheck:tsc`.
+- [ ] I ran `npm run check:coverage` when touching source, tests, or critical paths.
+- [ ] I ran `npm run typecheck:tsc` when touching source or critical paths.
+- [ ] I requested or confirmed full matrix when touching runtime-sensitive paths, queue/import/memory paths, package/release code, workflows, or platform-sensitive behavior.
 - [ ] I ran `npm run audit:signatures` when touching release/package dependencies.
 - [ ] I ran `npm run smoke:hindsight` or confirmed a configured `Hindsight Integration` pass when memory-path behavior changed; if unavailable, I documented the limitation.
 

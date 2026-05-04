@@ -27,10 +27,12 @@
 ## Verification
 
 - [ ] `npm run check`
-- [ ] `npm run check:coverage`
-- [ ] `npm run typecheck:tsc`
+- [ ] `npm run check:coverage` (source, tests, critical paths, or `ci:coverage`)
+- [ ] `npm run typecheck:tsc` (source/critical paths or full CI)
+- [ ] full matrix requested/passed (runtime, queue/import, package/release, workflow changes, or `ci:full`)
+- [ ] package verification requested/passed (release/package changes or `ci:package`)
 - [ ] `npm run pack:verify` (release/package changes)
-- [ ] `npm run smoke:hindsight` or configured `Hindsight Integration` pass (memory-path behavior changes; document unavailable live proof)
+- [ ] `npm run smoke:hindsight` or configured `Hindsight Integration` pass (memory-path behavior changes or `ci:live-smoke`; document unavailable live proof)
 
 ## Guidance sync
 

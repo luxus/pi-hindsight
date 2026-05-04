@@ -3,18 +3,148 @@ name: Check
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main, review/mvp]
+    tags:
+      - "v*.*.*"
+  schedule:
+    - cron: "41 2 * * *"
   workflow_dispatch:
+    inputs:
+      full:
+        description: Run full coverage/typecheck/package matrix
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 concurrency:
   group: check-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: check (${{ matrix.os }})
+  impact:
+    name: classify impact
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.classify.outputs.coverage }}
+      full_matrix: ${{ steps.classify.outputs.full_matrix }}
+      package_check: ${{ steps.classify.outputs.package_check }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          FULL_INPUT: ${{ inputs.full || 'true' }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          coverage=false
+          full_matrix=false
+          package_check=false
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$FULL_INPUT" = "false" ]; then
+            :
+          elif [ "$EVENT_NAME" != "pull_request" ]; then
+            coverage=true
+            full_matrix=true
+            package_check=true
+          elif [[ ",$LABELS," == *",ci:full,"* ]]; then
+            coverage=true
+            full_matrix=true
+            package_check=true
+          else
+            git fetch origin "$BASE_REF" --depth=1
+            changed=$(git diff --name-only "origin/$BASE_REF"...HEAD)
+            echo "Changed files:" >> "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "$changed" >> "$GITHUB_STEP_SUMMARY"
+
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              case "$path" in
+                extensions/*|tests/*|scripts/*|package.json|package-lock.json|tsconfig.json|vitest.config.ts)
+                  coverage=true
+                  ;;
+              esac
+              case "$path" in
+                extensions/client*|extensions/queue*|extensions/retain*|extensions/import*|extensions/memory-lifecycle*|extensions/memory-*operations.ts|extensions/bank*|extensions/config*|extensions/commands.ts|extensions/tools.ts|extensions/index.ts|scripts/smoke-*|scripts/verify-release.mjs|scripts/install-smoke.mjs|package.json|package-lock.json|.github/workflows/*)
+                  full_matrix=true
+                  ;;
+              esac
+              case "$path" in
+                package.json|package-lock.json|scripts/verify-release.mjs|scripts/install-smoke.mjs|.github/workflows/release.yml)
+                  package_check=true
+                  ;;
+              esac
+            done <<< "$changed"
+
+            if [[ ",$LABELS," == *",ci:coverage,"* ]]; then coverage=true; fi
+            if [[ ",$LABELS," == *",ci:package,"* ]]; then package_check=true; fi
+          fi
+
+          echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
+          echo "full_matrix=$full_matrix" >> "$GITHUB_OUTPUT"
+          echo "package_check=$package_check" >> "$GITHUB_OUTPUT"
+          {
+            echo "coverage=$coverage"
+            echo "full_matrix=$full_matrix"
+            echo "package_check=$package_check"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  pr-fast:
+    name: fast PR check (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: impact
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --engine-strict
+
+      - name: Run checks
+        run: npm run check
+
+  coverage:
+    name: coverage gate (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: [impact, pr-fast]
+    if: needs.impact.outputs.coverage == 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --engine-strict
+
+      - name: Run coverage gate
+        run: npm run check:coverage
+
+  full-matrix:
+    name: full matrix (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    needs: [impact, pr-fast]
+    if: needs.impact.outputs.full_matrix == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -41,4 +171,45 @@ jobs:
         run: npm run typecheck:tsc
 
       - name: Verify package contents
+        if: needs.impact.outputs.package_check == 'true'
         run: npm pack --dry-run
+
+  package-check:
+    name: package verification (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: [impact, pr-fast]
+    if: needs.impact.outputs.package_check == 'true' && needs.impact.outputs.full_matrix != 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --engine-strict
+
+      - name: Verify package contents
+        run: npm pack --dry-run
+
+  tsc-fallback:
+    name: TypeScript compiler fallback (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: [impact, pr-fast]
+    if: needs.impact.outputs.coverage == 'true' && needs.impact.outputs.full_matrix != 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --engine-strict
+
+      - name: Run TypeScript compiler fallback
+        run: npm run typecheck:tsc
