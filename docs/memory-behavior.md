@@ -116,7 +116,7 @@ Per-session governance is stored outside provider-visible messages under `.pi/hi
 /hindsight:tag remove <tag>
 ```
 
-`read-only` recalls but does not automatically retain. `ignored` disables recall and retain. `next-opt-out` skips automatic retain for the next completed run only.
+`read-only` recalls but does not automatically retain. `ignored` disables recall and retain. `next-opt-out` skips automatic retain for the next completed run only. ADR 003 defines the TUI vocabulary and mode matrix for `normal`, `read-only`, `ignored`, and reserved future `tools-only`.
 
 ## Global memory policy
 
