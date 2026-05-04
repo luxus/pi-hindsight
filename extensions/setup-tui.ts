@@ -7,7 +7,23 @@ import { handleDeployment, handleFieldEdit, handleResetFieldAction } from "./set
 import type { SetupActionId, SetupUiState, ThemeLike } from "./setup-tui-types.js";
 
 export { buildRetainReceiptStatusFacts, createSetupComponent } from "./setup-tui-render.js";
-export type { SetupActionId, SetupUiState, ThemeLike } from "./setup-tui-types.js";
+export {
+  applySetupIntent,
+  currentSetupTab,
+  normalizeSetupUiState,
+  selectedSetupField,
+  selectedSetupIndex,
+  setupIntentFromInput,
+} from "./setup-flow.js";
+export type { SetupIntent, SetupResult } from "./setup-flow.js";
+export type {
+  SetupActionId,
+  SetupProfileChoice,
+  SetupStep,
+  SetupTemplateChoice,
+  SetupUiState,
+  ThemeLike,
+} from "./setup-tui-types.js";
 
 async function showSetupTui(
   ctx: ExtensionCommandContext,

@@ -7,10 +7,19 @@ export type SetupActionId =
   | "toggle-advanced"
   | "done";
 
+export type SetupStep = "config" | "profile" | "banks" | "template" | "review" | "done";
+
+export type SetupProfileChoice = "project-only" | "project-global" | "global-only";
+
+export type SetupTemplateChoice = "none" | "paste-json";
+
 export type SetupUiState = {
+  step?: SetupStep;
   tabIndex: number;
   selectedByTab: Partial<Record<TabId, number>>;
   showAdvanced?: boolean;
+  profileChoice?: SetupProfileChoice;
+  templateChoice?: SetupTemplateChoice;
 };
 
 export type ThemeLike = {

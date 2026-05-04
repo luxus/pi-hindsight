@@ -1,13 +1,15 @@
 import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import {
-  Key,
-  matchesKey,
-  truncateToWidth,
-  visibleWidth,
-  type Component,
-} from "@mariozechner/pi-tui";
-import type { ConfigEditingField, ConfigEditingTab } from "./config-editing-model.js";
+import { truncateToWidth, visibleWidth, type Component } from "@mariozechner/pi-tui";
+import type { ConfigEditingTab } from "./config-editing-model.js";
 import type { RetainReceipt } from "./retain-receipts.js";
+import {
+  applySetupIntent,
+  currentSetupTab,
+  normalizeSetupUiState,
+  selectedSetupField,
+  selectedSetupIndex,
+  setupIntentFromInput,
+} from "./setup-flow.js";
 import {
   RECEIPT_FACT_LIMIT,
   type SetupActionId,
@@ -84,39 +86,12 @@ export function createSetupComponent(
   state: SetupUiState,
   done: (action: SetupActionId | null) => void,
 ): Component {
-  state.tabIndex = Math.min(Math.max(0, state.tabIndex), Math.max(0, tabs.length - 1));
-
-  function currentTab(): ConfigEditingTab {
-    return tabs[state.tabIndex] ?? tabs[0]!;
-  }
-
-  function selectedIndex(): number {
-    const tab = currentTab();
-    return Math.min(state.selectedByTab[tab.id] ?? 0, Math.max(0, tab.fields.length - 1));
-  }
-
-  function setSelectedIndex(index: number): void {
-    state.selectedByTab[currentTab().id] = index;
-  }
-
-  function selectedField(): ConfigEditingField | undefined {
-    return currentTab().fields[selectedIndex()];
-  }
-
-  function moveTab(delta: number): void {
-    state.tabIndex = (state.tabIndex + delta + tabs.length) % tabs.length;
-    setSelectedIndex(selectedIndex());
-  }
-
-  function moveSelection(delta: number): void {
-    const fields = currentTab().fields;
-    if (fields.length === 0) return;
-    setSelectedIndex((selectedIndex() + delta + fields.length) % fields.length);
-  }
+  Object.assign(state, normalizeSetupUiState(tabs, state));
 
   return {
     render(width: number): string[] {
-      const tab = currentTab();
+      Object.assign(state, normalizeSetupUiState(tabs, state));
+      const tab = currentSetupTab(tabs, state) ?? tabs[0]!;
       const lines: string[] = [];
       const innerWidth = Math.max(0, width - 2);
       const changedCount = tabs.reduce(
@@ -182,7 +157,7 @@ export function createSetupComponent(
       }
 
       for (const [index, field] of tab.fields.entries()) {
-        const isSelected = index === selectedIndex();
+        const isSelected = index === selectedSetupIndex(tabs, state);
         const marker = isSelected ? theme.fg("accent", "→") : " ";
         const dirty = field.changed ? theme.fg("warning", "*") : " ";
         const label = isSelected
@@ -195,7 +170,7 @@ export function createSetupComponent(
         );
       }
 
-      const detailField = selectedField();
+      const detailField = selectedSetupField(tabs, state);
       if (detailField) {
         lines.push(boxed("", width, theme));
         lines.push(boxed(theme.fg("accent", theme.bold("Details")), width, theme));
@@ -230,42 +205,11 @@ export function createSetupComponent(
       return lines.map((line) => truncateToWidth(line, width));
     },
     handleInput(data: string): void {
-      if (matchesKey(data, Key.escape) || data === "q") {
-        done(null);
-        return;
-      }
-      if (data === "d") {
-        done("choose-deployment");
-        return;
-      }
-      if (matchesKey(data, Key.left) || data === "h" || data === "<") {
-        moveTab(-1);
-        return;
-      }
-      if (matchesKey(data, Key.right) || data === "l" || data === ">") {
-        moveTab(1);
-        return;
-      }
-      if (matchesKey(data, Key.up) || data === "k") {
-        moveSelection(-1);
-        return;
-      }
-      if (matchesKey(data, Key.down) || data === "j") {
-        moveSelection(1);
-        return;
-      }
-      if (data === "r") {
-        const field = selectedField();
-        if (field?.changed) done(`reset:${field.id}`);
-        return;
-      }
-      if (data === "a") {
-        done("toggle-advanced");
-        return;
-      }
-      if (matchesKey(data, Key.enter)) {
-        done(selectedField()?.id ?? null);
-      }
+      const intent = setupIntentFromInput(data);
+      if (!intent) return;
+      const result = applySetupIntent(tabs, state, intent);
+      Object.assign(state, result.state);
+      if (result.kind === "action") done(result.action);
     },
     invalidate(): void {},
   };
