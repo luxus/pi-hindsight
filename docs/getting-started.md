@@ -46,6 +46,7 @@ Current keyboard controls:
 - `Enter`: edit selected setting
 - `r`: remove the selected setting's active override
 - `f`: flush queued retain jobs
+- `m`: open the mental model library
 - `d`: deployment setup
 - `g`: rerun guided setup
 

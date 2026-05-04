@@ -194,7 +194,7 @@ export function createSetupComponent(
         boxed(
           theme.fg(
             "dim",
-            ` h/l or </> tabs · j/k move · enter edit · r reset · f flush · a advanced ${state.showAdvanced ? "on" : "off"} · d deployment · g guided · q close `,
+            ` h/l or </> tabs · j/k move · enter edit · r reset · f flush · m models · a advanced ${state.showAdvanced ? "on" : "off"} · d deployment · g guided · q close `,
           ),
           width,
           theme,

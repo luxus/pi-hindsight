@@ -10,7 +10,7 @@ For a generated reference of registered tools, commands, and editable config fie
 /hindsight
 ```
 
-Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI.
+Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI. Press `m` to open the mental model library for explicit view, refresh, or exact-ID deletion.
 
 ## Setup and config
 
