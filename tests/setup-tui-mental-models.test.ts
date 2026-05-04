@@ -61,7 +61,7 @@ describe("setup TUI mental models", () => {
         return { ...listResponse.items[0], bank_id: bank, content: "remembered architecture" };
       },
     });
-    const ui = ctx(["Project", "Project model (model-1) tags=project", "View"]);
+    const ui = ctx(["Project", "Browse existing", "Project model (model-1) tags=project", "View"]);
 
     await handleMentalModels(ui.ctx as never, deps(client));
 
@@ -70,6 +70,35 @@ describe("setup TUI mental models", () => {
       { method: "get", bank: "project-bank", id: "model-1" },
     ]);
     expect(ui.notifications[0]?.message).toContain("remembered architecture");
+  });
+
+  it("creates a mental model from a reflect query with preview", async () => {
+    const calls: Array<{ method: string; bank: string; request: unknown }> = [];
+    const client = clientWith({
+      createMentalModel: async (bank, request) => {
+        calls.push({ method: "create", bank, request });
+        return { operation_id: "op-create", status: "queued" };
+      },
+    });
+    const ui = ctx(
+      ["Project", "Create from reflect query", "Create"],
+      ["Project patterns", "What project patterns recur?", "project, patterns"],
+    );
+
+    await handleMentalModels(ui.ctx as never, deps(client));
+
+    expect(calls).toEqual([
+      {
+        method: "create",
+        bank: "project-bank",
+        request: {
+          name: "Project patterns",
+          sourceQuery: "What project patterns recur?",
+          tags: ["project", "patterns"],
+        },
+      },
+    ]);
+    expect(ui.notifications[0]?.message).toContain("op-create");
   });
 
   it("refreshes, shows history, and requires typed exact id for delete", async () => {
@@ -101,20 +130,22 @@ describe("setup TUI mental models", () => {
     });
 
     await handleMentalModels(
-      ctx(["Global", "Project model (model-1) tags=project", "Refresh"]).ctx as never,
+      ctx(["Global", "Browse existing", "Project model (model-1) tags=project", "Refresh"])
+        .ctx as never,
       deps(client, config),
     );
     await handleMentalModels(
-      ctx(["Global", "Project model (model-1) tags=project", "History"]).ctx as never,
+      ctx(["Global", "Browse existing", "Project model (model-1) tags=project", "History"])
+        .ctx as never,
       deps(client, config),
     );
     const wrongDelete = ctx(
-      ["Global", "Project model (model-1) tags=project", "Delete"],
+      ["Global", "Browse existing", "Project model (model-1) tags=project", "Delete"],
       ["wrong"],
     );
     await handleMentalModels(wrongDelete.ctx as never, deps(client, config));
     const exactDelete = ctx(
-      ["Global", "Project model (model-1) tags=project", "Delete"],
+      ["Global", "Browse existing", "Project model (model-1) tags=project", "Delete"],
       ["model-1"],
     );
     await handleMentalModels(exactDelete.ctx as never, deps(client, config));

@@ -49,6 +49,31 @@ export function createMentalModelOperations(deps: MemoryOperationsDeps) {
       return { bankId, result };
     },
 
+    async promoteReflectQueryToMentalModel(args: {
+      bank: "project" | "global";
+      name: string;
+      sourceQuery: string;
+      id?: string | null;
+      tags?: string[];
+      maxTokens?: number;
+    }) {
+      const name = args.name.trim();
+      const sourceQuery = args.sourceQuery.trim();
+      if (!name) throw new Error("Mental model name is required");
+      if (!sourceQuery) throw new Error("Mental model source query is required");
+      const bankId = resolveBank(deps, args.bank);
+      const client = deps.getClient();
+      if (!client.createMentalModel) throw unavailable("create");
+      const result = await client.createMentalModel(bankId, {
+        ...(args.id !== undefined ? { id: args.id } : {}),
+        name,
+        sourceQuery,
+        ...(args.tags ? { tags: args.tags } : {}),
+        ...(args.maxTokens !== undefined ? { maxTokens: args.maxTokens } : {}),
+      });
+      return { bankId, result };
+    },
+
     async updateMentalModel(args: {
       bank?: string;
       mentalModelId: string;

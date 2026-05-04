@@ -156,7 +156,7 @@ describe("memory operations", () => {
   });
 
   it("resolves project/global bank aliases for explicit operations", async () => {
-    const calls: Array<{ method: string; bank: string }> = [];
+    const calls: Array<{ method: string; bank: string; request?: unknown }> = [];
     const config = {
       ...DEFAULT_CONFIG,
       banks: { ...DEFAULT_CONFIG.banks, global: { enabled: true, bankId: "global-luxus" } },
@@ -183,8 +183,8 @@ describe("memory operations", () => {
           calls.push({ method: "listMentalModels", bank });
           return { items: [] };
         },
-        createMentalModel: async (bank) => {
-          calls.push({ method: "createMentalModel", bank });
+        createMentalModel: async (bank, request) => {
+          calls.push({ method: "createMentalModel", bank, request });
           return { operation_id: "op" };
         },
         refreshMentalModel: async (bank) => {
@@ -212,6 +212,27 @@ describe("memory operations", () => {
       request: { name: "Project model", sourceQuery: "What matters?" },
     });
     await operations.refreshMentalModel({ bank: "global", mentalModelId: "model" });
+    await operations.promoteReflectQueryToMentalModel({
+      bank: "global",
+      name: "Project patterns",
+      sourceQuery: "What patterns recur?",
+      tags: ["project", "patterns"],
+    });
+
+    await expect(
+      operations.promoteReflectQueryToMentalModel({
+        bank: "project",
+        name: "   ",
+        sourceQuery: "What patterns recur?",
+      }),
+    ).rejects.toThrow("Mental model name is required");
+    await expect(
+      operations.promoteReflectQueryToMentalModel({
+        bank: "project",
+        name: "Project patterns",
+        sourceQuery: "   ",
+      }),
+    ).rejects.toThrow("Mental model source query is required");
 
     expect(calls).toEqual(
       expect.arrayContaining([
@@ -220,8 +241,21 @@ describe("memory operations", () => {
         { method: "reflect", bank: "project-bank" },
         { method: "delete", bank: "global-luxus" },
         { method: "listMentalModels", bank: "global-luxus" },
-        { method: "createMentalModel", bank: "project-bank" },
+        {
+          method: "createMentalModel",
+          bank: "project-bank",
+          request: { name: "Project model", sourceQuery: "What matters?" },
+        },
         { method: "refreshMentalModel", bank: "global-luxus" },
+        {
+          method: "createMentalModel",
+          bank: "global-luxus",
+          request: {
+            name: "Project patterns",
+            sourceQuery: "What patterns recur?",
+            tags: ["project", "patterns"],
+          },
+        },
       ]),
     );
   });
