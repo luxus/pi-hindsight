@@ -15,7 +15,14 @@ function bankOptions(deps: MemoryOperationsDeps): string[] {
   return config.banks.global.enabled ? ["Project", "Global", CANCEL] : ["Project", CANCEL];
 }
 
-function bankForChoice(choice: string | undefined): string | undefined {
+function parseTags(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function bankForChoice(choice: string | undefined): "project" | "global" | undefined {
   if (choice === "Project") return "project";
   if (choice === "Global") return "global";
   return undefined;
@@ -30,6 +37,44 @@ export async function handleMentalModels(
   if (!bank) return;
 
   const operations = createMemoryOperations(deps);
+  const mode = await ctx.ui.select("Mental model action", [
+    "Create from reflect query",
+    "Browse existing",
+    CANCEL,
+  ]);
+  if (mode === "Create from reflect query") {
+    const name = ((await ctx.ui.input("Mental model name", "")) ?? "").trim();
+    if (!name) {
+      ctx.ui.notify("Mental model create cancelled; name is required.", "warning");
+      return;
+    }
+    const sourceQuery = ((await ctx.ui.input("Reflect source query", "")) ?? "").trim();
+    if (!sourceQuery) {
+      ctx.ui.notify("Mental model create cancelled; source query is required.", "warning");
+      return;
+    }
+    const tags = parseTags(await ctx.ui.input("Tags, comma-separated", ""));
+    const preview = [`Name: ${name}`, `Bank: ${bankChoice}`, `Source query: ${sourceQuery}`];
+    if (tags.length) preview.push(`Tags: ${tags.join(", ")}`);
+    const confirm = await ctx.ui.select(`Create mental model?\n${preview.join("\n")}`, [
+      "Create",
+      CANCEL,
+    ]);
+    if (confirm !== "Create") return;
+    const created = await operations.promoteReflectQueryToMentalModel({
+      bank,
+      name,
+      sourceQuery,
+      ...(tags.length ? { tags } : {}),
+    });
+    ctx.ui.notify(
+      `Hindsight mental model create queued for ${name}; ${renderMentalModelOperationResult(created.result)}`,
+      "info",
+    );
+    return;
+  }
+  if (mode !== "Browse existing") return;
+
   const listed = await operations.listMentalModels({
     bank,
     options: { detail: "metadata", limit: 100 },
