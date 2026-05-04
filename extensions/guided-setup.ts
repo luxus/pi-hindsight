@@ -27,6 +27,7 @@ import {
   type BankTemplateProfileId,
   type BankTemplateTarget,
 } from "./bank-template-catalog.js";
+import { importDocumentSummary } from "./import-presentation.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "./config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
@@ -218,7 +219,9 @@ export async function editTemplateManifestForSetup(args: {
 async function selectTemplateManifest(args: {
   ctx: ExtensionCommandContext;
   target: TemplateTarget;
-}): Promise<{ label: string; manifest: BankTemplateManifest } | undefined> {
+}): Promise<
+  { label: string; manifest: BankTemplateManifest; profileId?: BankTemplateProfileId } | undefined
+> {
   const defaultLabel = chooseBuiltInTemplateOption(args.target);
   const options = [
     "Skip",
@@ -238,7 +241,11 @@ async function selectTemplateManifest(args: {
   const templateId = templateChoiceFromLabel(choice);
   if (!templateId) return undefined;
   const template = getBuiltInBankTemplate(templateId);
-  return { label: template.label, manifest: cloneBankTemplateManifest(template.manifest) };
+  return {
+    label: template.label,
+    manifest: cloneBankTemplateManifest(template.manifest),
+    profileId: template.id,
+  };
 }
 
 async function maybeImportBankTemplate(args: {
@@ -248,18 +255,19 @@ async function maybeImportBankTemplate(args: {
   setupProfile: SetupProfileChoice;
   projectBankId?: string;
   globalBankId?: string;
-}): Promise<void> {
+}): Promise<Set<BankTemplateProfileId>> {
   const targets = enabledTemplateTargets(args);
   if (targets.length === 0) {
     args.ctx.ui.notify("No enabled bank target for template import.", "warning");
-    return;
+    return new Set();
   }
   const configure = await args.ctx.ui.confirm(
     "Configure Hindsight bank templates?",
     targets.map((target) => `${target.location}: ${target.bank}`).join("\n"),
   );
-  if (!configure) return;
+  if (!configure) return new Set();
 
+  const appliedProfiles = new Set<BankTemplateProfileId>();
   const client = args.deps.getClient();
   for (const target of targets) {
     const selected = await selectTemplateManifest({ ctx: args.ctx, target });
@@ -310,7 +318,117 @@ async function maybeImportBankTemplate(args: {
       `Imported ${selected.label} template into ${applied.bankId}: ${summarizeBankTemplateImportResult(applied.result)}`,
       "info",
     );
+    if (selected.profileId) appliedProfiles.add(selected.profileId);
   }
+  return appliedProfiles;
+}
+
+export function importChoicesForSetup(args: {
+  setupProfile: SetupProfileChoice;
+  appliedProfiles: Set<BankTemplateProfileId>;
+  projectBankId?: string;
+  globalBankId?: string;
+}): string[] {
+  const choices = ["Skip import"];
+  const profileHints = args.appliedProfiles;
+  const canProject = args.setupProfile !== "global-only" && Boolean(args.projectBankId);
+  const canGateway = args.setupProfile !== "project-only" && Boolean(args.globalBankId);
+  const wantsProject = profileHints.has("coding-project") || (!profileHints.size && canProject);
+  const wantsGateway =
+    profileHints.has("assistant-personal") ||
+    profileHints.has("general-user") ||
+    (!profileHints.size && canGateway);
+  if (canProject && wantsProject) choices.push("Preview repo Pi sessions");
+  if (canGateway && wantsGateway) choices.push("Preview gateway transcript");
+  if (canProject && !choices.includes("Preview repo Pi sessions")) {
+    choices.push("Preview repo Pi sessions");
+  }
+  if (canGateway && !choices.includes("Preview gateway transcript")) {
+    choices.push("Preview gateway transcript");
+  }
+  return choices;
+}
+
+export async function maybeOfferHistoricalImportForSetup(args: {
+  ctx: ExtensionCommandContext;
+  operations: MemoryOperations;
+  setupProfile: SetupProfileChoice;
+  appliedProfiles?: Set<BankTemplateProfileId>;
+  cwd: string;
+  projectBankId?: string;
+  globalBankId?: string;
+}): Promise<void> {
+  const proceed = await args.ctx.ui.confirm(
+    "Preview historical import now?",
+    "Imports always dry-run first. Project profiles use repo Pi sessions; user profiles can import gateway/chat transcripts.",
+  );
+  if (!proceed) return;
+  const choice = await args.ctx.ui.select(
+    "Choose import source",
+    importChoicesForSetup({
+      setupProfile: args.setupProfile,
+      appliedProfiles: args.appliedProfiles ?? new Set(),
+      ...(args.projectBankId ? { projectBankId: args.projectBankId } : {}),
+      ...(args.globalBankId ? { globalBankId: args.globalBankId } : {}),
+    }),
+  );
+  if (!choice || choice === "Skip import") return;
+
+  if (choice === "Preview repo Pi sessions") {
+    const currentSessionFile = args.ctx.sessionManager?.getSessionFile?.();
+    const dryRun = await args.operations.importProjectSessions({
+      cwd: args.cwd,
+      ...(currentSessionFile ? { currentSessionFile } : {}),
+      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      dryRun: true,
+    });
+    const summary = importDocumentSummary({
+      documents: dryRun.imported.flatMap((result) => result.documents),
+      malformedLineCount: dryRun.malformedLineCount,
+    });
+    const confirmed = await args.ctx.ui.confirm(
+      `Import repo Pi sessions into ${dryRun.bankId}?`,
+      `Dry run: sessions=${dryRun.sessionFiles.length}; documents=${dryRun.documentCount}; messages=${dryRun.messageCount}; ${summary}`,
+    );
+    if (!confirmed) return;
+    const result = await args.operations.importProjectSessions({
+      cwd: args.cwd,
+      ...(currentSessionFile ? { currentSessionFile } : {}),
+      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      dryRun: false,
+    });
+    args.ctx.ui.notify(
+      `Imported repo Pi sessions into ${result.bankId}: sessions=${result.sessionFiles.length}; documents=${result.documentCount}; messages=${result.messageCount}`,
+      "info",
+    );
+    return;
+  }
+
+  const sourceFile = await args.ctx.ui.input("Gateway transcript JSONL path", "");
+  if (!sourceFile?.trim()) return;
+  const dryRun = await args.operations.importGatewayTranscript({
+    sourceFile: sourceFile.trim(),
+    cwd: args.cwd,
+    ...(args.globalBankId ? { bank: args.globalBankId } : {}),
+    dryRun: true,
+  });
+  const confirmed = await args.ctx.ui.confirm(
+    `Import gateway transcript into ${dryRun.bankId}?`,
+    `Dry run: kept=${dryRun.keptEventCount}; turns=${dryRun.retainedTurnCount}; dropped=${dryRun.droppedEventCount}; malformed=${dryRun.malformedLineCount}; document=${dryRun.documentId}`,
+  );
+  if (!confirmed) return;
+  const result = await args.operations.importGatewayTranscript({
+    sourceFile: sourceFile.trim(),
+    cwd: args.cwd,
+    ...(args.globalBankId ? { bank: args.globalBankId } : {}),
+    dryRun: false,
+  });
+  args.ctx.ui.notify(
+    result.skipped
+      ? `Gateway import skipped: ${result.skipReason}`
+      : `Imported gateway transcript into ${result.bankId} as ${result.documentId}`,
+    "info",
+  );
 }
 
 export async function runGuidedSetup(args: {
@@ -370,11 +488,21 @@ export async function runGuidedSetup(args: {
   const result = await operations.configure(args.cwd, patch);
   args.ctx.ui.notify(`Wrote ${result.path}`, "info");
 
-  await maybeImportBankTemplate({
+  const appliedProfiles = await maybeImportBankTemplate({
     ctx: args.ctx,
     deps: args.deps,
     operations,
     setupProfile,
+    ...(projectBankId !== undefined ? { projectBankId } : {}),
+    ...(globalBankId !== undefined ? { globalBankId } : {}),
+  });
+
+  await maybeOfferHistoricalImportForSetup({
+    ctx: args.ctx,
+    operations,
+    setupProfile,
+    appliedProfiles,
+    cwd: args.cwd,
     ...(projectBankId !== undefined ? { projectBankId } : {}),
     ...(globalBankId !== undefined ? { globalBankId } : {}),
   });

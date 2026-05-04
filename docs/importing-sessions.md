@@ -34,6 +34,10 @@ Pi session preview output includes document count, import mode, raw message coun
 
 Gateway preview output includes kept event count, retained user-turn count, dropped event count/type totals, malformed-line count, target user bank, content hash, and byte count.
 
+## Guided setup import prompt
+
+Guided setup offers historical import after config/template setup. It always previews first. Project/coding setup offers repo-scoped Pi session import; user/assistant setup offers gateway transcript import. You can skip and run the tools later.
+
 ## Import commands
 
 ```text

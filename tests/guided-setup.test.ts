@@ -8,6 +8,8 @@ import {
   editTemplateManifestForSetup,
   enabledTemplateTargets,
   hasProjectHindsightConfig,
+  importChoicesForSetup,
+  maybeOfferHistoricalImportForSetup,
   setupProfileChoiceToMemoryProfile,
 } from "../extensions/guided-setup.js";
 
@@ -221,6 +223,112 @@ describe("guided setup", () => {
       "Edit bank field",
       "Cancel",
     ]);
+  });
+
+  it("limits setup import choices to configured setup banks", () => {
+    expect(
+      importChoicesForSetup({
+        setupProfile: "global-only",
+        appliedProfiles: new Set(["coding-project"]),
+        globalBankId: "user-bank",
+      }),
+    ).toEqual(["Skip import", "Preview gateway transcript"]);
+    expect(
+      importChoicesForSetup({
+        setupProfile: "project-only",
+        appliedProfiles: new Set(["assistant-personal"]),
+        projectBankId: "project-bank",
+      }),
+    ).toEqual(["Skip import", "Preview repo Pi sessions"]);
+    expect(
+      importChoicesForSetup({
+        setupProfile: "project-global",
+        appliedProfiles: new Set(["assistant-personal"]),
+        projectBankId: "project-bank",
+        globalBankId: "user-bank",
+      }),
+    ).toEqual(["Skip import", "Preview gateway transcript", "Preview repo Pi sessions"]);
+  });
+
+  it("previews repo session import after project setup before writing", async () => {
+    const ctx = {
+      cwd: "/repo",
+      sessionManager: { getSessionFile: () => "/sessions/current.jsonl" },
+      ui: {
+        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+        select: vi.fn().mockResolvedValueOnce("Preview repo Pi sessions"),
+        input: vi.fn(),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importProjectSessions = vi.fn().mockResolvedValueOnce({
+      bankId: "project-bank",
+      sessionFiles: ["/sessions/current.jsonl"],
+      imported: [{ documents: [{ updateMode: "replace", status: "pending", messageCount: 2 }] }],
+      malformedLineCount: 0,
+      documentCount: 1,
+      messageCount: 2,
+    });
+    const operations = {
+      importProjectSessions,
+      importGatewayTranscript: vi.fn(),
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "project-only",
+      cwd: "/repo",
+      projectBankId: "project-bank",
+    });
+
+    expect(importProjectSessions).toHaveBeenCalledWith({
+      cwd: "/repo",
+      currentSessionFile: "/sessions/current.jsonl",
+      bank: "project-bank",
+      dryRun: true,
+    });
+    expect(importProjectSessions).toHaveBeenCalledTimes(1);
+  });
+
+  it("previews gateway import after user setup before writing", async () => {
+    const ctx = {
+      ui: {
+        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importGatewayTranscript = vi.fn().mockResolvedValueOnce({
+      bankId: "user-bank",
+      keptEventCount: 3,
+      retainedTurnCount: 1,
+      droppedEventCount: 2,
+      malformedLineCount: 0,
+      documentId: "doc",
+    });
+    const operations = {
+      importProjectSessions: vi.fn(),
+      importGatewayTranscript,
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "global-only",
+      appliedProfiles: new Set(["assistant-personal"]),
+      cwd: "/repo",
+      globalBankId: "user-bank",
+    });
+
+    expect(importGatewayTranscript).toHaveBeenCalledWith({
+      sourceFile: "/tmp/gateway.jsonl",
+      cwd: "/repo",
+      bank: "user-bank",
+      dryRun: true,
+    });
+    expect(importGatewayTranscript).toHaveBeenCalledTimes(1);
   });
 
   it("uses existing configured global bank ID when profile enables global memory", () => {
