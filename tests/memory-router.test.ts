@@ -62,7 +62,13 @@ describe("memory router", () => {
   it("defaults to explicit-only dry-run with no writes", () => {
     const decision = routeMemoryCandidate({
       content: "Kai prefers terse replies across projects",
-      config: DEFAULT_CONFIG,
+      config: {
+        ...DEFAULT_CONFIG,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+        },
+      },
     });
 
     expect(decision).toMatchObject({
@@ -72,6 +78,20 @@ describe("memory router", () => {
       signals: ["global"],
     });
     expect(decision.reason).toContain("dry-run only");
+    expect(decision.targets).toEqual([
+      {
+        bankRole: "global",
+        bankId: "global-bank",
+        tags: [],
+        willWrite: false,
+      },
+    ]);
+    expect(decision.safetyNotes).toEqual(
+      expect.arrayContaining([
+        "dry-run only; no automatic writes in explicit-only mode",
+        "global memory candidate; keep only durable cross-project facts",
+      ]),
+    );
     expect(decision.matchedSignals).toEqual(
       expect.arrayContaining(["preference", "cross-project workflow/style"]),
     );
@@ -80,11 +100,48 @@ describe("memory router", () => {
   it("can describe router writes when router mode is enabled", () => {
     const decision = routeMemoryCandidate({
       content: "Kai prefers terse replies for this repo config workflow",
-      config: { ...DEFAULT_CONFIG, globalRetain: { mode: "router" } },
+      config: {
+        ...DEFAULT_CONFIG,
+        globalRetain: { mode: "router" },
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { ...DEFAULT_CONFIG.banks.project, bankId: "project-bank" },
+          global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+        },
+      },
     });
 
     expect(decision.route).toBe("both");
     expect(decision.writes).toEqual(["project", "global"]);
+    expect(decision.targets).toEqual([
+      {
+        bankRole: "project",
+        bankId: "project-bank",
+        tags: [],
+        willWrite: true,
+      },
+      {
+        bankRole: "global",
+        bankId: "global-bank",
+        tags: [],
+        willWrite: true,
+      },
+    ]);
+  });
+
+  it("adds safety notes for secret-like content", () => {
+    const decision = routeMemoryCandidate({
+      content: "Temporary note contained bearer token abc123 from a private URL",
+      config: DEFAULT_CONFIG,
+    });
+
+    expect(decision.route).toBe("skip");
+    expect(decision.safetyNotes).toEqual(
+      expect.arrayContaining([
+        "review/redact before retain: secret-like content",
+        "skip candidate; do not retain transient or unsafe content",
+      ]),
+    );
   });
 
   it("uses mission terms as routing signals", () => {

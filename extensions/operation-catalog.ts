@@ -5,6 +5,7 @@ import { maintenanceCommandOperations } from "./command-maintenance.js";
 import { sessionCommandOperations } from "./command-session.js";
 import type { MemoryOperationsDeps } from "./memory-operation-service.js";
 import { createMemoryOperations } from "./memory-operation-service.js";
+import { getSessionFile } from "./session.js";
 import { runHindsightSetupTui } from "./setup-tui.js";
 import {
   configureToolResponse,
@@ -162,9 +163,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, _signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const sessionFile = getSessionFile(ctx);
         const result = operations.routeMemory({
           content: params.content,
           ...(params.context ? { context: params.context } : {}),
+          cwd: ctx.cwd,
+          ...(sessionFile ? { sessionFile } : {}),
         });
         return routeMemoryToolResponse(result);
       },

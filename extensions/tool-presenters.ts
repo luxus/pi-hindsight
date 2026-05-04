@@ -26,11 +26,26 @@ export function retainToolResponse(result: RetainToolResult): ToolTextResponse<R
 export function routeMemoryToolResponse(
   result: RouteMemoryToolResult,
 ): ToolTextResponse<RouteMemoryToolResult> {
+  const targetText = result.targets.length
+    ? result.targets
+        .map(
+          (target) =>
+            `${target.bankRole}:${target.bankId} tags=${target.tags.join(",") || "none"} ${target.willWrite ? "will-write" : "preview-only"}`,
+        )
+        .join("; ")
+    : "none";
+  const writeText = result.writes.length ? result.writes.join(",") : "none";
+  const safetyText = result.safetyNotes.length ? result.safetyNotes.join("; ") : "none";
   return {
     content: [
       {
         type: "text",
-        text: `Route ${result.route} confidence=${result.confidence}; ${result.reason}`,
+        text: [
+          `Route ${result.route} confidence=${result.confidence}; ${result.reason}`,
+          `Targets: ${targetText}`,
+          `Writes now: ${writeText}`,
+          `Safety: ${safetyText}`,
+        ].join("\n"),
       },
     ],
     details: result,

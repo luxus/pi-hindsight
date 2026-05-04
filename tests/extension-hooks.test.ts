@@ -423,6 +423,9 @@ describe("extension hooks", () => {
     );
 
     expect(result.details).toMatchObject({ route: "global", mode: "explicit-only", writes: [] });
+    expect(result.details.targets).toEqual([]);
+    expect(result.content[0].text).toContain("Targets: none");
+    expect(result.content[0].text).toContain("Writes now: none");
     expect(mocked.client.retain).not.toHaveBeenCalled();
   });
 

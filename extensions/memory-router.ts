@@ -1,3 +1,5 @@
+import { baseTags, deriveProjectBankId } from "./banking.js";
+import { stableSessionId } from "./session.js";
 import type { ResolvedConfig } from "./types.js";
 
 export type MemoryRoute = "project" | "global" | "both" | "skip";
@@ -7,6 +9,9 @@ export interface MemoryRouteInput {
   content: string;
   context?: string;
   config: ResolvedConfig;
+  cwd?: string;
+  projectBankId?: string;
+  sessionFile?: string;
 }
 
 export interface MemoryRouteClassification {
@@ -25,10 +30,19 @@ export interface MemoryRouterAdapter {
   }): MemoryRouteClassification;
 }
 
+export interface MemoryRouteTargetPreview {
+  bankRole: "project" | "global";
+  bankId: string;
+  tags: string[];
+  willWrite: boolean;
+}
+
 export interface MemoryRouteDecision extends MemoryRouteClassification {
   reason: string;
   mode: ResolvedConfig["globalRetain"]["mode"];
   writes: string[];
+  targets: MemoryRouteTargetPreview[];
+  safetyNotes: string[];
   projectMission: string;
   globalMission: string;
 }
@@ -54,6 +68,11 @@ const SKIP_PATTERNS: Array<[RegExp, string]> = [
   [/\/var\/folders\//i, "temporary file path"],
   [/\btemporary\b/i, "temporary detail"],
   [/\bscreenshot\b/i, "screenshot artifact"],
+];
+
+const SECRET_PATTERNS: Array<[RegExp, string]> = [
+  [/\b(bearer|api[_-]?key|token|cookie|secret|password)\b/i, "secret-like content"],
+  [/https?:\/\/[^\s]*\b(private|internal|token|key)\b[^\s]*/i, "private URL"],
 ];
 
 function matchSignals(text: string, patterns: Array<[RegExp, string]>): string[] {
@@ -144,6 +163,72 @@ function missionSummary(mission: string | undefined, fallback: string): string {
   return mission.length > 120 ? `${mission.slice(0, 117)}...` : mission;
 }
 
+function previewTags(args: { cwd?: string; sessionFile?: string }): string[] {
+  if (!args.cwd) return [];
+  return baseTags(args.cwd, stableSessionId(args.sessionFile, args.cwd));
+}
+
+function routeTargets(args: {
+  route: MemoryRoute;
+  config: ResolvedConfig;
+  writes: string[];
+  cwd?: string;
+  projectBankId?: string;
+  sessionFile?: string;
+}): MemoryRouteTargetPreview[] {
+  const targets: MemoryRouteTargetPreview[] = [];
+  if (args.route === "project" || args.route === "both") {
+    const bankId =
+      args.projectBankId ??
+      args.config.banks.project.bankId ??
+      (args.cwd ? deriveProjectBankId(args.cwd, args.config) : undefined);
+    if (bankId) {
+      targets.push({
+        bankRole: "project",
+        bankId,
+        tags: previewTags({
+          ...(args.cwd ? { cwd: args.cwd } : {}),
+          ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
+        }),
+        willWrite: args.writes.includes("project"),
+      });
+    }
+  }
+  if (args.route === "global" || args.route === "both") {
+    const bankId = args.config.banks.global.enabled ? args.config.banks.global.bankId : undefined;
+    if (bankId) {
+      targets.push({
+        bankRole: "global",
+        bankId,
+        tags: previewTags({
+          ...(args.cwd ? { cwd: args.cwd } : {}),
+          ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
+        }),
+        willWrite: args.writes.includes("global"),
+      });
+    }
+  }
+  return targets;
+}
+
+function safetyNotes(args: {
+  text: string;
+  route: MemoryRoute;
+  mode: ResolvedConfig["globalRetain"]["mode"];
+}) {
+  const notes: string[] = [];
+  const secretMatches = matchSignals(args.text, SECRET_PATTERNS);
+  if (secretMatches.length) notes.push(`review/redact before retain: ${secretMatches.join(", ")}`);
+  if (args.mode === "explicit-only")
+    notes.push("dry-run only; no automatic writes in explicit-only mode");
+  if (args.route === "global" || args.route === "both") {
+    notes.push("global memory candidate; keep only durable cross-project facts");
+  }
+  if (args.route === "skip")
+    notes.push("skip candidate; do not retain transient or unsafe content");
+  return notes;
+}
+
 export function routeMemoryCandidate(
   args: MemoryRouteInput,
   adapter: MemoryRouterAdapter = createMissionAwareMemoryRouter(),
@@ -162,7 +247,7 @@ export function routeMemoryCandidate(
     projectMission,
     globalMission,
   });
-  const writes =
+  const candidateWrites =
     args.config.globalRetain.mode === "router"
       ? classification.route === "both"
         ? ["project", "global"]
@@ -170,6 +255,12 @@ export function routeMemoryCandidate(
           ? []
           : [classification.route]
       : [];
+  const writes = candidateWrites.filter((target) =>
+    target === "project"
+      ? args.config.banks.project.enabled
+      : args.config.banks.global.enabled && Boolean(args.config.banks.global.bankId),
+  );
+  const text = `${args.content}\n${args.context ?? ""}`;
   const reason =
     args.config.globalRetain.mode === "explicit-only"
       ? `dry-run only: globalRetain.mode=explicit-only; suggested=${classification.route}; signals=${classification.matchedSignals.join(", ") || "none"}`
@@ -180,6 +271,19 @@ export function routeMemoryCandidate(
     reason,
     mode: args.config.globalRetain.mode,
     writes,
+    targets: routeTargets({
+      route: classification.route,
+      config: args.config,
+      writes,
+      ...(args.cwd ? { cwd: args.cwd } : {}),
+      ...(args.projectBankId ? { projectBankId: args.projectBankId } : {}),
+      ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
+    }),
+    safetyNotes: safetyNotes({
+      text,
+      route: classification.route,
+      mode: args.config.globalRetain.mode,
+    }),
     projectMission,
     globalMission,
   };
