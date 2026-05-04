@@ -50,6 +50,58 @@ describe("Pi session import", () => {
     expect(parsed.messages[0]).toMatchObject({ id: "1", role: "user", content: "hi" });
   });
 
+  it("previews curated import metrics that drop non-error tool results", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-curated-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-curated", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          parentId: null,
+          message: { role: "user", content: "remember architecture" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "tool1",
+          parentId: "u1",
+          message: { role: "toolResult", name: "read", content: "huge successful file output" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "tool2",
+          parentId: "tool1",
+          message: { role: "toolResult", name: "bash", isError: true, content: "build failed" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          parentId: "tool2",
+          message: { role: "assistant", content: "decision recorded" },
+        }),
+      ].join("\n"),
+    );
+
+    const result = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      dryRun: true,
+      client: { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
+    });
+
+    expect(result.documents[0]).toMatchObject({
+      rawMessageCount: 4,
+      messageCount: 3,
+      droppedToolResultCount: 1,
+      topDroppedTools: [{ name: "read", count: 1, bytes: expect.any(Number) }],
+      wouldWrite: false,
+    });
+  });
+
   it("retains current branch import with repo tags, provenance, deterministic branch document id, and replace mode", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
     mkdirSync(join(dir, ".git"));

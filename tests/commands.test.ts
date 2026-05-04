@@ -345,7 +345,7 @@ describe("hindsight commands", () => {
     );
     expect(ctx.ui.notify).toHaveBeenCalledWith(
       expect.stringContaining(
-        "Import preview: current session; messages=1; documents=1; update=replace; status=pending; write=no",
+        "Import preview: current session; messages=1; documents=1; update=replace; status=pending; projected=1/1 messages; droppedToolResults=0",
       ),
       "info",
     );
