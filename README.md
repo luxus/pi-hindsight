@@ -73,7 +73,7 @@ Intentionally deferred:
 - automatic mental-model management
 - broad bank administration UI beyond setup/config guidance
 
-See [`docs/risky-memory-modes.md`](docs/risky-memory-modes.md) for why these remain deferred.
+See [`docs/risky-memory-modes.md`](docs/risky-memory-modes.md) for why these remain deferred. Pi Hindsight stays Pi-first; framework adapters such as LiteLLM, CrewAI, Pydantic AI, OpenAI Agents, and Vercel AI SDK belong in companion packages or examples. See [`docs/core-vs-companion-adapters.md`](docs/core-vs-companion-adapters.md).
 
 ## Install
 
