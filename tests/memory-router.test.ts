@@ -6,7 +6,7 @@ import {
   routeMemoryCandidate,
   type MemoryRoute,
   type MemoryRouteSignal,
-  type MemoryRouterAdapter,
+  type RoutingStrategy,
 } from "../extensions/memory-router.js";
 
 interface RouterEvalFixture {
@@ -209,9 +209,9 @@ describe("memory router", () => {
     );
   });
 
-  it("passes mission context through the router adapter seam", () => {
+  it("passes normalized config and mission context through the routing strategy seam", () => {
     const calls: unknown[] = [];
-    const adapter: MemoryRouterAdapter = {
+    const adapter: RoutingStrategy = {
       classify(args) {
         calls.push(args);
         return {
@@ -239,8 +239,9 @@ describe("memory router", () => {
     );
 
     expect(calls[0]).toMatchObject({
-      projectMission: "Project retain mission",
-      globalMission: "Global retain mission",
+      content: "remember this",
+      config: expect.objectContaining({ globalRetain: { mode: "explicit-only" } }),
+      missions: { project: "Project retain mission", global: "Global retain mission" },
     });
     expect(decision.projectMission).toBe("Project retain mission");
     expect(decision.globalMission).toBe("Global retain mission");

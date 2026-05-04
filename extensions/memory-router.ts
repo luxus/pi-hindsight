@@ -1,51 +1,31 @@
 import { baseTags, deriveProjectBankId } from "./banking.js";
 import { stableSessionId } from "./session.js";
+import type {
+  MemoryRoute,
+  MemoryRouteClassification,
+  MemoryRouteDecision,
+  MemoryRouterAdapter,
+  MemoryRouteSignal,
+  MemoryRouteTargetPreview,
+  RoutingBankRole,
+  RoutingCandidate,
+  RoutingStrategy,
+  RoutingStrategyInput,
+} from "./routing-strategy.js";
 import type { ResolvedConfig } from "./types.js";
 
-export type MemoryRoute = "project" | "global" | "both" | "skip";
-export type MemoryRouteSignal = "global" | "project" | "skip";
-
-export interface MemoryRouteInput {
-  content: string;
-  context?: string;
-  config: ResolvedConfig;
-  cwd?: string;
-  projectBankId?: string;
-  sessionFile?: string;
-}
-
-export interface MemoryRouteClassification {
-  route: MemoryRoute;
-  confidence: number;
-  signals: MemoryRouteSignal[];
-  matchedSignals: string[];
-}
-
-export interface MemoryRouterAdapter {
-  classify(args: {
-    content: string;
-    context?: string;
-    projectMission?: string;
-    globalMission?: string;
-  }): MemoryRouteClassification;
-}
-
-export interface MemoryRouteTargetPreview {
-  bankRole: "project" | "global";
-  bankId: string;
-  tags: string[];
-  willWrite: boolean;
-}
-
-export interface MemoryRouteDecision extends MemoryRouteClassification {
-  reason: string;
-  mode: ResolvedConfig["globalRetain"]["mode"];
-  writes: string[];
-  targets: MemoryRouteTargetPreview[];
-  safetyNotes: string[];
-  projectMission: string;
-  globalMission: string;
-}
+export type {
+  MemoryRoute,
+  MemoryRouteClassification,
+  MemoryRouteDecision,
+  MemoryRouterAdapter,
+  MemoryRouteSignal,
+  MemoryRouteTargetPreview,
+  RoutingBankRole,
+  RoutingCandidate as MemoryRouteInput,
+  RoutingStrategy,
+  RoutingStrategyInput,
+} from "./routing-strategy.js";
 
 const GLOBAL_PATTERNS: Array<[RegExp, string]> = [
   [/\b(prefer|prefers|preference|likes|wants|always|never)\b/i, "preference"],
@@ -135,18 +115,18 @@ function missionMatches(text: string, mission: string | undefined, label: string
   return matched.length ? [`${label} mission:${matched.slice(0, 3).join("/")}`] : [];
 }
 
-export function createMissionAwareMemoryRouter(): MemoryRouterAdapter {
+export function createMissionAwareMemoryRouter(): RoutingStrategy {
   return {
     classify(args) {
       const text = `${args.content}\n${args.context ?? ""}`;
       return classifyFromSignals({
         globalMatches: [
           ...matchSignals(text, GLOBAL_PATTERNS),
-          ...missionMatches(text, args.globalMission, "global"),
+          ...missionMatches(text, args.missions.global, "global"),
         ],
         projectMatches: [
           ...matchSignals(text, PROJECT_PATTERNS),
-          ...missionMatches(text, args.projectMission, "project"),
+          ...missionMatches(text, args.missions.project, "project"),
         ],
         skipMatches: matchSignals(text, SKIP_PATTERNS),
       });
@@ -154,7 +134,7 @@ export function createMissionAwareMemoryRouter(): MemoryRouterAdapter {
   };
 }
 
-export function createHeuristicMemoryRouter(): MemoryRouterAdapter {
+export function createHeuristicMemoryRouter(): RoutingStrategy {
   return createMissionAwareMemoryRouter();
 }
 
@@ -230,8 +210,8 @@ function safetyNotes(args: {
 }
 
 export function routeMemoryCandidate(
-  args: MemoryRouteInput,
-  adapter: MemoryRouterAdapter = createMissionAwareMemoryRouter(),
+  args: RoutingCandidate,
+  strategy: RoutingStrategy = createMissionAwareMemoryRouter(),
 ): MemoryRouteDecision {
   const projectMission = missionSummary(
     args.config.banks.project.retainMission,
@@ -241,19 +221,23 @@ export function routeMemoryCandidate(
     args.config.banks.global.retainMission,
     "built-in global retain mission",
   );
-  const classification = adapter.classify({
+  const strategyInput: RoutingStrategyInput = {
     content: args.content,
     ...(args.context ? { context: args.context } : {}),
-    projectMission,
-    globalMission,
-  });
-  const candidateWrites =
+    config: args.config,
+    missions: { project: projectMission, global: globalMission },
+    ...(args.cwd ? { cwd: args.cwd } : {}),
+    ...(args.projectBankId ? { projectBankId: args.projectBankId } : {}),
+    ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
+  };
+  const classification = strategy.classify(strategyInput);
+  const candidateWrites: RoutingBankRole[] =
     args.config.globalRetain.mode === "router"
       ? classification.route === "both"
         ? ["project", "global"]
         : classification.route === "skip"
           ? []
-          : [classification.route]
+          : [classification.route as RoutingBankRole]
       : [];
   const writes = candidateWrites.filter((target) =>
     target === "project"
