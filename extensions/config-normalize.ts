@@ -106,10 +106,9 @@ export function normalizeConfig(
     config.banks?.project?.bankId,
     DEFAULT_CONFIG.banks.project.bankId,
   );
-  const globalBankId = optionalString(
-    config.banks?.global?.bankId,
-    DEFAULT_CONFIG.banks.global.bankId,
-  );
+  const userBankConfig = config.banks?.user ?? config.banks?.global;
+  const defaultUserBankConfig = DEFAULT_CONFIG.banks.user;
+  const globalBankId = optionalString(userBankConfig?.bankId, defaultUserBankConfig.bankId);
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
     hindsight: {
@@ -129,21 +128,33 @@ export function normalizeConfig(
         ),
         ...missionFields(config.banks?.project),
       },
-      global: {
-        enabled: bool(config.banks?.global?.enabled, DEFAULT_CONFIG.banks.global.enabled),
+      user: {
+        enabled: bool(userBankConfig?.enabled, defaultUserBankConfig.enabled),
         ...(globalBankId ? { bankId: globalBankId } : {}),
-        ...missionFields(config.banks?.global),
+        ...missionFields(userBankConfig),
+      },
+      global: {
+        enabled: bool(userBankConfig?.enabled, defaultUserBankConfig.enabled),
+        ...(globalBankId ? { bankId: globalBankId } : {}),
+        ...missionFields(userBankConfig),
       },
     },
     observations: {
       enabled: bool(config.observations?.enabled, DEFAULT_CONFIG.observations.enabled),
       scopes: stringMatrix(config.observations?.scopes, DEFAULT_CONFIG.observations.scopes),
     },
+    userRetain: {
+      mode: enumValue(
+        config.userRetain?.mode ?? config.globalRetain?.mode,
+        ["explicit-only", "router"],
+        DEFAULT_CONFIG.userRetain.mode,
+      ),
+    },
     globalRetain: {
       mode: enumValue(
-        config.globalRetain?.mode,
+        config.userRetain?.mode ?? config.globalRetain?.mode,
         ["explicit-only", "router"],
-        DEFAULT_CONFIG.globalRetain.mode,
+        DEFAULT_CONFIG.userRetain.mode,
       ),
     },
     recall: {
@@ -175,13 +186,17 @@ export function normalizeConfig(
             ? config.recall.queryPreamble
             : DEFAULT_CONFIG.recall.projectQueryPreamble,
       globalQueryPreamble:
-        hasConfiguredRecallField(rawConfig, "globalQueryPreamble") &&
-        typeof config.recall?.globalQueryPreamble === "string"
-          ? config.recall.globalQueryPreamble
-          : hasConfiguredRecallField(rawConfig, "queryPreamble") &&
-              typeof config.recall?.queryPreamble === "string"
-            ? config.recall.queryPreamble
-            : DEFAULT_CONFIG.recall.globalQueryPreamble,
+        hasConfiguredRecallField(rawConfig, "userQueryPreamble") &&
+        typeof config.recall?.userQueryPreamble === "string"
+          ? config.recall.userQueryPreamble
+          : hasConfiguredRecallField(rawConfig, "globalQueryPreamble") &&
+              typeof config.recall?.globalQueryPreamble === "string"
+            ? config.recall.globalQueryPreamble
+            : hasConfiguredRecallField(rawConfig, "queryPreamble") &&
+                typeof config.recall?.queryPreamble === "string"
+              ? config.recall.queryPreamble
+              : (DEFAULT_CONFIG.recall.userQueryPreamble ??
+                DEFAULT_CONFIG.recall.globalQueryPreamble),
       includeDateInQuery: bool(
         config.recall?.includeDateInQuery,
         DEFAULT_CONFIG.recall.includeDateInQuery,

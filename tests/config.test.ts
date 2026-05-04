@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveConfig } from "../extensions/config.js";
@@ -127,6 +134,93 @@ describe("resolveConfig", () => {
     expect(resolveConfig(cwd, { PI_HINDSIGHT_ENABLED: "true" }).enabled).toBe(true);
   });
 
+  it("supports user bank env and keeps legacy global env as fallback", () => {
+    const cwd = tmp();
+    expect(
+      resolveConfig(cwd, {
+        PI_HINDSIGHT_GLOBAL_BANK_ID: "legacy-global-bank",
+      }).banks.global,
+    ).toMatchObject({ enabled: true, bankId: "legacy-global-bank" });
+    expect(
+      resolveConfig(cwd, {
+        PI_HINDSIGHT_GLOBAL_BANK_ID: "legacy-global-bank",
+        PI_HINDSIGHT_USER_BANK_ID: "user-bank",
+      }).banks.global,
+    ).toMatchObject({ enabled: true, bankId: "user-bank" });
+  });
+
+  it("migrates legacy global memory config keys to user keys with backup", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    const path = join(cwd, ".pi", "hindsight.json");
+    writeFileSync(
+      path,
+      JSON.stringify({
+        banks: {
+          user: { enabled: true, bankId: "preferred-user" },
+          global: { enabled: true, bankId: "old-global" },
+        },
+        userRetain: { mode: "explicit-only" },
+        globalRetain: { mode: "router" },
+        recall: {
+          userQueryPreamble: "Preferred preamble",
+          globalQueryPreamble: "Legacy preamble",
+        },
+      }),
+    );
+
+    const config = resolveConfig(cwd);
+    const migrated = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    const backups = readdirSync(join(cwd, ".pi")).filter((name) =>
+      name.startsWith("hindsight.json.bak-"),
+    );
+
+    expect(config.banks.user).toMatchObject({ enabled: true, bankId: "preferred-user" });
+    expect(config.banks.global).toMatchObject({ enabled: true, bankId: "preferred-user" });
+    expect(config.userRetain.mode).toBe("explicit-only");
+    expect(config.globalRetain.mode).toBe("explicit-only");
+    expect(config.recall.globalQueryPreamble).toBe("Preferred preamble");
+    expect(migrated).toMatchObject({
+      banks: { user: { enabled: true, bankId: "preferred-user" } },
+      userRetain: { mode: "explicit-only" },
+      recall: { userQueryPreamble: "Preferred preamble" },
+    });
+    expect(migrated).not.toHaveProperty("banks.global");
+    expect(migrated).not.toHaveProperty("globalRetain");
+    expect(migrated).not.toHaveProperty("recall.globalQueryPreamble");
+    expect(backups).toHaveLength(1);
+    expect(existsSync(join(cwd, ".pi", backups[0]!))).toBe(true);
+  });
+
+  it("merges legacy global fields into partial user config before removing duplicates", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    const path = join(cwd, ".pi", "hindsight.json");
+    writeFileSync(
+      path,
+      JSON.stringify({
+        banks: {
+          user: { enabled: true },
+          global: { enabled: false, bankId: "legacy-bank", retainMission: "Legacy retain" },
+        },
+        userRetain: {},
+        globalRetain: { mode: "router" },
+      }),
+    );
+
+    const config = resolveConfig(cwd);
+    const migrated = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+
+    expect(config.banks.user).toMatchObject({
+      enabled: true,
+      bankId: "legacy-bank",
+      retainMission: "Legacy retain",
+    });
+    expect(config.userRetain.mode).toBe("router");
+    expect(migrated).not.toHaveProperty("banks.global");
+    expect(migrated).not.toHaveProperty("globalRetain");
+  });
+
   it("accepts recall query builder overrides", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));
@@ -251,7 +345,7 @@ describe("resolveConfig", () => {
       "Project memory lookup for current repo architecture, tasks, bugs, decisions, and constraints.",
     );
     expect(config.recall.globalQueryPreamble).toBe(
-      "Global memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
+      "User memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
     );
     expect(config.recall.includeDateInQuery).toBe(false);
     expect(config.recall.includeRepoHintsInQuery).toBe(true);

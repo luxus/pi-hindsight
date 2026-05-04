@@ -19,7 +19,7 @@ function deps() {
     ...DEFAULT_CONFIG,
     banks: {
       ...DEFAULT_CONFIG.banks,
-      global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-luxus" },
+      user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "global-luxus" },
     },
   };
   return {

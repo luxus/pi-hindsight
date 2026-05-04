@@ -37,8 +37,8 @@ export interface DebugReportArgs {
 
 export function bankSelectionMessage(projectBankId: string, config: ResolvedConfig): string {
   if (!config.banks.project.enabled) {
-    return config.banks.global.enabled && config.banks.global.bankId
-      ? `Hindsight global-only memory: ${config.banks.global.bankId}`
+    return config.banks.user.enabled && config.banks.user.bankId
+      ? `Hindsight global-only memory: ${config.banks.user.bankId}`
       : "Hindsight project bank disabled and no global bank configured.";
   }
   if (config.banks.project.bankId) {
@@ -50,8 +50,8 @@ export function bankSelectionMessage(projectBankId: string, config: ResolvedConf
 export function memoryProfile(
   config: ResolvedConfig,
 ): "project-only" | "project+global" | "global-only" | "none" {
-  if (!config.banks.project.enabled) return config.banks.global.enabled ? "global-only" : "none";
-  if (config.banks.global.enabled) return "project+global";
+  if (!config.banks.project.enabled) return config.banks.user.enabled ? "global-only" : "none";
+  if (config.banks.user.enabled) return "project+global";
   return "project-only";
 }
 
@@ -125,23 +125,19 @@ export function formatDebugReport(args: DebugReportArgs): string {
           args.config.banks.project.observationsMission,
         ),
         globalConfigured: Boolean(
-          args.config.banks.global.retainMission ||
-          args.config.banks.global.reflectMission ||
-          args.config.banks.global.observationsMission,
+          args.config.banks.user.retainMission ||
+          args.config.banks.user.reflectMission ||
+          args.config.banks.user.observationsMission,
         ),
       },
       observations: observationScopes,
       overrideProjectBankId:
         "Set PI_HINDSIGHT_PROJECT_BANK_ID or .pi/hindsight.json banks.project.bankId",
-      globalBankId: args.config.banks.global.enabled
-        ? (args.config.banks.global.bankId ?? null)
-        : null,
+      globalBankId: args.config.banks.user.enabled ? (args.config.banks.user.bankId ?? null) : null,
       memoryRoutes: {
         recall: [
           ...(args.config.banks.project.enabled ? ["project"] : []),
-          ...(args.config.banks.global.enabled && args.config.banks.global.bankId
-            ? ["global"]
-            : []),
+          ...(args.config.banks.user.enabled && args.config.banks.user.bankId ? ["global"] : []),
         ],
         autoRetain: args.config.banks.project.enabled ? "project" : null,
       },

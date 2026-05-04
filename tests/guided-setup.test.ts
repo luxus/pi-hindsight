@@ -15,7 +15,7 @@ const configuredGlobal = {
   ...DEFAULT_CONFIG,
   banks: {
     ...DEFAULT_CONFIG.banks,
-    global: { ...DEFAULT_CONFIG.banks.global, bankId: "global-luxus" },
+    user: { ...DEFAULT_CONFIG.banks.user, bankId: "global-luxus" },
   },
 };
 

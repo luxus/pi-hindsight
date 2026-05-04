@@ -8,11 +8,11 @@ export function resolveOperationBank(args: {
   const requested = args.requestedBank?.trim();
   if (!requested || requested === "project") return args.projectBankId;
   if (requested === "global") {
-    if (!args.config.banks.global.enabled)
-      throw new Error("Global Hindsight bank is disabled. Enable banks.global first.");
-    if (!args.config.banks.global.bankId)
-      throw new Error("Global Hindsight bank ID is not configured.");
-    return args.config.banks.global.bankId;
+    if (!args.config.banks.user.enabled)
+      throw new Error("User Hindsight bank is disabled. Enable banks.user first.");
+    if (!args.config.banks.user.bankId)
+      throw new Error("User Hindsight bank ID is not configured.");
+    return args.config.banks.user.bankId;
   }
   return requested;
 }

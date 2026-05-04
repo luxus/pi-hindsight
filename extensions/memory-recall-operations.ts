@@ -12,7 +12,7 @@ function recallTagsForBank(
   projectBankId: string,
   bankId: string,
 ): string[] {
-  return config.banks.global.enabled && bankId === config.banks.global.bankId
+  return config.banks.user.enabled && bankId === config.banks.user.bankId
     ? ["source:pi"]
     : recallScopeTags(cwd);
 }

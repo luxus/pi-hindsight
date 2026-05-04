@@ -56,8 +56,8 @@ export function buildGuidedSetupPatch(args: {
       : {}),
     ...(memoryProfile !== "project-only" && args.globalBankId?.trim()
       ? { globalBankId: args.globalBankId.trim() }
-      : args.config.banks.global.bankId && memoryProfile !== "project-only"
-        ? { globalBankId: args.config.banks.global.bankId }
+      : args.config.banks.user.bankId && memoryProfile !== "project-only"
+        ? { globalBankId: args.config.banks.user.bankId }
         : {}),
   };
 }
@@ -344,11 +344,11 @@ export async function runGuidedSetup(args: {
       ? undefined
       : await askBankId({
           ctx: args.ctx,
-          title: "Global bank ID",
-          fallback: config.banks.global.bankId ?? "",
+          title: "User bank ID",
+          fallback: config.banks.user.bankId ?? "",
         });
   if (setupProfile !== "project-only" && !globalBankId) {
-    args.ctx.ui.notify("Global bank ID required for global memory profiles.", "warning");
+    args.ctx.ui.notify("User bank ID required for user memory profiles.", "warning");
     return false;
   }
 
@@ -361,7 +361,7 @@ export async function runGuidedSetup(args: {
   const summary = [
     `Profile: ${setupProfileChoiceToMemoryProfile(setupProfile)}`,
     ...(projectBankId ? [`Project bank: ${projectBankId}`] : []),
-    ...(globalBankId ? [`Global bank: ${globalBankId}`] : []),
+    ...(globalBankId ? [`User bank: ${globalBankId}`] : []),
   ].join("\n");
   const confirmed = await args.ctx.ui.confirm("Write Pi Hindsight config?", summary);
   if (!confirmed) return false;

@@ -95,6 +95,30 @@ describe("extension hooks", () => {
     );
   });
 
+  it("notifies when startup migrates legacy global memory config", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ banks: { global: { enabled: true, bankId: "global-bank" } } }),
+    );
+    const { createMemoryLifecycle } = await import("../extensions/memory-lifecycle.js");
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    await createMemoryLifecycle(cwd).initialize(ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Migrated Hindsight memory config from global to user keys"),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("Backups:"), "info");
+  });
+
   it("marks startup status offline after bank ensure fails", async () => {
     mocked.ensureProjectBank.mockRejectedValueOnce(new Error("down"));
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
@@ -782,7 +806,7 @@ describe("extension hooks", () => {
     });
     expect(mocked.client.recall.mock.calls[1]?.[0]).toBe("global-bank");
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain(
-      "Global memory lookup for durable user preferences",
+      "User memory lookup for durable user preferences",
     );
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain("scope:global");
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain("user: What do I know?");

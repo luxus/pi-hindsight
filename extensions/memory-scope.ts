@@ -21,10 +21,10 @@ export function selectMemoryScopes(cwd: string, config: ResolvedConfig): MemoryR
     });
   }
 
-  if (config.banks.global.enabled && config.banks.global.bankId) {
+  if (config.banks.user.enabled && config.banks.user.bankId) {
     scopes.push({
       kind: "global",
-      bankId: config.banks.global.bankId,
+      bankId: config.banks.user.bankId,
       tags: identity.globalRecallTags,
       tagsMatch: "any_strict",
     });

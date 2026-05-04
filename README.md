@@ -25,7 +25,7 @@ Recall  = retrieve relevant memory candidates
 Reflect = analyze memory for patterns or answers
 ```
 
-Everything lives in a **memory bank**. This extension defaults to a project bank per repo so unrelated projects do not leak into each other. A global bank is optional and explicit.
+Everything lives in a **memory bank**. This extension defaults to a project bank per repo so unrelated projects do not leak into each other. A user bank is optional and explicit.
 
 ```mermaid
 flowchart LR
@@ -43,7 +43,7 @@ Sharp rules:
 - Use stable document IDs for live sessions.
 - Keep recall ephemeral; do not write recalled memory back into transcripts.
 - Use tags and banks for scope.
-- Keep global memory opt-in and intentional.
+- Keep user memory opt-in and intentional.
 
 See [`docs/hindsight-core-functions.md`](docs/hindsight-core-functions.md) and [`docs/memory-behavior.md`](docs/memory-behavior.md) for details.
 
@@ -57,7 +57,7 @@ Implemented:
 - automatic retain through Pi's `agent_end` hook
 - queue-first retain with lock, retry, malformed-line quarantine, and dead-letter handling
 - stable live-session document IDs
-- project/global memory profiles
+- project/user memory profiles
 - historical Pi session import with manifest and checkpoint support
 - setup/status TUI through `/hindsight`
 - explicit tools and command shortcuts for advanced use
@@ -111,8 +111,8 @@ Package name: `@luxusai/pi-hindsight`.
 
 4. Choose a memory profile:
    - `project-only`: safest default; repo memory stays in a project bank.
-   - `project+global`: recalls project memory plus durable global preferences.
-   - `global-only`: broad shared memory; automatic project retain is disabled.
+   - `project+global`: recalls project memory plus durable user preferences.
+   - `global-only`: user-only shared memory; automatic project retain is disabled.
 
 5. Start coding. Recall happens before provider calls; retain happens after completed agent runs.
 
@@ -193,7 +193,7 @@ Common environment variables:
 export HINDSIGHT_BASE_URL=http://localhost:8888
 export HINDSIGHT_API_KEY=...
 export PI_HINDSIGHT_PROJECT_BANK_ID=pi-project-my-repo
-export PI_HINDSIGHT_GLOBAL_BANK_ID=global-luxus
+export PI_HINDSIGHT_USER_BANK_ID=user-luxus
 ```
 
 ## Safety

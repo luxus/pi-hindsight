@@ -178,7 +178,7 @@ export function createSetupComponent(
           detailField.description,
           `Default: ${detailField.defaultValue}`,
           ...(detailField.projectValue ? [`Project: ${detailField.projectValue}`] : []),
-          ...(detailField.globalValue ? [`Global: ${detailField.globalValue}`] : []),
+          ...(detailField.globalValue ? [`User: ${detailField.globalValue}`] : []),
           ...(detailField.envValue ? [`Env: ${detailField.envValue}`] : []),
         ];
         for (const detail of details) {

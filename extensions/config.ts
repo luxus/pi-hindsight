@@ -2,6 +2,7 @@ import { join } from "node:path";
 import type { ResolvedConfig } from "./types.js";
 import { DEFAULT_CONFIG } from "./config-defaults.js";
 import { readConfigFile } from "./config-json.js";
+import { migrateUserMemoryConfigFiles } from "./config-migration.js";
 import { normalizeConfig } from "./config-normalize.js";
 import { envBool, merge, validEnvVarName } from "./config-utils.js";
 
@@ -11,6 +12,7 @@ export { parseJsonWithComments, readConfigFile, readJson } from "./config-json.j
 export { validEnvVarName } from "./config-utils.js";
 
 export function resolveConfig(cwd: string, env: NodeJS.ProcessEnv = process.env): ResolvedConfig {
+  migrateUserMemoryConfigFiles(cwd, env);
   let rawConfig: Record<string, unknown> = {};
   let config = DEFAULT_CONFIG;
   const home = env.HOME;
@@ -46,9 +48,10 @@ export function resolveConfig(cwd: string, env: NodeJS.ProcessEnv = process.env)
     rawConfig = merge(rawConfig, patch);
     config = merge(config, patch);
   }
-  if (env.PI_HINDSIGHT_GLOBAL_BANK_ID) {
+  const userBankId = env.PI_HINDSIGHT_USER_BANK_ID || env.PI_HINDSIGHT_GLOBAL_BANK_ID;
+  if (userBankId) {
     const patch = {
-      banks: { global: { enabled: true, bankId: env.PI_HINDSIGHT_GLOBAL_BANK_ID } },
+      banks: { user: { enabled: true, bankId: userBankId } },
     };
     rawConfig = merge(rawConfig, patch);
     config = merge(config, patch);

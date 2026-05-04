@@ -46,16 +46,16 @@ function settingPrompt(field: ConfigEditingField): string {
     `Effective: ${field.value} (${field.source ?? "default"})`,
     `Environment: ${field.envValue ?? "not set"}`,
     `Project: ${field.projectValue ?? "not set"}`,
-    `Global: ${field.globalValue ?? "not set"}`,
+    `User: ${field.globalValue ?? "not set"}`,
     `Default: ${field.defaultValue}`,
     field.source === "env"
-      ? "Environment currently wins; project/global edits save for when env override is removed."
+      ? "Environment currently wins; project/user edits save for when env override is removed."
       : "Changes save immediately.",
   ].join("\n");
 }
 
 function scopeLabel(scope: ConfigScope): string {
-  return scope === "project" ? "Project" : "Global";
+  return scope === "project" ? "Project" : "User";
 }
 
 function withScopedValues(field: ConfigEditingField, values: string[]): string[] {
@@ -64,7 +64,7 @@ function withScopedValues(field: ConfigEditingField, values: string[]): string[]
   );
   const resets = (field.editableScopes ?? ["project"]).flatMap((scope) => {
     if (scope === "project" && field.projectValue !== undefined) return ["Remove project override"];
-    if (scope === "global" && field.globalValue !== undefined) return ["Remove global override"];
+    if (scope === "global" && field.globalValue !== undefined) return ["Remove user override"];
     return [];
   });
   return [...scoped, ...resets, CANCEL];
@@ -73,8 +73,7 @@ function withScopedValues(field: ConfigEditingField, values: string[]): string[]
 function parseScopedAction(action: string): { scope: ConfigScope; value: string } | undefined {
   if (action.startsWith("Project: "))
     return { scope: "project", value: action.slice("Project: ".length) };
-  if (action.startsWith("Global: "))
-    return { scope: "global", value: action.slice("Global: ".length) };
+  if (action.startsWith("User: ")) return { scope: "global", value: action.slice("User: ".length) };
   return undefined;
 }
 
@@ -86,7 +85,7 @@ async function chooseScope(
   if (scopes.length === 1) return scopes[0];
   const value = await ctx.ui.select(settingPrompt(field), scopes.map(scopeLabel).concat(CANCEL));
   if (!value || value === CANCEL) return undefined;
-  return value === "Global" ? "global" : "project";
+  return value === "User" ? "global" : "project";
 }
 
 async function handleResetAction(
@@ -99,7 +98,7 @@ async function handleResetAction(
     await resetField(ctx, deps, field, "project");
     return true;
   }
-  if (action === "Remove global override") {
+  if (action === "Remove user override") {
     await resetField(ctx, deps, field, "global");
     return true;
   }

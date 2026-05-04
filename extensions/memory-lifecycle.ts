@@ -1,5 +1,6 @@
 import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
 import { resolveConfig } from "./config.js";
+import { consumeLastConfigMigrationResults } from "./config-migration.js";
 import { deriveProjectBankId } from "./banking.js";
 import { createHindsightClient } from "./client.js";
 import { ensureGlobalBank, ensureProjectBank } from "./bank-operations.js";
@@ -128,6 +129,16 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return;
       reloadConfig(runtime.cwd);
+      const migrations = consumeLastConfigMigrationResults();
+      if (migrations.length) {
+        notify(
+          runtime,
+          `Migrated Hindsight memory config from global to user keys. Backups: ${migrations
+            .map((migration) => migration.backupPath)
+            .join(", ")}`,
+          "info",
+        );
+      }
       if (!config.enabled) return;
       let ensureFailed = false;
       let ensureSucceeded = false;
@@ -144,10 +155,10 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           notify(runtime, `Hindsight project bank ensure failed: ${redactError(error)}`, "warning");
         }
       }
-      if (config.banks.global.enabled && config.banks.global.bankId) {
+      if (config.banks.user.enabled && config.banks.user.bankId) {
         try {
-          await ensureGlobalBank(client, config.banks.global.bankId, {
-            ...config.banks.global,
+          await ensureGlobalBank(client, config.banks.user.bankId, {
+            ...config.banks.user,
             enableObservations: config.observations.enabled,
           });
           ensureSucceeded = true;
@@ -159,8 +170,8 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       }
       const capabilityProbeBankId = config.banks.project.enabled
         ? projectBankId
-        : config.banks.global.enabled
-          ? config.banks.global.bankId
+        : config.banks.user.enabled
+          ? config.banks.user.bankId
           : undefined;
       if (config.retain.enabled && capabilityProbeBankId) {
         try {

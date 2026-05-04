@@ -30,14 +30,14 @@ Retain explicit raw content in Hindsight. Use for durable facts or decisions.
 
 ### `hindsight_retain_global`
 
-Retain explicit durable global memory in the configured global bank. Use for stable user identity, preferences, and cross-project workflows only.
+Retain explicit durable user memory in the configured user bank. Use for stable user identity, preferences, and cross-project workflows only.
 
-| Parameter  | Type          | Required | Description                                     |
-| ---------- | ------------- | -------- | ----------------------------------------------- |
-| `content`  | string        | yes      | Raw memory content to retain.                   |
-| `context`  | string        | yes      | Why this memory is durable global user context. |
-| `tags`     | array<string> | no       |                                                 |
-| `entities` | array<object> | no       |                                                 |
+| Parameter  | Type          | Required | Description                              |
+| ---------- | ------------- | -------- | ---------------------------------------- |
+| `content`  | string        | yes      | Raw memory content to retain.            |
+| `context`  | string        | yes      | Why this memory is durable user context. |
+| `tags`     | array<string> | no       |                                          |
+| `entities` | array<object> | no       |                                          |
 
 ### `hindsight_retain_receipts`
 
@@ -49,7 +49,7 @@ List recent explicit retain receipts so exact document IDs can be deleted.
 
 ### `hindsight_route_memory`
 
-Dry-run memory routing against current project/global policy. Does not retain anything.
+Dry-run memory routing against current project/user policy. Does not retain anything.
 
 | Parameter | Type   | Required | Description                           |
 | --------- | ------ | -------- | ------------------------------------- |
@@ -74,8 +74,8 @@ Write project Hindsight config (.pi/hindsight.json), including project bank over
 | ------------------ | ------- | -------- | ---------------------------------------------------------------- |
 | `projectBankId`    | string  | no       | Project bank ID to use. Defaults to currently selected bank.     |
 | `baseUrl`          | string  | no       | Hindsight base URL, e.g. http://localhost:8888                   |
-| `globalBankId`     | string  | no       | Optional global bank ID.                                         |
-| `enableGlobalBank` | boolean | no       | Enable or disable global bank.                                   |
+| `globalBankId`     | string  | no       | Optional user bank ID.                                           |
+| `enableGlobalBank` | boolean | no       | Enable or disable user bank.                                     |
 | `enabled`          | boolean | no       | Enable or disable Hindsight extension.                           |
 | `queuePath`        | string  | no       | Retain queue path. Defaults to .pi/hindsight/retain-queue.jsonl. |
 
@@ -140,7 +140,7 @@ Ask Hindsight to synthesize an answer from memory. Use explicitly, not for defau
 | `memoryProfile`         | Banks      | select       | project-only                         | project-only, project+global, global-only | no       | banks.profile                      | Project-only is safest. Project+global also recalls personal cross-project memory.                                         |
 | `projectBankId`         | Banks      | text         | auto-derived                         |                                           | no       | banks.project.bankId               | Bank used for this repository. Default derives a stable ID from repo identity.                                             |
 | `globalBankEnabled`     | Banks      | boolean      | disabled                             |                                           | no       | banks.global.enabled               | Allows cross-project recall from a shared bank.                                                                            |
-| `globalBankId`          | Banks      | text         | not set                              |                                           | no       | banks.global.bankId                | Shared bank used only when global memory is enabled.                                                                       |
+| `globalBankId`          | Banks      | text         | not set                              |                                           | no       | banks.global.bankId                | Shared user bank used only when user memory is enabled.                                                                    |
 | `recallEnabled`         | Recall     | boolean      | enabled                              |                                           | no       | recall.enabled                     | Looks up memory before answer generation and injects it ephemerally.                                                       |
 | `recallBudget`          | Recall     | select       | mid                                  | low, mid, high                            | no       | recall.budget                      | Low, mid, or high retrieval effort.                                                                                        |
 | `recallMaxTokens`       | Recall     | positive-int | 800                                  |                                           | no       | recall.maxTokens                   | Maximum memory tokens injected into context.                                                                               |

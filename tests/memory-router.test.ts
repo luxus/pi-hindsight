@@ -80,7 +80,7 @@ describe("memory router", () => {
         ...DEFAULT_CONFIG,
         banks: {
           ...DEFAULT_CONFIG.banks,
-          global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+          user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "global-bank" },
         },
       },
     });
@@ -119,11 +119,11 @@ describe("memory router", () => {
         ...(context ? { context } : {}),
         config: {
           ...DEFAULT_CONFIG,
-          globalRetain: { mode: "router" },
+          userRetain: { mode: "router" },
           banks: {
             ...DEFAULT_CONFIG.banks,
             project: { ...DEFAULT_CONFIG.banks.project, bankId: "project-bank" },
-            global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+            user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "global-bank" },
           },
         },
       });
@@ -146,11 +146,11 @@ describe("memory router", () => {
       content: "Kai prefers terse replies for this repo config workflow",
       config: {
         ...DEFAULT_CONFIG,
-        globalRetain: { mode: "router" },
+        userRetain: { mode: "router" },
         banks: {
           ...DEFAULT_CONFIG.banks,
           project: { ...DEFAULT_CONFIG.banks.project, bankId: "project-bank" },
-          global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+          user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "global-bank" },
         },
       },
     });
@@ -231,7 +231,7 @@ describe("memory router", () => {
           banks: {
             ...DEFAULT_CONFIG.banks,
             project: { ...DEFAULT_CONFIG.banks.project, retainMission: "Project retain mission" },
-            global: { ...DEFAULT_CONFIG.banks.global, retainMission: "Global retain mission" },
+            user: { ...DEFAULT_CONFIG.banks.user, retainMission: "Global retain mission" },
           },
         },
       },

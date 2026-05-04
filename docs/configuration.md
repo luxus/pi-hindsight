@@ -12,7 +12,7 @@ Config is loaded from:
 
 If both `.json` and `.jsonc` exist at the same scope, `.json` wins. Config is normalized after merging. Unknown fields are ignored, and invalid values fall back to defaults.
 
-Environment variables win the effective value. Project/global stored values can still be edited for future runs after the environment override is removed.
+Environment variables win the effective value. Project/user stored values can still be edited for future runs after the environment override is removed.
 
 ## Common environment variables
 
@@ -24,7 +24,9 @@ export HINDSIGHT_API_KEY_REF=HINDSIGHT_API_KEY
 
 export PI_HINDSIGHT_ENABLED=true
 export PI_HINDSIGHT_PROJECT_BANK_ID=pi-project-my-repo
-export PI_HINDSIGHT_GLOBAL_BANK_ID=global-luxus
+export PI_HINDSIGHT_USER_BANK_ID=user-luxus
+# Legacy fallback still works during migration:
+# export PI_HINDSIGHT_GLOBAL_BANK_ID=global-luxus
 ```
 
 Project config SecretRef shape:
@@ -39,11 +41,11 @@ Project config SecretRef shape:
 
 ## Memory profiles
 
-- `project-only`: project bank enabled; global bank disabled; automatic retain writes to project bank.
-- `project+global`: project and global recall enabled; automatic retain still writes project transcript deltas to the project bank by default.
-- `global-only`: project bank disabled; global recall enabled; automatic retain disabled.
+- `project-only`: project bank enabled; user bank disabled; automatic retain writes to project bank.
+- `project+global`: project and user recall enabled; automatic retain still writes project transcript deltas to the project bank by default.
+- `global-only`: project bank disabled; user recall enabled; automatic retain disabled.
 
-When a profile enables global memory without an existing bank ID, setup writes `pi-global` as the global bank ID. Override it with `PI_HINDSIGHT_GLOBAL_BANK_ID`, `.pi/hindsight.json` `banks.global.bankId`, or the setup TUI if you prefer a different shared bank.
+When a profile enables user memory without an existing bank ID, setup writes `pi-global` as the default user bank ID for compatibility. Override it with `PI_HINDSIGHT_USER_BANK_ID`, `.pi/hindsight.json` `banks.user.bankId`, or the setup TUI if you prefer a different shared bank. Legacy `PI_HINDSIGHT_GLOBAL_BANK_ID` and `banks.global` configs are migrated/supported during transition.
 
 ## Setup TUI
 
@@ -68,9 +70,9 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
       "bankId": "pi-project-my-repo",
       "derive": "manual"
     },
-    "global": {
+    "user": {
       "enabled": false,
-      "bankId": "global-luxus"
+      "bankId": "user-luxus"
     }
   },
   "recall": {

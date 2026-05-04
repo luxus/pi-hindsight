@@ -48,7 +48,7 @@ export interface MemoryRouteTargetPreview {
 
 export interface MemoryRouteDecision extends MemoryRouteClassification {
   reason: string;
-  mode: ResolvedConfig["globalRetain"]["mode"];
+  mode: ResolvedConfig["userRetain"]["mode"];
   writes: RoutingBankRole[];
   targets: MemoryRouteTargetPreview[];
   safetyNotes: string[];

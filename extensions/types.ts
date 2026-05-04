@@ -34,6 +34,7 @@ export interface ResolvedConfig {
       bankId?: string;
       derive: "repo" | "cwd" | "manual";
     };
+    user: BankMissionSettings & { enabled: boolean; bankId?: string };
     global: BankMissionSettings & { enabled: boolean; bankId?: string };
   };
   recall: {
@@ -47,6 +48,7 @@ export interface ResolvedConfig {
     queryPreamble: string;
     projectQueryPreamble: string;
     globalQueryPreamble: string;
+    userQueryPreamble?: string;
     includeDateInQuery: boolean;
     includeRepoHintsInQuery: boolean;
     storeLastRecall: boolean;
@@ -62,6 +64,9 @@ export interface ResolvedConfig {
   observations: {
     enabled: boolean;
     scopes: string[][];
+  };
+  userRetain: {
+    mode: GlobalRetainMode;
   };
   globalRetain: {
     mode: GlobalRetainMode;

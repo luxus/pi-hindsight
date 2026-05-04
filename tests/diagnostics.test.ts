@@ -89,6 +89,7 @@ describe("diagnostics", () => {
           ...DEFAULT_CONFIG,
           banks: {
             project: { enabled: false, derive: "repo" },
+            user: { enabled: true, bankId: "global-bank" },
             global: { enabled: true, bankId: "global-bank" },
           },
         },
@@ -109,6 +110,7 @@ describe("diagnostics", () => {
           ...DEFAULT_CONFIG,
           banks: {
             project: { enabled: false, derive: "repo" },
+            user: { enabled: false },
             global: { enabled: false },
           },
         },

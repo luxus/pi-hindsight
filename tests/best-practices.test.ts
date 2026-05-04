@@ -115,7 +115,7 @@ describe("Hindsight best-practice invariants", () => {
     mkdirSync(join(cwd, ".git"));
     const config: ResolvedConfig = {
       ...DEFAULT_CONFIG,
-      banks: { ...DEFAULT_CONFIG.banks, global: { enabled: true, bankId: "pi-global" } },
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "pi-global" } },
     };
 
     const scopes = selectMemoryScopes(cwd, config);

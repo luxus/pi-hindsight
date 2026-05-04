@@ -12,12 +12,12 @@ import { CANCEL } from "./setup-tui-types.js";
 
 function bankOptions(deps: MemoryOperationsDeps): string[] {
   const config = deps.getConfig();
-  return config.banks.global.enabled ? ["Project", "Global", CANCEL] : ["Project", CANCEL];
+  return config.banks.user.enabled ? ["Project", "User", CANCEL] : ["Project", CANCEL];
 }
 
 function bankForChoice(choice: string | undefined): "project" | "global" | undefined {
   if (choice === "Project") return "project";
-  if (choice === "Global") return "global";
+  if (choice === "User") return "global";
   return undefined;
 }
 

@@ -86,7 +86,7 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
     messages: AgentEndEvent["messages"],
   ): { targets: string[]; decision?: MemoryRouteDecision } => {
     const config = deps.getConfig();
-    if (config.globalRetain.mode !== "router") {
+    if (config.userRetain.mode !== "router") {
       return { targets: config.banks.project.enabled ? [deps.getProjectBankId()] : [] };
     }
     const content = JSON.stringify(retainableMessages(messages), null, 2);
@@ -97,8 +97,8 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
     });
     const targets = decision.writes.flatMap((target) => {
       if (target === "project" && config.banks.project.enabled) return [deps.getProjectBankId()];
-      if (target === "global" && config.banks.global.enabled && config.banks.global.bankId)
-        return [config.banks.global.bankId];
+      if (target === "global" && config.banks.user.enabled && config.banks.user.bankId)
+        return [config.banks.user.bankId];
       return [];
     });
     return { targets: [...new Set(targets)], decision };
@@ -108,7 +108,7 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
     async retain(event: AgentEndEvent, runtime: RuntimeSnapshot): Promise<RetainTurnResult> {
       const config = deps.getConfig();
       const canRetainProject = config.banks.project.enabled;
-      const canRetainGlobal = config.banks.global.enabled && Boolean(config.banks.global.bankId);
+      const canRetainGlobal = config.banks.user.enabled && Boolean(config.banks.user.bankId);
       if (!config.enabled || !config.retain.enabled || (!canRetainProject && !canRetainGlobal))
         return { queued: false, sent: 0, remaining: 0 };
 

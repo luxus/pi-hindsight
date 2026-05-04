@@ -13,7 +13,7 @@ export { CONFIG_FIELD_PATHS, CONFIG_FIELD_RESET_KEYS } from "./config-field-path
 
 function memoryProfileLabel(config: ResolvedConfig): MemoryProfile {
   if (!config.banks.project.enabled) return "global-only";
-  if (config.banks.global.enabled) return "project+global";
+  if (config.banks.user.enabled) return "project+global";
   return "project-only";
 }
 
@@ -153,8 +153,8 @@ export function buildBaseConfigEditingFields(
   const defaults = DEFAULT_CONFIG;
   const profile = memoryProfileLabel(config);
   const defaultProfile = memoryProfileLabel(defaults);
-  const globalBankId = config.banks.global.bankId ?? "not set";
-  const defaultGlobalBankId = defaults.banks.global.bankId ?? "not set";
+  const globalBankId = config.banks.user.bankId ?? "not set";
+  const defaultGlobalBankId = defaults.banks.user.bankId ?? "not set";
   return [
     booleanField({
       id: "enabled",
@@ -229,17 +229,17 @@ export function buildBaseConfigEditingFields(
     booleanField({
       id: "globalBankEnabled",
       tab: "Banks",
-      label: "Global memory enabled",
+      label: "User memory enabled",
       description: "Allows cross-project recall from a shared bank.",
-      value: config.banks.global.enabled,
-      defaultValue: defaults.banks.global.enabled,
+      value: config.banks.user.enabled,
+      defaultValue: defaults.banks.user.enabled,
       resetKey: "banks.global.enabled",
     }),
     textField({
       id: "globalBankId",
       tab: "Banks",
-      label: "Global bank ID",
-      description: "Shared bank used only when global memory is enabled.",
+      label: "User bank ID",
+      description: "Shared user bank used only when user memory is enabled.",
       value: globalBankId,
       defaultValue: defaultGlobalBankId,
       resetKey: "banks.global.bankId",
@@ -326,11 +326,11 @@ export function buildBaseConfigEditingFields(
     selectField({
       id: "globalRetainMode",
       tab: "Retain",
-      label: "Global retain mode",
+      label: "User retain mode",
       description:
         "Advanced. explicit-only keeps global writes manual; router enables future high-confidence routing.",
-      value: config.globalRetain.mode,
-      defaultValue: defaults.globalRetain.mode,
+      value: config.userRetain.mode,
+      defaultValue: defaults.userRetain.mode,
       resetKey: "globalRetain.mode",
       choices: ["explicit-only", "router"],
       advanced: true,
@@ -469,6 +469,7 @@ export function editableScopesForField(fieldId: FieldId): ConfigScope[] {
 }
 
 export function configEnvValues(env: NodeJS.ProcessEnv): Partial<Record<FieldId, string>> {
+  const userBankId = env.PI_HINDSIGHT_USER_BANK_ID || env.PI_HINDSIGHT_GLOBAL_BANK_ID;
   return {
     ...(env.PI_HINDSIGHT_ENABLED ? { enabled: env.PI_HINDSIGHT_ENABLED } : {}),
     ...(env.HINDSIGHT_BASE_URL ? { baseUrl: env.HINDSIGHT_BASE_URL } : {}),
@@ -478,9 +479,7 @@ export function configEnvValues(env: NodeJS.ProcessEnv): Partial<Record<FieldId,
     ...(env.PI_HINDSIGHT_PROJECT_BANK_ID
       ? { projectBankId: env.PI_HINDSIGHT_PROJECT_BANK_ID }
       : {}),
-    ...(env.PI_HINDSIGHT_GLOBAL_BANK_ID
-      ? { globalBankId: env.PI_HINDSIGHT_GLOBAL_BANK_ID, globalBankEnabled: "enabled" }
-      : {}),
+    ...(userBankId ? { globalBankId: userBankId, globalBankEnabled: "enabled" } : {}),
   };
 }
 
@@ -550,7 +549,7 @@ export function patchForConfigEditingField(
     case "memoryProfile":
       return {
         memoryProfile: value as MemoryProfile,
-        globalBankId: config.banks.global.bankId ?? DEFAULT_GLOBAL_BANK_ID,
+        globalBankId: config.banks.user.bankId ?? DEFAULT_GLOBAL_BANK_ID,
       };
     case "projectBankId":
       return { projectBankId: value.trim() };
@@ -634,15 +633,15 @@ export function inputDefaultForConfigEditingField(
     case "projectObservationsMission":
       return config.banks.project.observationsMission ?? "";
     case "globalBankId":
-      return config.banks.global.bankId ?? DEFAULT_GLOBAL_BANK_ID;
+      return config.banks.user.bankId ?? DEFAULT_GLOBAL_BANK_ID;
     case "globalRetainMission":
-      return config.banks.global.retainMission ?? "";
+      return config.banks.user.retainMission ?? "";
     case "globalReflectMission":
-      return config.banks.global.reflectMission ?? "";
+      return config.banks.user.reflectMission ?? "";
     case "globalObservationsMission":
-      return config.banks.global.observationsMission ?? "";
+      return config.banks.user.observationsMission ?? "";
     case "globalRetainMode":
-      return config.globalRetain.mode;
+      return config.userRetain.mode;
     case "timeoutMs":
       return String(config.hindsight.timeoutMs);
     case "recallMaxTokens":
@@ -674,8 +673,8 @@ export function buildStatusFacts(
     ["Memory scope", profile],
     ["Active project bank", config.banks.project.enabled ? projectBankId : "disabled"],
     [
-      "Global bank",
-      config.banks.global.enabled ? (config.banks.global.bankId ?? "missing id") : "disabled",
+      "User bank",
+      config.banks.user.enabled ? (config.banks.user.bankId ?? "missing id") : "disabled",
     ],
     ...(config.banks.project.retainMission ||
     config.banks.project.reflectMission ||
@@ -687,17 +686,17 @@ export function buildStatusFacts(
           ],
         ]
       : []),
-    ...(config.banks.global.retainMission ||
-    config.banks.global.reflectMission ||
-    config.banks.global.observationsMission
+    ...(config.banks.user.retainMission ||
+    config.banks.user.reflectMission ||
+    config.banks.user.observationsMission
       ? [
-          ["Global mission overrides", "legacy local config; prefer Hindsight bank config"] as [
+          ["User mission overrides", "legacy local config; prefer Hindsight bank config"] as [
             string,
             string,
           ],
         ]
       : []),
-    ["Global retain mode", config.globalRetain.mode],
+    ["User retain mode", config.userRetain.mode],
     ["Recall", enabledDisabled(config.recall.enabled)],
     ["Retain", enabledDisabled(config.retain.enabled)],
     ["Retain queue", config.retain.queuePath],

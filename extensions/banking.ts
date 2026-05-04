@@ -39,7 +39,7 @@ export function deriveProjectBankId(cwd: string, config: ResolvedConfig): string
 }
 
 export function selectBanks(cwd: string, config: ResolvedConfig): BankSelection {
-  const globalBankId = config.banks.global.enabled ? config.banks.global.bankId : undefined;
+  const globalBankId = config.banks.user.enabled ? config.banks.user.bankId : undefined;
   return {
     projectBankId: deriveProjectBankId(cwd, config),
     ...(globalBankId ? { globalBankId } : {}),

@@ -175,7 +175,7 @@ function routeTargets(args: {
     }
   }
   if (args.route === "global" || args.route === "both") {
-    const bankId = args.config.banks.global.enabled ? args.config.banks.global.bankId : undefined;
+    const bankId = args.config.banks.user.enabled ? args.config.banks.user.bankId : undefined;
     if (bankId) {
       targets.push({
         bankRole: "global",
@@ -194,7 +194,7 @@ function routeTargets(args: {
 function safetyNotes(args: {
   text: string;
   route: MemoryRoute;
-  mode: ResolvedConfig["globalRetain"]["mode"];
+  mode: ResolvedConfig["userRetain"]["mode"];
 }) {
   const notes: string[] = [];
   const secretMatches = matchSignals(args.text, SECRET_PATTERNS);
@@ -218,7 +218,7 @@ export function routeMemoryCandidate(
     "built-in project retain mission",
   );
   const globalMission = missionSummary(
-    args.config.banks.global.retainMission,
+    args.config.banks.user.retainMission,
     "built-in global retain mission",
   );
   const strategyInput: RoutingStrategyInput = {
@@ -232,7 +232,7 @@ export function routeMemoryCandidate(
   };
   const classification = strategy.classify(strategyInput);
   const candidateWrites: RoutingBankRole[] =
-    args.config.globalRetain.mode === "router"
+    args.config.userRetain.mode === "router"
       ? classification.route === "both"
         ? ["project", "global"]
         : classification.route === "skip"
@@ -242,18 +242,18 @@ export function routeMemoryCandidate(
   const writes = candidateWrites.filter((target) =>
     target === "project"
       ? args.config.banks.project.enabled
-      : args.config.banks.global.enabled && Boolean(args.config.banks.global.bankId),
+      : args.config.banks.user.enabled && Boolean(args.config.banks.user.bankId),
   );
   const text = `${args.content}\n${args.context ?? ""}`;
   const reason =
-    args.config.globalRetain.mode === "explicit-only"
+    args.config.userRetain.mode === "explicit-only"
       ? `dry-run only: globalRetain.mode=explicit-only; suggested=${classification.route}; signals=${classification.matchedSignals.join(", ") || "none"}`
       : `router mode: suggested=${classification.route}; signals=${classification.matchedSignals.join(", ") || "none"}`;
 
   return {
     ...classification,
     reason,
-    mode: args.config.globalRetain.mode,
+    mode: args.config.userRetain.mode,
     writes,
     targets: routeTargets({
       route: classification.route,
@@ -266,7 +266,7 @@ export function routeMemoryCandidate(
     safetyNotes: safetyNotes({
       text,
       route: classification.route,
-      mode: args.config.globalRetain.mode,
+      mode: args.config.userRetain.mode,
     }),
     projectMission,
     globalMission,

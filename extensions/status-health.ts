@@ -3,7 +3,7 @@ import { redactError } from "./sanitize.js";
 
 export type StatusHealthFacts = Array<[string, string]>;
 
-type BankRoute = { label: "Project bank" | "Global bank"; bankId: string };
+type BankRoute = { label: "Project bank" | "User bank"; bankId: string };
 const STATUS_HEALTH_TIMEOUT_MS = 1_500;
 
 async function withStatusTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -40,8 +40,8 @@ function bankRoutes(config: ResolvedConfig, projectBankId: string): BankRoute[] 
     ...(config.banks.project.enabled
       ? [{ label: "Project bank" as const, bankId: projectBankId }]
       : []),
-    ...(config.banks.global.enabled && config.banks.global.bankId
-      ? [{ label: "Global bank" as const, bankId: config.banks.global.bankId }]
+    ...(config.banks.user.enabled && config.banks.user.bankId
+      ? [{ label: "User bank" as const, bankId: config.banks.user.bankId }]
       : []),
   ];
 }

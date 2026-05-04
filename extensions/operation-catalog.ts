@@ -107,12 +107,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     }),
     defineCatalogTool({
       name: "hindsight_retain_global",
-      label: "Hindsight Retain Global",
+      label: "Hindsight Retain User",
       description:
-        "Retain explicit durable global memory in the configured global bank. Use for stable user identity, preferences, and cross-project workflows only.",
+        "Retain explicit durable user memory in the configured user bank. Use for stable user identity, preferences, and cross-project workflows only.",
       parameters: Type.Object({
         content: Type.String({ description: "Raw memory content to retain." }),
-        context: Type.String({ description: "Why this memory is durable global user context." }),
+        context: Type.String({ description: "Why this memory is durable user context." }),
         tags: Type.Optional(Type.Array(Type.String())),
         entities: Type.Optional(
           Type.Array(
@@ -157,7 +157,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_route_memory",
       label: "Hindsight Route Memory",
       description:
-        "Dry-run memory routing against current project/global policy. Does not retain anything.",
+        "Dry-run memory routing against current project/user policy. Does not retain anything.",
       parameters: Type.Object({
         content: Type.String({ description: "Candidate memory content to classify." }),
         context: Type.Optional(Type.String({ description: "Optional context for routing." })),
@@ -208,9 +208,9 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         baseUrl: Type.Optional(
           Type.String({ description: "Hindsight base URL, e.g. http://localhost:8888" }),
         ),
-        globalBankId: Type.Optional(Type.String({ description: "Optional global bank ID." })),
+        globalBankId: Type.Optional(Type.String({ description: "Optional user bank ID." })),
         enableGlobalBank: Type.Optional(
-          Type.Boolean({ description: "Enable or disable global bank." }),
+          Type.Boolean({ description: "Enable or disable user bank." }),
         ),
         enabled: Type.Optional(
           Type.Boolean({ description: "Enable or disable Hindsight extension." }),

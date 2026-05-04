@@ -111,7 +111,7 @@ describe("config editing model", () => {
       ...DEFAULT_CONFIG,
       banks: {
         ...DEFAULT_CONFIG.banks,
-        global: { ...DEFAULT_CONFIG.banks.global, bankId: "global-luxus" },
+        user: { ...DEFAULT_CONFIG.banks.user, bankId: "global-luxus" },
       },
     };
     expect(patchForConfigEditingField("memoryProfile", "project+global", configuredGlobal)).toEqual(
@@ -178,7 +178,7 @@ describe("config editing model", () => {
           banks: {
             ...DEFAULT_CONFIG.banks,
             project: { ...DEFAULT_CONFIG.banks.project, retainMission: "Project retain mission" },
-            global: {
+            user: {
               enabled: true,
               bankId: "global-luxus",
               retainMission: "Global retain mission",
@@ -190,7 +190,7 @@ describe("config editing model", () => {
     ).toEqual(
       expect.arrayContaining([
         ["Project mission overrides", "legacy local config; prefer Hindsight bank config"],
-        ["Global mission overrides", "legacy local config; prefer Hindsight bank config"],
+        ["User mission overrides", "legacy local config; prefer Hindsight bank config"],
       ]),
     );
   });

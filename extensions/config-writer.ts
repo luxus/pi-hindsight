@@ -21,7 +21,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function mergeBankPatch(
   patch: Record<string, unknown>,
-  bank: "project" | "global",
+  bank: "project" | "user",
   values: Record<string, unknown>,
 ): void {
   const banksPatch = isRecord(patch.banks) ? patch.banks : {};
@@ -131,16 +131,16 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   if (input.memoryProfile) {
     const globalBankId = input.globalBankId || DEFAULT_GLOBAL_BANK_ID;
     if (input.memoryProfile === "project-only") {
-      patch.banks = { project: { enabled: true }, global: { enabled: false } };
+      patch.banks = { project: { enabled: true }, user: { enabled: false } };
     } else if (input.memoryProfile === "project+global") {
       patch.banks = {
         project: { enabled: true },
-        global: { enabled: true, bankId: globalBankId },
+        user: { enabled: true, bankId: globalBankId },
       };
     } else {
       patch.banks = {
         project: { enabled: false },
-        global: { enabled: true, bankId: globalBankId },
+        user: { enabled: true, bankId: globalBankId },
       };
     }
   }
@@ -162,23 +162,23 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   if (!input.memoryProfile && (input.globalBankId || input.enableGlobalBank !== undefined)) {
     patch.banks = {
       ...(isRecord(patch.banks) ? patch.banks : {}),
-      global: {
+      user: {
         ...(input.enableGlobalBank !== undefined ? { enabled: input.enableGlobalBank } : {}),
         ...(input.globalBankId ? { bankId: input.globalBankId, enabled: true } : {}),
       },
     };
   }
   if (input.globalRetainMission !== undefined) {
-    mergeBankPatch(patch, "global", { retainMission: input.globalRetainMission });
+    mergeBankPatch(patch, "user", { retainMission: input.globalRetainMission });
   }
   if (input.globalReflectMission !== undefined) {
-    mergeBankPatch(patch, "global", { reflectMission: input.globalReflectMission });
+    mergeBankPatch(patch, "user", { reflectMission: input.globalReflectMission });
   }
   if (input.globalObservationsMission !== undefined) {
-    mergeBankPatch(patch, "global", { observationsMission: input.globalObservationsMission });
+    mergeBankPatch(patch, "user", { observationsMission: input.globalObservationsMission });
   }
   if (input.globalRetainMode) {
-    patch.globalRetain = { mode: input.globalRetainMode };
+    patch.userRetain = { mode: input.globalRetainMode };
   }
   if (
     input.recallEnabled !== undefined ||

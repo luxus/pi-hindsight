@@ -30,7 +30,7 @@ describe("memory operations", () => {
     >;
     expect(written.banks).toMatchObject({
       project: { enabled: false },
-      global: { enabled: true, bankId: "shared" },
+      user: { enabled: true, bankId: "shared" },
     });
 
     await operations.configure(cwd, { timeoutMs: 1234 });
@@ -40,7 +40,7 @@ describe("memory operations", () => {
     >;
     expect(written.banks).toMatchObject({
       project: { enabled: false },
-      global: { enabled: true, bankId: "shared" },
+      user: { enabled: true, bankId: "shared" },
     });
     expect(written.hindsight).toMatchObject({ timeoutMs: 1234 });
 
@@ -51,7 +51,7 @@ describe("memory operations", () => {
     >;
     expect(written.banks).toMatchObject({
       project: { enabled: true },
-      global: { enabled: false },
+      user: { enabled: false },
     });
   });
 
@@ -159,7 +159,7 @@ describe("memory operations", () => {
     const calls: Array<{ method: string; bank: string; request?: unknown }> = [];
     const config = {
       ...DEFAULT_CONFIG,
-      banks: { ...DEFAULT_CONFIG.banks, global: { enabled: true, bankId: "global-luxus" } },
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "global-luxus" } },
       retain: { ...DEFAULT_CONFIG.retain, async: false },
     };
     const operations = createMemoryOperations({

@@ -37,7 +37,7 @@ describe("status health", () => {
         ...DEFAULT_CONFIG,
         banks: {
           ...DEFAULT_CONFIG.banks,
-          global: { enabled: true, bankId: "global-bank" },
+          user: { enabled: true, bankId: "global-bank" },
         },
       },
       projectBankId: "project-bank",
@@ -47,7 +47,7 @@ describe("status health", () => {
       expect.arrayContaining([
         ["Server", "reachable"],
         ["Project bank", "reachable · project-bank name"],
-        ["Global bank", "reachable · global-bank name"],
+        ["User bank", "reachable · global-bank name"],
         ["Project bank missions", "db · retain Override retain from db · reflect Reflect from db"],
         ["Project bank stats", "memories 3 · docs 2 · observations 1 · pending 4 · failed 0"],
       ]),

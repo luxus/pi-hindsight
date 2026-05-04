@@ -38,7 +38,7 @@ describe("config writer", () => {
           reflectMission: "Project reflect",
           observationsMission: "Project observations",
         },
-        global: {
+        user: {
           retainMission: "Global retain",
           reflectMission: "Global reflect",
           observationsMission: "Global observations",
@@ -49,10 +49,10 @@ describe("config writer", () => {
 
   it("builds memory profile patches", () => {
     expect(buildProjectConfigPatch({ memoryProfile: "project-only" })).toEqual({
-      banks: { project: { enabled: true }, global: { enabled: false } },
+      banks: { project: { enabled: true }, user: { enabled: false } },
     });
     expect(buildProjectConfigPatch({ memoryProfile: "project+global" })).toEqual({
-      banks: { project: { enabled: true }, global: { enabled: true, bankId: "pi-global" } },
+      banks: { project: { enabled: true }, user: { enabled: true, bankId: "pi-global" } },
     });
     expect(
       buildProjectConfigPatch({
@@ -61,7 +61,7 @@ describe("config writer", () => {
         globalBankId: "shared",
       }),
     ).toEqual({
-      banks: { project: { enabled: false }, global: { enabled: true, bankId: "shared" } },
+      banks: { project: { enabled: false }, user: { enabled: true, bankId: "shared" } },
     });
   });
 
@@ -108,9 +108,9 @@ describe("config writer", () => {
     });
   });
 
-  it("builds global retain mode patch", () => {
+  it("builds user retain mode patch", () => {
     expect(buildProjectConfigPatch({ globalRetainMode: "router" })).toEqual({
-      globalRetain: { mode: "router" },
+      userRetain: { mode: "router" },
     });
   });
 

@@ -91,7 +91,7 @@ describe("setup TUI mental models", () => {
       ...DEFAULT_CONFIG,
       banks: {
         ...DEFAULT_CONFIG.banks,
-        global: { ...DEFAULT_CONFIG.banks.global, enabled: true, bankId: "global-bank" },
+        user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "global-bank" },
       },
     };
     const client = clientWith({
@@ -105,7 +105,7 @@ describe("setup TUI mental models", () => {
       },
     });
 
-    const ui = ctx(["Global", "Project model (model-1) tags=project", "History summary"]);
+    const ui = ctx(["User", "Project model (model-1) tags=project", "History summary"]);
     await handleMentalModels(ui.ctx as never, deps(client, config));
 
     expect(calls).toEqual([

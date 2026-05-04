@@ -6,6 +6,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   banks: {
     project: { enabled: true, derive: "repo" },
     global: { enabled: false },
+    user: { enabled: false },
   },
   recall: {
     enabled: true,
@@ -19,7 +20,9 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     projectQueryPreamble:
       "Project memory lookup for current repo architecture, tasks, bugs, decisions, and constraints.",
     globalQueryPreamble:
-      "Global memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
+      "User memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
+    userQueryPreamble:
+      "User memory lookup for durable user preferences, recurring workflows, coding habits, and cross-project context.",
     includeDateInQuery: false,
     includeRepoHintsInQuery: true,
     storeLastRecall: false,
@@ -36,6 +39,9 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     scopes: [["harness:pi"], ["repo:{repoKey}"]],
   },
   globalRetain: {
+    mode: "explicit-only",
+  },
+  userRetain: {
     mode: "explicit-only",
   },
   retain: {
