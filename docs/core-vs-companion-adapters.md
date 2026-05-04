@@ -66,7 +66,7 @@ If most answers are yes, it can be core. If any answer depends on a non-Pi frame
 
 | Request                                                                   | Location        | Reason                                                              |
 | ------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------- |
-| Add `/hindsight` action to refresh a mental model                         | Core            | Pi TUI exposes Hindsight mental-model API directly.                 |
+| Add `/hindsight` read-only mental model list/detail view                  | Core            | Pi can inspect Hindsight mental models without cloning web UI.      |
 | Add operation-service seam for creating Hindsight bank templates          | Core            | Bank templates are Hindsight-native and framework-neutral.          |
 | Import Markdown, text, or JSON seed files into a selected bank            | Core if generic | Simple content import helps Pi projects without framework coupling. |
 | Add LiteLLM middleware that injects recalled memory into chat completions | Companion       | Middleware shape belongs to LiteLLM, not Pi.                        |

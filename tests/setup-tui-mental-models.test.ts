@@ -61,7 +61,7 @@ describe("setup TUI mental models", () => {
         return { ...listResponse.items[0], bank_id: bank, content: "remembered architecture" };
       },
     });
-    const ui = ctx(["Project", "Browse existing", "Project model (model-1) tags=project", "View"]);
+    const ui = ctx(["Project", "Project model (model-1) tags=project", "View read-only summary"]);
 
     await handleMentalModels(ui.ctx as never, deps(client));
 
@@ -70,38 +70,22 @@ describe("setup TUI mental models", () => {
       { method: "get", bank: "project-bank", id: "model-1" },
     ]);
     expect(ui.notifications[0]?.message).toContain("remembered architecture");
+    expect(ui.notifications[0]?.message).toContain("read-only");
   });
 
-  it("creates a mental model from a reflect query with preview", async () => {
-    const calls: Array<{ method: string; bank: string; request: unknown }> = [];
+  it("shows web interface hint without exposing create actions", async () => {
     const client = clientWith({
-      createMentalModel: async (bank, request) => {
-        calls.push({ method: "create", bank, request });
-        return { operation_id: "op-create", status: "queued" };
-      },
+      listMentalModels: async () => listResponse,
     });
-    const ui = ctx(
-      ["Project", "Create from reflect query", "Create"],
-      ["Project patterns", "What project patterns recur?", "project, patterns"],
-    );
+    const ui = ctx(["Project", "Project model (model-1) tags=project", "Web interface hint"]);
 
     await handleMentalModels(ui.ctx as never, deps(client));
 
-    expect(calls).toEqual([
-      {
-        method: "create",
-        bank: "project-bank",
-        request: {
-          name: "Project patterns",
-          sourceQuery: "What project patterns recur?",
-          tags: ["project", "patterns"],
-        },
-      },
-    ]);
-    expect(ui.notifications[0]?.message).toContain("op-create");
+    expect(ui.notifications[0]?.message).toContain("read-only");
+    expect(ui.notifications[0]?.message).toContain("http://localhost:8888");
   });
 
-  it("refreshes, shows history, and requires typed exact id for delete", async () => {
+  it("shows history without exposing refresh or delete actions", async () => {
     const calls: Array<{ method: string; bank: string; id?: string }> = [];
     const config = {
       ...DEFAULT_CONFIG,
@@ -115,47 +99,20 @@ describe("setup TUI mental models", () => {
         calls.push({ method: "list", bank });
         return listResponse;
       },
-      refreshMentalModel: async (bank, id) => {
-        calls.push({ method: "refresh", bank, id });
-        return { operation_id: "op-1", status: "queued" };
-      },
       getMentalModelHistory: async (bank, id) => {
         calls.push({ method: "history", bank, id });
         return { items: [{ id: "v1", created_at: "2026-05-04T01:00:00Z" }] };
       },
-      deleteMentalModel: async (bank, id) => {
-        calls.push({ method: "delete", bank, id });
-        return {};
-      },
     });
 
-    await handleMentalModels(
-      ctx(["Global", "Browse existing", "Project model (model-1) tags=project", "Refresh"])
-        .ctx as never,
-      deps(client, config),
-    );
-    await handleMentalModels(
-      ctx(["Global", "Browse existing", "Project model (model-1) tags=project", "History"])
-        .ctx as never,
-      deps(client, config),
-    );
-    const wrongDelete = ctx(
-      ["Global", "Browse existing", "Project model (model-1) tags=project", "Delete"],
-      ["wrong"],
-    );
-    await handleMentalModels(wrongDelete.ctx as never, deps(client, config));
-    const exactDelete = ctx(
-      ["Global", "Browse existing", "Project model (model-1) tags=project", "Delete"],
-      ["model-1"],
-    );
-    await handleMentalModels(exactDelete.ctx as never, deps(client, config));
+    const ui = ctx(["Global", "Project model (model-1) tags=project", "History summary"]);
+    await handleMentalModels(ui.ctx as never, deps(client, config));
 
-    expect(exactDelete.prompts[0]?.fallback).toBe("");
-    expect(calls).toContainEqual({ method: "refresh", bank: "global-bank", id: "model-1" });
-    expect(calls).toContainEqual({ method: "history", bank: "global-bank", id: "model-1" });
-    expect(calls.filter((call) => call.method === "delete")).toEqual([
-      { method: "delete", bank: "global-bank", id: "model-1" },
+    expect(calls).toEqual([
+      { method: "list", bank: "global-bank" },
+      { method: "history", bank: "global-bank", id: "model-1" },
     ]);
-    expect(wrongDelete.notifications[0]?.message).toContain("exact ID did not match");
+    expect(ui.notifications[0]?.message).toContain("Mental model history");
+    expect(ui.notifications[0]?.message).toContain("read-only");
   });
 });

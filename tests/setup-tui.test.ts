@@ -49,6 +49,6 @@ describe("setup TUI receipt facts", () => {
     const rendered = component.render(100).join("\n");
     expect(rendered).toContain("Extract durable project");
     expect(rendered).toContain("f flush");
-    expect(rendered).toContain("m models");
+    expect(rendered).toContain("m models read-only");
   });
 });

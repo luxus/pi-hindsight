@@ -67,7 +67,11 @@ export function mentalModelOption(model: MentalModelSummary): string {
   return `${model.name} (${model.id})${tags}${stale}`;
 }
 
-export function renderMentalModel(model: MentalModelSummary): string {
+export function mentalModelWebInterfaceHint(baseUrl: string): string {
+  return `Pi mental model view is read-only. Use the Hindsight web interface for create, edit, refresh, or delete: ${baseUrl}`;
+}
+
+export function renderMentalModel(model: MentalModelSummary, webHint?: string): string {
   const lines = [
     `Mental model ${model.name} (${model.id})`,
     `Bank: ${model.bankId ?? "unknown"}`,
@@ -76,11 +80,12 @@ export function renderMentalModel(model: MentalModelSummary): string {
     `Stale: ${model.isStale === undefined || model.isStale === null ? "unknown" : model.isStale ? "yes" : "no"}`,
   ];
   if (model.sourceQuery) lines.push(`Source query: ${model.sourceQuery}`);
+  if (webHint) lines.push("", webHint);
   if (model.content) lines.push("", model.content);
   return lines.join("\n");
 }
 
-export function renderMentalModelHistory(value: unknown): string {
+export function renderMentalModelHistory(value: unknown, webHint?: string): string {
   if (!isRecord(value) || !Array.isArray(value.items) || value.items.length === 0) {
     return "Mental model history: none";
   }
@@ -93,6 +98,7 @@ export function renderMentalModelHistory(value: unknown): string {
     const status = stringValue(item.status);
     lines.push(`- ${id} at ${createdAt}${status ? ` status=${status}` : ""}`);
   }
+  if (webHint) lines.push("", webHint);
   return lines.length > 1 ? lines.join("\n") : "Mental model history: none";
 }
 

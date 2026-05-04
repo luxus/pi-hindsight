@@ -59,15 +59,13 @@ Avoid starter mental models for:
 
 ## Future TUI behavior
 
-A future TUI slice can show starter suggestions as a picker inside the mental model library:
+A future TUI slice should not try to recreate Hindsight's full mental model editor. If starter suggestions become interactive in Pi, prefer one of these lighter options:
 
-1. Choose bank: project or global.
-2. Choose `Create from starter suggestion`.
-3. Preview name, source query, tags, and target bank.
-4. Confirm creation.
-5. Submit through the existing mental model creation operation.
+1. Show suggestions as read-only copy with a Hindsight web interface handoff.
+2. Offer a preview-only dry run of name, source query, tags, and target bank.
+3. Defer actual create/edit/refresh/delete to the Hindsight web interface unless a later issue explicitly reopens Pi-side editing.
 
-The picker should allow editing the name, query, and tags before create. It should not hide the source query behind friendly labels.
+Pi should not hide source queries behind friendly labels.
 
 ## Bank template guidance
 
