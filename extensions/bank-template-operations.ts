@@ -2,6 +2,7 @@ import { resolveOperationBank } from "./bank-selection.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 import { isRecord } from "./client-rest.js";
 import type { BankTemplateManifest } from "./bank-template-catalog.js";
+import { validateBankTemplateManifestForEditing } from "./bank-template-editor.js";
 
 export type { BankTemplateManifest } from "./bank-template-catalog.js";
 
@@ -15,7 +16,10 @@ export function parseBankTemplateManifestJson(input: string): BankTemplateManife
   }
   if (!isRecord(parsed)) throw new Error("Invalid bank template JSON: manifest must be an object.");
   if (parsed.version !== "1") throw new Error('Invalid bank template JSON: version must be "1".');
-  return parsed as unknown as BankTemplateManifest;
+  const manifest = parsed as unknown as BankTemplateManifest;
+  const errors = validateBankTemplateManifestForEditing(manifest);
+  if (errors.length) throw new Error(`Invalid bank template JSON: ${errors.join(" ")}`);
+  return manifest;
 }
 
 export function summarizeBankTemplateManifestValue(manifest: unknown): string {

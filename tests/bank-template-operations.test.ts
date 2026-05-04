@@ -45,6 +45,17 @@ describe("bank template operations", () => {
     expect(() => parseBankTemplateManifestJson("not json")).toThrow("Invalid bank template JSON");
     expect(() => parseBankTemplateManifestJson("[]")).toThrow("manifest must be an object");
     expect(() => parseBankTemplateManifestJson("{}")).toThrow('version must be "1"');
+    expect(() =>
+      parseBankTemplateManifestJson(
+        JSON.stringify({
+          version: "1",
+          mental_models: [
+            { id: "dup", name: "A", source_query: "Q" },
+            { id: "dup", name: "B", source_query: "Q" },
+          ],
+        }),
+      ),
+    ).toThrow("Duplicate mental model id: dup");
   });
 
   it("resolves bank aliases before dry-run import", async () => {
