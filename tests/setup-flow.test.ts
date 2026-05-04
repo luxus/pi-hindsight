@@ -36,6 +36,7 @@ describe("setup flow state", () => {
   it("maps setup keystrokes to behavior-neutral intents", () => {
     expect(setupIntentFromInput("q")).toEqual({ type: "close" });
     expect(setupIntentFromInput("d")).toEqual({ type: "chooseDeployment" });
+    expect(setupIntentFromInput("g")).toEqual({ type: "guidedSetup" });
     expect(setupIntentFromInput("h")).toEqual({ type: "moveTab", delta: -1 });
     expect(setupIntentFromInput("l")).toEqual({ type: "moveTab", delta: 1 });
     expect(setupIntentFromInput("j")).toEqual({ type: "moveSelection", delta: 1 });

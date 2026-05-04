@@ -1,6 +1,7 @@
 import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import type { FieldId } from "./config-editing-model.js";
 import type { MemoryOperationsDeps } from "./memory-operation-service.js";
+import { hasProjectHindsightConfig, runGuidedSetup } from "./guided-setup.js";
 import { buildSetupTabs } from "./setup-tui-facts.js";
 import { createSetupComponent } from "./setup-tui-render.js";
 import { handleDeployment, handleFieldEdit, handleResetFieldAction } from "./setup-tui-actions.js";
@@ -51,6 +52,15 @@ export async function runHindsightSetupTui(
   deps: MemoryOperationsDeps,
 ): Promise<void> {
   const state: SetupUiState = { tabIndex: 0, selectedByTab: {} };
+  if (!hasProjectHindsightConfig(ctx.cwd)) {
+    const choice = await ctx.ui.select("No project Hindsight config found", [
+      "Guided setup",
+      "Open advanced setup",
+      "Skip",
+    ]);
+    if (choice === "Guided setup") await runGuidedSetup({ ctx, deps, cwd: ctx.cwd });
+    if (choice === "Skip" || !choice) return;
+  }
   while (true) {
     const config = deps.getConfig();
     const projectBankId = deps.getProjectBankId();
@@ -58,6 +68,7 @@ export async function runHindsightSetupTui(
     if (!action || action === "done") return;
     try {
       if (action === "choose-deployment") await handleDeployment(ctx, deps, config);
+      else if (action === "guided-setup") await runGuidedSetup({ ctx, deps, cwd: ctx.cwd });
       else if (action === "toggle-advanced") {
         state.showAdvanced = !state.showAdvanced;
         state.selectedByTab = {};

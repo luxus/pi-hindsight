@@ -4,6 +4,7 @@ export type SetupActionId =
   | FieldId
   | `reset:${FieldId}`
   | "choose-deployment"
+  | "guided-setup"
   | "toggle-advanced"
   | "done";
 

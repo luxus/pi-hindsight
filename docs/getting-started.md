@@ -37,6 +37,8 @@ In Pi, run:
 
 The setup TUI shows memory status, selected banks, retain queue state, import state, recent retain receipts, and editable configuration fields.
 
+If the repository has no project config yet, `/hindsight` offers guided setup before opening the advanced setup TUI. Guided setup can also be rerun later from the TUI with `g`.
+
 Current keyboard controls:
 
 - `h`/`l` or `<`/`>`: switch tabs
@@ -44,6 +46,7 @@ Current keyboard controls:
 - `Enter`: edit selected setting
 - `r`: remove the selected setting's active override
 - `d`: deployment setup
+- `g`: rerun guided setup
 
 ## 4. Pick a memory profile
 
