@@ -1,5 +1,7 @@
 # Tools and commands
 
+For a generated reference of registered tools, commands, and editable config fields, see [`surface-reference.md`](surface-reference.md).
+
 `/hindsight` is the main control center. Commands are convenience shortcuts and escape hatches for advanced workflows.
 
 ## Main command

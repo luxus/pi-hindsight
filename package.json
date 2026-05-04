@@ -26,7 +26,8 @@
     "docs/pr-roadmap.md",
     "docs/post-mvp-roadmap.md",
     "docs/risky-memory-modes.md",
-    "docs/next-opt-out-design.md"
+    "docs/next-opt-out-design.md",
+    "docs/surface-reference.md"
   ],
   "type": "module",
   "publishConfig": {
@@ -39,7 +40,9 @@
     "lint:fix": "oxlint --type-aware --type-check --fix extensions tests",
     "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\"",
     "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\"",
-    "check": "npm run format && npm run lint && npm run typecheck && npm test",
+    "surface-reference": "tsx scripts/generate-surface-reference.ts",
+    "surface-reference:check": "tsx scripts/generate-surface-reference.ts --check",
+    "check": "npm run surface-reference:check && npm run format && npm run lint && npm run typecheck && npm test",
     "check:ci": "npm run check && npm run check:coverage",
     "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run audit:signatures && npm run pack:verify && npm run smoke:hindsight",
     "install-hooks": "node scripts/install-hooks.mjs",

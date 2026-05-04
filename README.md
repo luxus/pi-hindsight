@@ -160,7 +160,7 @@ Useful shortcuts:
 /hindsight:next-opt-out                 # skip automatic retain once
 ```
 
-See [`docs/tools-and-commands.md`](docs/tools-and-commands.md) for the full command and tool surface.
+See [`docs/tools-and-commands.md`](docs/tools-and-commands.md) for the full command and tool surface. Generated tools, commands, and config fields are listed in [`docs/surface-reference.md`](docs/surface-reference.md).
 
 ## Historical import
 
