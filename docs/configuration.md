@@ -47,6 +47,15 @@ Project config SecretRef shape:
 
 When a profile enables user memory without an existing bank ID, setup writes `pi-global` as the default user bank ID for compatibility. Override it with `PI_HINDSIGHT_USER_BANK_ID`, `.pi/hindsight.json` `banks.user.bankId`, or the setup TUI if you prefer a different shared bank. Legacy `PI_HINDSIGHT_GLOBAL_BANK_ID` and `banks.global` configs are migrated/supported during transition.
 
+## Bank settings display
+
+Pi Hindsight distinguishes local Pi behavior from bank-owned Hindsight settings. Setup and status surfaces show both:
+
+- `Location: Project` or `Location: User` describes the Pi memory route.
+- `Bank: <bank-id>` names the concrete Hindsight bank that owns missions, config overrides, mental models, and directives.
+
+Mission text and mental models remain Hindsight bank settings, not normal Pi JSON config.
+
 ## Setup TUI
 
 Run:

@@ -1,9 +1,17 @@
+import {
+  bankConfigOverrideSummaryLines,
+  bankSettingsTargetDisplay,
+} from "./bank-settings-presenter.js";
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
 import { redactError } from "./sanitize.js";
 
 export type StatusHealthFacts = Array<[string, string]>;
 
-type BankRoute = { label: "Project bank" | "User bank"; bankId: string };
+type BankRoute = {
+  label: "Project bank" | "User bank";
+  location: "Project" | "User";
+  bankId: string;
+};
 const STATUS_HEALTH_TIMEOUT_MS = 1_500;
 
 async function withStatusTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
@@ -38,10 +46,16 @@ function dateField(value: unknown, key: string): string | undefined {
 function bankRoutes(config: ResolvedConfig, projectBankId: string): BankRoute[] {
   return [
     ...(config.banks.project.enabled
-      ? [{ label: "Project bank" as const, bankId: projectBankId }]
+      ? [{ label: "Project bank" as const, location: "Project" as const, bankId: projectBankId }]
       : []),
     ...(config.banks.user.enabled && config.banks.user.bankId
-      ? [{ label: "User bank" as const, bankId: config.banks.user.bankId }]
+      ? [
+          {
+            label: "User bank" as const,
+            location: "User" as const,
+            bankId: config.banks.user.bankId,
+          },
+        ]
       : []),
   ];
 }
@@ -103,7 +117,8 @@ async function bankFact(client: HindsightLikeClient, route: BankRoute): Promise<
       : undefined;
     const name =
       isRecord(profile) && typeof profile.name === "string" ? profile.name : route.bankId;
-    const facts: StatusHealthFacts = [[route.label, `reachable · ${name}`]];
+    const target = bankSettingsTargetDisplay({ location: route.location, bankId: route.bankId });
+    const facts: StatusHealthFacts = [[route.label, `reachable · ${name} · ${target.reviewLine}`]];
     if (client.getBankConfig) {
       try {
         const config = await withStatusTimeout(
@@ -111,6 +126,8 @@ async function bankFact(client: HindsightLikeClient, route: BankRoute): Promise<
           `${route.label} config`,
         );
         const summary = formatMissionConfig(config);
+        const overrideSummary = bankConfigOverrideSummaryLines(config).join(" · ");
+        facts.push([`${route.label} config`, overrideSummary]);
         if (summary) facts.push([`${route.label} missions`, `db · ${summary}`]);
       } catch (error) {
         facts.push([`${route.label} missions`, `unavailable · ${redactError(error)}`]);

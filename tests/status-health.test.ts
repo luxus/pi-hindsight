@@ -46,8 +46,10 @@ describe("status health", () => {
     expect(facts).toEqual(
       expect.arrayContaining([
         ["Server", "reachable"],
-        ["Project bank", "reachable · project-bank name"],
-        ["User bank", "reachable · global-bank name"],
+        ["Project bank", "reachable · project-bank name · Project → Bank: project-bank"],
+        ["User bank", "reachable · global-bank name · User → Bank: global-bank"],
+        ["Project bank config", "Bank overrides: 1 · Resolved config fields: 2"],
+        ["User bank config", "Bank overrides: 1 · Resolved config fields: 2"],
         ["Project bank missions", "db · retain Override retain from db · reflect Reflect from db"],
         ["Project bank stats", "memories 3 · docs 2 · observations 1 · pending 4 · failed 0"],
       ]),

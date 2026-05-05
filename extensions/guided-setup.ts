@@ -13,6 +13,11 @@ import {
   type BankTemplateEditorField,
 } from "./bank-template-editor.js";
 import {
+  bankSettingsTargetDisplay,
+  bankSettingsTargetLines,
+  bankTemplateSummaryLines,
+} from "./bank-settings-presenter.js";
+import {
   createMemoryOperations,
   type MemoryOperations,
   type MemoryOperationsDeps,
@@ -22,7 +27,6 @@ import {
   cloneBankTemplateManifest,
   defaultBankTemplateForTarget,
   getBuiltInBankTemplate,
-  summarizeBankTemplateManifest,
   type BankTemplateManifest,
   type BankTemplateMentalModel,
   type BankTemplateProfileId,
@@ -98,7 +102,8 @@ export function enabledTemplateTargets(args: {
     ...(args.setupProfile !== "global-only" && args.projectBankId
       ? [
           {
-            label: `Project bank (${args.projectBankId})`,
+            label: bankSettingsTargetDisplay({ location: "Project", bankId: args.projectBankId })
+              .optionLabel,
             location: "Project" as const,
             bank: args.projectBankId,
             defaultTemplateTarget: "project" as const,
@@ -108,7 +113,8 @@ export function enabledTemplateTargets(args: {
     ...(args.setupProfile !== "project-only" && args.globalBankId
       ? [
           {
-            label: `User bank (${args.globalBankId})`,
+            label: bankSettingsTargetDisplay({ location: "User", bankId: args.globalBankId })
+              .optionLabel,
             location: "User" as const,
             bank: args.globalBankId,
             defaultTemplateTarget: "user" as const,
@@ -159,12 +165,9 @@ function templateChoiceFromLabel(label: string): BankTemplateProfileId | undefin
 }
 
 function bankTemplateReview(manifest: BankTemplateManifest): string {
-  const summary = summarizeBankTemplateManifest(manifest);
   const warnings = mentalModelTagWarnings(manifest);
   return [
-    `Bank overrides: ${summary.bankOverrideCount}`,
-    `Mental models: ${summary.mentalModelCount}`,
-    `Directives: ${summary.directiveCount}`,
+    ...bankTemplateSummaryLines(manifest),
     ...(warnings.length ? ["Warnings:", ...warnings.map((warning) => `- ${warning}`)] : []),
   ].join("\n");
 }
@@ -272,7 +275,11 @@ async function maybeImportBankTemplate(args: {
   }
   const configure = await args.ctx.ui.confirm(
     "Configure Hindsight bank templates?",
-    targets.map((target) => `${target.location}: ${target.bank}`).join("\n"),
+    targets
+      .flatMap((target) =>
+        bankSettingsTargetLines({ location: target.location, bankId: target.bank }),
+      )
+      .join("\n"),
   );
   if (!configure) return [];
 
@@ -286,7 +293,12 @@ async function maybeImportBankTemplate(args: {
     if (exists) {
       const updateExisting = await args.ctx.ui.confirm(
         `Bank already exists: ${target.bank}`,
-        `Location: ${target.location}\nTemplate: ${selected.label}\n\nSetup preserves existing banks by default. Apply this template anyway?`,
+        [
+          ...bankSettingsTargetLines({ location: target.location, bankId: target.bank }),
+          `Template: ${selected.label}`,
+          "",
+          "Setup preserves existing banks by default. Apply this template anyway?",
+        ].join("\n"),
       );
       if (!updateExisting) {
         args.ctx.ui.notify(`Skipped existing bank ${target.bank}.`, "info");

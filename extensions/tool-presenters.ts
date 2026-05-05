@@ -1,3 +1,4 @@
+import { exportedBankTemplateSummaryLines } from "./bank-settings-presenter.js";
 import type { MemoryOperations } from "./memory-operation-service.js";
 
 type ToolTextResponse<Details> = {
@@ -108,37 +109,17 @@ export function importToolResponse(result: ImportToolResult): ToolTextResponse<I
   return { content: [{ type: "text", text }], details: result };
 }
 
-function manifestCounts(manifest: unknown): {
-  bankOverrideCount: number;
-  mentalModelCount: number;
-  directiveCount: number;
-} {
-  if (typeof manifest !== "object" || !manifest || Array.isArray(manifest)) {
-    return { bankOverrideCount: 0, mentalModelCount: 0, directiveCount: 0 };
-  }
-  const record = manifest as Record<string, unknown>;
-  const bank = record.bank;
-  return {
-    bankOverrideCount:
-      typeof bank === "object" && bank !== null && !Array.isArray(bank)
-        ? Object.keys(bank).length
-        : 0,
-    mentalModelCount: Array.isArray(record.mental_models) ? record.mental_models.length : 0,
-    directiveCount: Array.isArray(record.directives) ? record.directives.length : 0,
-  };
-}
-
 export function exportBankTemplateToolResponse(
   result: ExportBankTemplateToolResult,
 ): ToolTextResponse<ExportBankTemplateToolResult> {
-  const counts = manifestCounts(result.manifest);
+  const summary = exportedBankTemplateSummaryLines(result.manifest).join("; ");
   return {
     content: [
       {
         type: "text",
         text: [
           `Exported bank template from ${result.bankId}.`,
-          `Bank overrides: ${counts.bankOverrideCount}; mental models: ${counts.mentalModelCount}; directives: ${counts.directiveCount}`,
+          summary,
           JSON.stringify(result.manifest, null, 2),
         ].join("\n"),
       },
