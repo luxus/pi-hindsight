@@ -43,8 +43,11 @@ export default defineConfig({
         {
           label: "Reference",
           items: [
+            { label: "Configuration", slug: "reference/configuration" },
             { label: "Tools and commands", slug: "reference/tools-and-commands" },
-            { label: "Surface reference", slug: "reference/surface-reference" },
+            { label: "Hooks", slug: "reference/hooks" },
+            { label: "Import controls", slug: "reference/import-controls" },
+            { label: "Generated surface reference", slug: "reference/surface-reference" },
           ],
         },
         {
