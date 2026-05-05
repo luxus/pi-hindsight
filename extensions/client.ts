@@ -7,6 +7,7 @@ import {
   bankConfigPath,
   bankTemplateExportPath,
   bankTemplateImportPath,
+  bankTemplateSchemaPath,
   createHindsightRestTransport,
   createMentalModelRequestBody,
   encodeBankPath,
@@ -118,7 +119,7 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
       ),
     // The installed high-level SDK does not export bank-template helpers. Its generated
     // import helper also exposes no typed body because the server endpoint accepts raw JSON.
-    // Keep a narrow REST shim for template import/export until the public SDK wraps them.
+    // Keep a narrow REST shim for template import/export/schema until the public SDK wraps them.
     importBankTemplate: (bankId, manifest, options) =>
       withTimeout("hindsight importBankTemplate", timeoutMs, (signal) =>
         rest.request(bankTemplateImportPath(bankId, options), {
@@ -135,6 +136,10 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
           (await rest.request(bankTemplateExportPath(bankId), {
             signal,
           })) as import("./bank-template-catalog.js").BankTemplateManifest,
+      ),
+    getBankTemplateSchema: () =>
+      withTimeout("hindsight getBankTemplateSchema", timeoutMs, (signal) =>
+        rest.request(bankTemplateSchemaPath(), { signal }),
       ),
     listMentalModels: (bankId, options) =>
       withTimeout("hindsight listMentalModels", timeoutMs, (signal) =>

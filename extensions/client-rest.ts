@@ -110,6 +110,10 @@ export function bankTemplateExportPath(bankId: string): string {
   return encodeBankPath(bankId, "/export");
 }
 
+export function bankTemplateSchemaPath(): string {
+  return "/v1/bank-template-schema";
+}
+
 export function updateBankConfigRequestBody(
   updates: Record<string, unknown>,
 ): Record<string, unknown> {

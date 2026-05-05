@@ -67,6 +67,10 @@ describe("Hindsight client adapter integration", () => {
         sendJson(res, 200, { version: "1", bank: { retain_mission: "Exported" } });
         return;
       }
+      if (req.method === "GET" && req.url === "/v1/bank-template-schema") {
+        sendJson(res, 200, { title: "BankTemplateManifest", properties: { version: {} } });
+        return;
+      }
       if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/config") {
         sendJson(res, 200, { config: { retain_custom_instructions: "Read from db" } });
         return;
@@ -181,6 +185,7 @@ describe("Hindsight client adapter integration", () => {
       { dryRun: true },
     );
     const exportedTemplate = await client.exportBankTemplate?.("test-bank");
+    const bankTemplateSchema = await client.getBankTemplateSchema?.();
     const bankConfig = await client.getBankConfig?.("test-bank");
     const bankConfigUpdate = await client.updateBankConfig?.("test-bank", {
       retain_custom_instructions: "Write to db",
@@ -212,6 +217,10 @@ describe("Hindsight client adapter integration", () => {
     expect(reflection).toEqual({ text: "reflection" });
     expect(templateDryRun).toEqual({ dry_run: true, config_applied: true });
     expect(exportedTemplate).toEqual({ version: "1", bank: { retain_mission: "Exported" } });
+    expect(bankTemplateSchema).toEqual({
+      title: "BankTemplateManifest",
+      properties: { version: {} },
+    });
     expect(bankConfig).toEqual({ config: { retain_custom_instructions: "Read from db" } });
     expect(bankConfigUpdate).toEqual({ updated: true });
     expect(bankConfigReset).toEqual({ reset: true });
@@ -232,6 +241,7 @@ describe("Hindsight client adapter integration", () => {
       "POST /v1/default/banks/test-bank/reflect",
       "POST /v1/default/banks/test-bank/import?dry_run=true",
       "GET /v1/default/banks/test-bank/export",
+      "GET /v1/bank-template-schema",
       "GET /v1/default/banks/test-bank/config",
       "PATCH /v1/default/banks/test-bank/config",
       "DELETE /v1/default/banks/test-bank/config",
@@ -289,15 +299,15 @@ describe("Hindsight client adapter integration", () => {
       version: "1",
       bank: { retain_mission: "Retain useful facts." },
     });
-    expect(requests[9]?.body).toEqual({
+    expect(requests[10]?.body).toEqual({
       updates: { retain_custom_instructions: "Write to db" },
     });
-    expect(requests[13]?.body).toEqual({
+    expect(requests[14]?.body).toEqual({
       name: "Model",
       source_query: "What should recur?",
       tags: ["source:pi"],
       max_tokens: 256,
     });
-    expect(requests[14]?.body).toEqual({ source_query: "Updated query", tags: null });
+    expect(requests[15]?.body).toEqual({ source_query: "Updated query", tags: null });
   });
 });

@@ -5,6 +5,7 @@ import {
   bankConfigPath,
   bankTemplateExportPath,
   bankTemplateImportPath,
+  bankTemplateSchemaPath,
   createMentalModelRequestBody,
   encodeBankPath,
   mentalModelCollectionPath,
@@ -43,6 +44,7 @@ describe("Hindsight REST transport helpers", () => {
       "/v1/default/banks/bank%2Fid/import?dry_run=true",
     );
     expect(bankTemplateExportPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/export");
+    expect(bankTemplateSchemaPath()).toBe("/v1/bank-template-schema");
     expect(
       updateBankConfigRequestBody({ retain_custom_instructions: "Extract carefully" }),
     ).toEqual({

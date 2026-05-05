@@ -10,6 +10,7 @@ function client(): HindsightLikeClient {
     reflect: async () => ({}),
     getBankConfig: async () => ({ config: {}, overrides: {} }),
     resetBankConfig: async () => ({ ok: true }),
+    getBankTemplateSchema: async () => ({ title: "BankTemplateManifest", properties: {} }),
     exportBankTemplate: async () => ({ version: "1" }),
   };
 }
@@ -32,6 +33,7 @@ describe("operation catalog", () => {
       "hindsight_configure",
       "hindsight_get_bank_config",
       "hindsight_reset_bank_config",
+      "hindsight_get_bank_template_schema",
       "hindsight_export_bank_template",
       "hindsight_import",
       "hindsight_import_gateway",

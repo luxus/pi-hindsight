@@ -54,6 +54,15 @@ export function summarizeBankTemplateImportResult(result: unknown): string {
 
 export function createBankTemplateOperations(deps: MemoryOperationsDeps) {
   return {
+    async getBankTemplateSchema() {
+      const client = deps.getClient();
+      if (!client.getBankTemplateSchema) {
+        throw new Error("Hindsight client does not support bank template schema fetch.");
+      }
+      const schema = await client.getBankTemplateSchema();
+      return { schema };
+    },
+
     async exportBankTemplate(args: { bank?: string }) {
       const client = deps.getClient();
       if (!client.exportBankTemplate)

@@ -79,6 +79,7 @@ Additional tools:
 - `hindsight_configure`
 - `hindsight_get_bank_config`
 - `hindsight_reset_bank_config`
+- `hindsight_get_bank_template_schema`
 - `hindsight_export_bank_template`
 - `hindsight_import`
 - `hindsight_import_gateway`

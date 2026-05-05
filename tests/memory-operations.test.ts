@@ -172,6 +172,9 @@ describe("memory operations", () => {
     await expect(operations.resetBankConfig({ bank: "project" })).rejects.toThrow(
       "Hindsight client does not support bank config reset.",
     );
+    await expect(operations.getBankTemplateSchema()).rejects.toThrow(
+      "Hindsight client does not support bank template schema fetch.",
+    );
   });
 
   it("resolves project/global bank aliases for explicit operations", async () => {
@@ -206,6 +209,10 @@ describe("memory operations", () => {
           calls.push({ method: "resetBankConfig", bank });
           return { ok: true };
         },
+        getBankTemplateSchema: async () => {
+          calls.push({ method: "getBankTemplateSchema", bank: "none" });
+          return { title: "BankTemplateManifest" };
+        },
         listMentalModels: async (bank) => {
           calls.push({ method: "listMentalModels", bank });
           return { items: [] };
@@ -235,6 +242,7 @@ describe("memory operations", () => {
     await operations.deleteDocument({ bank: "global", documentId: "doc" });
     await operations.getBankConfig({ bank: "global" });
     await operations.resetBankConfig({ bank: "global" });
+    await operations.getBankTemplateSchema();
     await operations.listMentalModels({ bank: "global" });
     await operations.createMentalModel({
       bank: "project",
@@ -272,6 +280,7 @@ describe("memory operations", () => {
         { method: "getBankConfig", bank: "global-luxus" },
         { method: "resetBankConfig", bank: "global-luxus" },
         { method: "getBankConfig", bank: "global-luxus" },
+        { method: "getBankTemplateSchema", bank: "none" },
         { method: "listMentalModels", bank: "global-luxus" },
         {
           method: "createMentalModel",

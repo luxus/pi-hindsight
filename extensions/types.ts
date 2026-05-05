@@ -302,6 +302,7 @@ export interface HindsightLikeClient {
     options?: { dryRun?: boolean },
   ): Promise<unknown>;
   exportBankTemplate?(bankId: string): Promise<BankTemplateManifest>;
+  getBankTemplateSchema?(): Promise<unknown>;
   listMentalModels?(bankId: string, options?: ListMentalModelsOptions): Promise<unknown>;
   getMentalModel?(
     bankId: string,

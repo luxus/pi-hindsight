@@ -95,6 +95,13 @@ Reset Hindsight bank config overrides for a selected bank.
 | --------- | ------ | -------- | ------------------------------------------- |
 | `bank`    | string | no       | Optional bank id. Defaults to project bank. |
 
+### `hindsight_get_bank_template_schema`
+
+Fetch the Hindsight bank-template JSON Schema used to validate portable manifests.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+
 ### `hindsight_export_bank_template`
 
 Export a portable Hindsight bank template manifest for reuse in another project or bank.

@@ -13,6 +13,7 @@ import {
   exportBankTemplateToolResponse,
   gatewayImportToolResponse,
   getBankConfigToolResponse,
+  getBankTemplateSchemaToolResponse,
   importToolResponse,
   resetBankConfigToolResponse,
   retainReceiptListToolResponse,
@@ -258,6 +259,18 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         useCwd(ctx.cwd);
         const result = await operations.resetBankConfig(params.bank ? { bank: params.bank } : {});
         return resetBankConfigToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_get_bank_template_schema",
+      label: "Hindsight Get Bank Template Schema",
+      description:
+        "Fetch the Hindsight bank-template JSON Schema used to validate portable manifests.",
+      parameters: Type.Object({}),
+      async execute(_id, _params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.getBankTemplateSchema();
+        return getBankTemplateSchemaToolResponse(result);
       },
     }),
     defineCatalogTool({

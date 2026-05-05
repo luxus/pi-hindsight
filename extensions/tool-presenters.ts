@@ -17,6 +17,9 @@ export type ImportToolResult = Awaited<ReturnType<MemoryOperations["importSessio
 export type GatewayImportToolResult = Awaited<
   ReturnType<MemoryOperations["importGatewayTranscript"]>
 >;
+export type GetBankTemplateSchemaToolResult = Awaited<
+  ReturnType<MemoryOperations["getBankTemplateSchema"]>
+>;
 export type ExportBankTemplateToolResult = Awaited<
   ReturnType<MemoryOperations["exportBankTemplate"]>
 >;
@@ -112,6 +115,37 @@ export function importToolResponse(result: ImportToolResult): ToolTextResponse<I
     ? `Import preview: ${result.messageCount} messages would write ${result.documents.length} ${documentLabel} to ${result.bankId}. First document: ${result.documentId}. Manifest unchanged: ${result.manifestPath}.`
     : `Imported ${result.messageCount} messages into ${result.bankId} as ${result.documentId}. Manifest: ${result.manifestPath}.`;
   return { content: [{ type: "text", text }], details: result };
+}
+
+function schemaSummary(schema: unknown): string {
+  if (typeof schema !== "object" || !schema || Array.isArray(schema))
+    return "Schema fields: unavailable";
+  const record = schema as Record<string, unknown>;
+  const title = typeof record.title === "string" ? record.title : "Bank template schema";
+  const properties = record.properties;
+  const propertyCount =
+    typeof properties === "object" && properties && !Array.isArray(properties)
+      ? Object.keys(properties).length
+      : 0;
+  return `${title}; top-level fields: ${propertyCount}`;
+}
+
+export function getBankTemplateSchemaToolResponse(
+  result: GetBankTemplateSchemaToolResult,
+): ToolTextResponse<GetBankTemplateSchemaToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          "Fetched Hindsight bank template JSON Schema.",
+          schemaSummary(result.schema),
+          JSON.stringify(result.schema, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
 }
 
 export function getBankConfigToolResponse(
