@@ -25,6 +25,17 @@ export function section(body, heading) {
   return pattern.exec(body)?.[1]?.trim() ?? "";
 }
 
+function hasSubstantiveContent(value) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .some((line) => line && !/^[-*]?\s*(todo|tbd|n\/a|none|#?)$/i.test(line));
+}
+
+function checkedLines(value, labelPattern) {
+  return value.split("\n").filter((line) => /^- \[[xX]\]/.test(line) && labelPattern.test(line));
+}
+
 export function validatePrBody(body) {
   const errors = [];
   const text = body.trim();
@@ -39,9 +50,19 @@ export function validatePrBody(body) {
     }
   }
 
+  const summary = section(text, "Summary");
+  if (!hasSubstantiveContent(summary)) {
+    errors.push("Summary section must describe the change.");
+  }
+
   const linkedIssue = section(text, "Linked issue");
   if (!/(close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?|updates?)\s+#\d+/i.test(linkedIssue)) {
     errors.push("Linked issue section must include Closes/Fixes/Resolves/Refs/Updates #<number>.");
+  }
+
+  const scope = section(text, "Scope");
+  if (!hasSubstantiveContent(scope)) {
+    errors.push("Scope section must describe the focused vertical slice.");
   }
 
   const verification = section(text, "Verification");
@@ -56,12 +77,17 @@ export function validatePrBody(body) {
   }
 
   const releaseImpact = section(text, "Release impact");
-  if (
-    !/- \[[xX]\] (No release impact|User-visible change|Package\/release path change)/.test(
-      releaseImpact,
-    )
-  ) {
+  const releaseImpactChoices = checkedLines(
+    releaseImpact,
+    /(No release impact|User-visible change|Package\/release path change)/,
+  );
+  if (releaseImpactChoices.length !== 1) {
     errors.push("Release impact section must check exactly one impact option.");
+  }
+
+  const risk = section(text, "Risk and rollback");
+  if (!hasSubstantiveContent(risk) || !/rollback|revert|back out|disable/i.test(risk)) {
+    errors.push("Risk and rollback section must describe risk and rollback/revert path.");
   }
 
   const followUps = section(text, "Follow-ups");
@@ -75,8 +101,14 @@ export function validatePrBody(body) {
       "Agent checklist must confirm AGENTS.md and CONTRIBUTING.md were read and followed.",
     );
   }
+  if (!/- \[[xX]\] I linked the issue before implementation/.test(agentChecklist)) {
+    errors.push("Agent checklist must confirm issue linkage before implementation.");
+  }
   if (!/- \[[xX]\] Final branch contains only focused, reviewable commits/.test(agentChecklist)) {
     errors.push("Agent checklist must confirm focused, reviewable commits.");
+  }
+  if (!/- \[[xX]\] I did not bypass hooks or checks/.test(agentChecklist)) {
+    errors.push("Agent checklist must confirm hooks/checks were not bypassed.");
   }
 
   return errors;

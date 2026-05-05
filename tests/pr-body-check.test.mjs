@@ -36,7 +36,9 @@ None.
 ## Agent checklist
 
 - [x] I read and followed \`AGENTS.md\` and \`CONTRIBUTING.md\`.
+- [x] I linked the issue before implementation.
 - [x] Final branch contains only focused, reviewable commits.
+- [x] I did not bypass hooks or checks.
 `;
 
 describe("check-pr-body", () => {
@@ -62,5 +64,52 @@ describe("check-pr-body", () => {
     );
 
     expect(validatePrBody(body)).toContain("Verification section must check `npm run check`.");
+  });
+
+  it("rejects placeholder summary and scope sections", () => {
+    const body = validBody
+      .replace("- Add release guardrails.", "- TODO")
+      .replace("- Docs and workflow only.", "- TBD");
+
+    expect(validatePrBody(body)).toEqual([
+      "Summary section must describe the change.",
+      "Scope section must describe the focused vertical slice.",
+    ]);
+  });
+
+  it("requires exactly one release impact choice", () => {
+    const body = validBody.replace(
+      "- [x] No release impact\n- [ ] User-visible change\n- [ ] Package/release path change",
+      "- [x] No release impact\n- [x] User-visible change\n- [ ] Package/release path change",
+    );
+
+    expect(validatePrBody(body)).toContain(
+      "Release impact section must check exactly one impact option.",
+    );
+  });
+
+  it("requires risk plus rollback or revert guidance", () => {
+    const body = validBody.replace("Low. Revert docs/workflow changes.", "Low.");
+
+    expect(validatePrBody(body)).toContain(
+      "Risk and rollback section must describe risk and rollback/revert path.",
+    );
+  });
+
+  it("requires issue linkage and no-bypass confirmations in the agent checklist", () => {
+    const body = validBody
+      .replace(
+        "- [x] I linked the issue before implementation.",
+        "- [ ] I linked the issue before implementation.",
+      )
+      .replace(
+        "- [x] I did not bypass hooks or checks.",
+        "- [ ] I did not bypass hooks or checks.",
+      );
+
+    expect(validatePrBody(body)).toEqual([
+      "Agent checklist must confirm issue linkage before implementation.",
+      "Agent checklist must confirm hooks/checks were not bypassed.",
+    ]);
   });
 });

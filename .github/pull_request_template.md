@@ -22,6 +22,8 @@
 
 ## Release impact
 
+Check exactly one:
+
 - [ ] No release impact
 - [ ] User-visible change
 - [ ] Package/release path change
@@ -30,7 +32,8 @@ Explain changelog/release notes impact, or say none.
 
 ## Risk and rollback
 
--
+- Risk:
+- Rollback/revert path:
 
 ## Follow-ups
 

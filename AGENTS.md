@@ -64,11 +64,11 @@ Keep exactly one implementation slice active at a time unless the user explicitl
 
 Agents must not push directly to `main`, tag releases, publish packages, or merge PRs unless a maintainer explicitly asks for that action. A maintainer instruction to run the continuous issue loop counts as merge authorization for PRs that satisfy the documented loop. Work should happen on a branch and flow through a PR.
 
-Before implementation starts, link the change to a GitHub issue. Keep each branch and PR to one focused vertical slice. Do not bundle drive-by refactors, formatting sweeps, or unrelated cleanup unless the issue explicitly asks for them.
+Before implementation starts, link the change to a GitHub issue. Keep each branch and PR to one focused vertical slice. Do not bundle drive-by refactors, formatting sweeps, or unrelated cleanup unless the issue explicitly asks for them. If the user asks for work without an issue, create or identify the issue first unless the change is trivial and purely conversational.
 
-Use Conventional Commits for final commit subjects because release automation, changelog generation, and release notes consume them as source of truth. Keep commits small and logical. Clean up noisy WIP commits before review when the workflow allows it. Never bypass Git hooks or checks with `--no-verify` or equivalent flags.
+Use Conventional Commits for final commit subjects because release automation, changelog generation, and release notes consume them as source of truth. Issue #195 tracks release-automation alignment, so commit subjects and PR release-impact notes must stay useful for generated changelogs. Keep commits small and logical: one reviewed behavior/docs/workflow change per commit unless splitting would create noise. Clean up noisy WIP commits before review when the workflow allows it. Never bypass Git hooks or checks with `--no-verify` or equivalent flags.
 
-Every PR must complete the repository PR template. The template is intentionally machine-checkable: linked issue, scope, verification, release impact, risk and rollback, follow-ups, and agent checklist. If a check was skipped, the PR must say why. If follow-up work remains, link a GitHub issue.
+Every PR must complete the repository PR template. The template is intentionally machine-checkable: linked issue, focused scope, verification, exactly one release-impact choice, risk and rollback/revert path, follow-ups, and agent checklist. If a check was skipped, the PR must say why. If follow-up work remains, link a GitHub issue. Do not leave placeholder PR text such as `TODO`, `TBD`, or naked template bullets.
 
 ## Hard rules
 
@@ -308,7 +308,10 @@ A change is done only when:
 3. tests cover the changed logic
 4. user-visible behavior is documented if changed
 5. the diff is minimal and focused
-6. no new memory anti-pattern was introduced
+6. the branch/PR is linked to a GitHub issue
+7. verification is summarized in the PR or issue
+8. the PR description has concrete scope, release impact, risk/rollback, and follow-up notes
+9. no new memory anti-pattern was introduced
 
 ## Agent skills
 
