@@ -155,7 +155,7 @@ describe("memory operations", () => {
     ]);
   });
 
-  it("reports unavailable bank config APIs", async () => {
+  it("reports unavailable bank config and directive APIs", async () => {
     const operations = createMemoryOperations({
       getClient: () => ({
         retain: async () => undefined,
@@ -174,6 +174,28 @@ describe("memory operations", () => {
     );
     await expect(operations.getBankTemplateSchema()).rejects.toThrow(
       "Hindsight client does not support bank template schema fetch.",
+    );
+    await expect(operations.listDirectives({ bank: "project" })).rejects.toThrow(
+      "Hindsight client does not support directive list.",
+    );
+    await expect(operations.getDirective({ bank: "project", directiveId: "d" })).rejects.toThrow(
+      "Hindsight client does not support directive get.",
+    );
+    await expect(
+      operations.createDirective({
+        bank: "project",
+        request: { name: "Rule", content: "Use facts." },
+      }),
+    ).rejects.toThrow("Hindsight client does not support directive create.");
+    await expect(
+      operations.updateDirective({
+        bank: "project",
+        directiveId: "d",
+        request: { content: "Updated" },
+      }),
+    ).rejects.toThrow("Hindsight client does not support directive update.");
+    await expect(operations.deleteDirective({ bank: "project", directiveId: "d" })).rejects.toThrow(
+      "Hindsight client does not support directive delete.",
     );
   });
 
@@ -213,6 +235,26 @@ describe("memory operations", () => {
           calls.push({ method: "getBankTemplateSchema", bank: "none" });
           return { title: "BankTemplateManifest" };
         },
+        listDirectives: async (bank) => {
+          calls.push({ method: "listDirectives", bank });
+          return { items: [] };
+        },
+        getDirective: async (bank) => {
+          calls.push({ method: "getDirective", bank });
+          return { id: "directive" };
+        },
+        createDirective: async (bank, request) => {
+          calls.push({ method: "createDirective", bank, request });
+          return { id: "directive" };
+        },
+        updateDirective: async (bank, _directiveId, request) => {
+          calls.push({ method: "updateDirective", bank, request });
+          return { id: "directive" };
+        },
+        deleteDirective: async (bank) => {
+          calls.push({ method: "deleteDirective", bank });
+          return { deleted: true };
+        },
         listMentalModels: async (bank) => {
           calls.push({ method: "listMentalModels", bank });
           return { items: [] };
@@ -243,6 +285,18 @@ describe("memory operations", () => {
     await operations.getBankConfig({ bank: "global" });
     await operations.resetBankConfig({ bank: "global" });
     await operations.getBankTemplateSchema();
+    await operations.listDirectives({ bank: "global" });
+    await operations.getDirective({ bank: "global", directiveId: "directive" });
+    await operations.createDirective({
+      bank: "project",
+      request: { name: "Rule", content: "Use source facts." },
+    });
+    await operations.updateDirective({
+      bank: "global",
+      directiveId: "directive",
+      request: { content: "Updated" },
+    });
+    await operations.deleteDirective({ bank: "global", directiveId: "directive" });
     await operations.listMentalModels({ bank: "global" });
     await operations.createMentalModel({
       bank: "project",
@@ -281,6 +335,15 @@ describe("memory operations", () => {
         { method: "resetBankConfig", bank: "global-luxus" },
         { method: "getBankConfig", bank: "global-luxus" },
         { method: "getBankTemplateSchema", bank: "none" },
+        { method: "listDirectives", bank: "global-luxus" },
+        { method: "getDirective", bank: "global-luxus" },
+        {
+          method: "createDirective",
+          bank: "project-bank",
+          request: { name: "Rule", content: "Use source facts." },
+        },
+        { method: "updateDirective", bank: "global-luxus", request: { content: "Updated" } },
+        { method: "deleteDirective", bank: "global-luxus" },
         { method: "listMentalModels", bank: "global-luxus" },
         {
           method: "createMentalModel",

@@ -195,6 +195,30 @@ export interface MentalModelTrigger {
   recall_chunks_max_tokens?: number | null;
 }
 
+export interface ListDirectivesOptions {
+  tags?: string[];
+  tagsMatch?: "any" | "all" | "exact";
+  activeOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateDirectiveRequest {
+  name: string;
+  content: string;
+  priority?: number;
+  isActive?: boolean;
+  tags?: string[];
+}
+
+export interface UpdateDirectiveRequest {
+  name?: string | null;
+  content?: string | null;
+  priority?: number | null;
+  isActive?: boolean | null;
+  tags?: string[] | null;
+}
+
 export interface CreateMentalModelRequest {
   id?: string | null;
   name: string;
@@ -303,6 +327,15 @@ export interface HindsightLikeClient {
   ): Promise<unknown>;
   exportBankTemplate?(bankId: string): Promise<BankTemplateManifest>;
   getBankTemplateSchema?(): Promise<unknown>;
+  listDirectives?(bankId: string, options?: ListDirectivesOptions): Promise<unknown>;
+  getDirective?(bankId: string, directiveId: string): Promise<unknown>;
+  createDirective?(bankId: string, request: CreateDirectiveRequest): Promise<unknown>;
+  updateDirective?(
+    bankId: string,
+    directiveId: string,
+    request: UpdateDirectiveRequest,
+  ): Promise<unknown>;
+  deleteDirective?(bankId: string, directiveId: string): Promise<unknown>;
   listMentalModels?(bankId: string, options?: ListMentalModelsOptions): Promise<unknown>;
   getMentalModel?(
     bankId: string,

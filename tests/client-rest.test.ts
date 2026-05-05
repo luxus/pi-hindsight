@@ -6,7 +6,10 @@ import {
   bankTemplateExportPath,
   bankTemplateImportPath,
   bankTemplateSchemaPath,
+  createDirectiveRequestBody,
   createMentalModelRequestBody,
+  directiveItemPath,
+  directivesCollectionPath,
   encodeBankPath,
   mentalModelCollectionPath,
   mentalModelHistoryPath,
@@ -14,6 +17,7 @@ import {
   mentalModelRefreshPath,
   reflectRequestBody,
   updateBankConfigRequestBody,
+  updateDirectiveRequestBody,
   updateMentalModelRequestBody,
 } from "../extensions/client-rest.js";
 
@@ -40,6 +44,20 @@ describe("Hindsight REST transport helpers", () => {
   it("encodes bank ids in REST paths", () => {
     expect(encodeBankPath("bank/id", "/reflect")).toBe("/v1/default/banks/bank%2Fid/reflect");
     expect(bankConfigPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/config");
+    expect(
+      directivesCollectionPath("bank/id", {
+        tags: ["source:pi", "profile:coding"],
+        tagsMatch: "all",
+        activeOnly: false,
+        limit: 10,
+        offset: 5,
+      }),
+    ).toBe(
+      "/v1/default/banks/bank%2Fid/directives?tags=source%3Api&tags=profile%3Acoding&tags_match=all&active_only=false&limit=10&offset=5",
+    );
+    expect(directiveItemPath("bank/id", "directive/id")).toBe(
+      "/v1/default/banks/bank%2Fid/directives/directive%2Fid",
+    );
     expect(bankTemplateImportPath("bank/id", { dryRun: true })).toBe(
       "/v1/default/banks/bank%2Fid/import?dry_run=true",
     );
@@ -49,6 +67,25 @@ describe("Hindsight REST transport helpers", () => {
       updateBankConfigRequestBody({ retain_custom_instructions: "Extract carefully" }),
     ).toEqual({
       updates: { retain_custom_instructions: "Extract carefully" },
+    });
+    expect(
+      createDirectiveRequestBody({
+        name: "Rule",
+        content: "Use source facts.",
+        priority: 2,
+        isActive: false,
+        tags: ["project"],
+      }),
+    ).toEqual({
+      name: "Rule",
+      content: "Use source facts.",
+      priority: 2,
+      is_active: false,
+      tags: ["project"],
+    });
+    expect(updateDirectiveRequestBody({ content: null, isActive: true })).toEqual({
+      content: null,
+      is_active: true,
     });
   });
 

@@ -79,6 +79,11 @@ Additional tools:
 - `hindsight_configure`
 - `hindsight_get_bank_config`
 - `hindsight_reset_bank_config`
+- `hindsight_list_directives`
+- `hindsight_get_directive`
+- `hindsight_create_directive`
+- `hindsight_update_directive`
+- `hindsight_delete_directive`
 - `hindsight_get_bank_template_schema`
 - `hindsight_export_bank_template`
 - `hindsight_import`

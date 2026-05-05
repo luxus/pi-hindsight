@@ -9,16 +9,21 @@ import { getSessionFile } from "./session.js";
 import { runHindsightSetupTui } from "./setup-tui.js";
 import {
   configureToolResponse,
+  createDirectiveToolResponse,
+  deleteDirectiveToolResponse,
   deleteDocumentToolResponse,
   exportBankTemplateToolResponse,
   gatewayImportToolResponse,
   getBankConfigToolResponse,
   getBankTemplateSchemaToolResponse,
+  getDirectiveToolResponse,
   importToolResponse,
+  listDirectivesToolResponse,
   resetBankConfigToolResponse,
   retainReceiptListToolResponse,
   retainToolResponse,
   routeMemoryToolResponse,
+  updateDirectiveToolResponse,
 } from "./tool-presenters.js";
 
 export type ToolOperation = Parameters<ExtensionAPI["registerTool"]>[0];
@@ -259,6 +264,147 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         useCwd(ctx.cwd);
         const result = await operations.resetBankConfig(params.bank ? { bank: params.bank } : {});
         return resetBankConfigToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_list_directives",
+      label: "Hindsight List Directives",
+      description: "List bank-owned Hindsight directives (hard reflect rules).",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Optional tag filter." })),
+        tagsMatch: Type.Optional(
+          Type.Union([Type.Literal("any"), Type.Literal("all"), Type.Literal("exact")]),
+        ),
+        activeOnly: Type.Optional(Type.Boolean({ description: "Only return active directives." })),
+        limit: Type.Optional(Type.Number({ description: "Maximum directives to return." })),
+        offset: Type.Optional(Type.Number({ description: "Pagination offset." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.listDirectives({
+          ...(params.bank ? { bank: params.bank } : {}),
+          options: {
+            ...(params.tags ? { tags: params.tags } : {}),
+            ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
+            ...(params.activeOnly !== undefined ? { activeOnly: params.activeOnly } : {}),
+            ...(params.limit !== undefined ? { limit: params.limit } : {}),
+            ...(params.offset !== undefined ? { offset: params.offset } : {}),
+          },
+        });
+        return listDirectivesToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_get_directive",
+      label: "Hindsight Get Directive",
+      description: "Get a bank-owned Hindsight directive by ID.",
+      parameters: Type.Object({
+        directiveId: Type.String({ description: "Directive ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.getDirective({
+          directiveId: params.directiveId,
+          ...(params.bank ? { bank: params.bank } : {}),
+        });
+        return getDirectiveToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_create_directive",
+      label: "Hindsight Create Directive",
+      description: "Create a bank-owned Hindsight directive (hard reflect rule).",
+      parameters: Type.Object({
+        name: Type.String({ description: "Human-readable directive name." }),
+        content: Type.String({ description: "Directive text to inject into prompts." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        priority: Type.Optional(
+          Type.Number({ description: "Higher priority directives are injected first." }),
+        ),
+        isActive: Type.Optional(Type.Boolean({ description: "Whether this directive is active." })),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Directive tags." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.createDirective({
+          ...(params.bank ? { bank: params.bank } : {}),
+          request: {
+            name: params.name,
+            content: params.content,
+            ...(params.priority !== undefined ? { priority: params.priority } : {}),
+            ...(params.isActive !== undefined ? { isActive: params.isActive } : {}),
+            ...(params.tags ? { tags: params.tags } : {}),
+          },
+        });
+        return createDirectiveToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_update_directive",
+      label: "Hindsight Update Directive",
+      description: "Update a bank-owned Hindsight directive.",
+      parameters: Type.Object({
+        directiveId: Type.String({ description: "Directive ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        name: Type.Optional(
+          Type.Union([Type.String(), Type.Null()], { description: "New directive name." }),
+        ),
+        content: Type.Optional(
+          Type.Union([Type.String(), Type.Null()], { description: "New directive text." }),
+        ),
+        priority: Type.Optional(
+          Type.Union([Type.Number(), Type.Null()], { description: "New priority." }),
+        ),
+        isActive: Type.Optional(
+          Type.Union([Type.Boolean(), Type.Null()], { description: "New active status." }),
+        ),
+        tags: Type.Optional(
+          Type.Union([Type.Array(Type.String()), Type.Null()], { description: "New tags." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.updateDirective({
+          directiveId: params.directiveId,
+          ...(params.bank ? { bank: params.bank } : {}),
+          request: {
+            ...(params.name !== undefined ? { name: params.name } : {}),
+            ...(params.content !== undefined ? { content: params.content } : {}),
+            ...(params.priority !== undefined ? { priority: params.priority } : {}),
+            ...(params.isActive !== undefined ? { isActive: params.isActive } : {}),
+            ...(params.tags !== undefined ? { tags: params.tags } : {}),
+          },
+        });
+        return updateDirectiveToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_delete_directive",
+      label: "Hindsight Delete Directive",
+      description: "Delete a bank-owned Hindsight directive.",
+      parameters: Type.Object({
+        directiveId: Type.String({ description: "Directive ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.deleteDirective({
+          directiveId: params.directiveId,
+          ...(params.bank ? { bank: params.bank } : {}),
+        });
+        return deleteDirectiveToolResponse(result);
       },
     }),
     defineCatalogTool({

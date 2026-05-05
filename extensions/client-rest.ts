@@ -1,8 +1,11 @@
 import type {
+  CreateDirectiveRequest,
   CreateMentalModelRequest,
   GetMentalModelOptions,
+  ListDirectivesOptions,
   ListMentalModelsOptions,
   ResolvedConfig,
+  UpdateDirectiveRequest,
   UpdateMentalModelRequest,
 } from "./types.js";
 
@@ -102,6 +105,23 @@ export function bankConfigPath(bankId: string): string {
   return encodeBankPath(bankId, "/config");
 }
 
+export function directivesCollectionPath(
+  bankId: string,
+  options: ListDirectivesOptions = {},
+): string {
+  const params = new URLSearchParams();
+  for (const tag of options.tags ?? []) params.append("tags", tag);
+  if (options.tagsMatch) params.set("tags_match", options.tagsMatch);
+  if (options.activeOnly !== undefined) params.set("active_only", String(options.activeOnly));
+  if (options.limit !== undefined) params.set("limit", String(options.limit));
+  if (options.offset !== undefined) params.set("offset", String(options.offset));
+  return appendQuery(encodeBankPath(bankId, "/directives"), params);
+}
+
+export function directiveItemPath(bankId: string, directiveId: string): string {
+  return `${encodeBankPath(bankId, "/directives")}/${encodeURIComponent(directiveId)}`;
+}
+
 export function bankTemplateImportPath(bankId: string, options: { dryRun?: boolean } = {}): string {
   return `${encodeBankPath(bankId, "/import")}${options.dryRun ? "?dry_run=true" : ""}`;
 }
@@ -152,6 +172,30 @@ export function mentalModelHistoryPath(bankId: string, mentalModelId: string): s
 
 export function mentalModelRefreshPath(bankId: string, mentalModelId: string): string {
   return `${mentalModelItemPath(bankId, mentalModelId)}/refresh`;
+}
+
+export function createDirectiveRequestBody(
+  request: CreateDirectiveRequest,
+): Record<string, unknown> {
+  return {
+    name: request.name,
+    content: request.content,
+    ...(request.priority !== undefined ? { priority: request.priority } : {}),
+    ...(request.isActive !== undefined ? { is_active: request.isActive } : {}),
+    ...(request.tags !== undefined ? { tags: request.tags } : {}),
+  };
+}
+
+export function updateDirectiveRequestBody(
+  request: UpdateDirectiveRequest,
+): Record<string, unknown> {
+  return {
+    ...(request.name !== undefined ? { name: request.name } : {}),
+    ...(request.content !== undefined ? { content: request.content } : {}),
+    ...(request.priority !== undefined ? { priority: request.priority } : {}),
+    ...(request.isActive !== undefined ? { is_active: request.isActive } : {}),
+    ...(request.tags !== undefined ? { tags: request.tags } : {}),
+  };
 }
 
 export function createMentalModelRequestBody(

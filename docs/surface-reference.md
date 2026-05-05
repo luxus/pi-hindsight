@@ -95,6 +95,64 @@ Reset Hindsight bank config overrides for a selected bank.
 | --------- | ------ | -------- | ------------------------------------------- |
 | `bank`    | string | no       | Optional bank id. Defaults to project bank. |
 
+### `hindsight_list_directives`
+
+List bank-owned Hindsight directives (hard reflect rules).
+
+| Parameter    | Type                       | Required | Description                                 |
+| ------------ | -------------------------- | -------- | ------------------------------------------- |
+| `bank`       | string                     | no       | Optional bank id. Defaults to project bank. |
+| `tags`       | array<string>              | no       | Optional tag filter.                        |
+| `tagsMatch`  | string \| string \| string | no       |                                             |
+| `activeOnly` | boolean                    | no       | Only return active directives.              |
+| `limit`      | number                     | no       | Maximum directives to return.               |
+| `offset`     | number                     | no       | Pagination offset.                          |
+
+### `hindsight_get_directive`
+
+Get a bank-owned Hindsight directive by ID.
+
+| Parameter     | Type   | Required | Description                                 |
+| ------------- | ------ | -------- | ------------------------------------------- |
+| `directiveId` | string | yes      | Directive ID.                               |
+| `bank`        | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_create_directive`
+
+Create a bank-owned Hindsight directive (hard reflect rule).
+
+| Parameter  | Type          | Required | Description                                    |
+| ---------- | ------------- | -------- | ---------------------------------------------- |
+| `name`     | string        | yes      | Human-readable directive name.                 |
+| `content`  | string        | yes      | Directive text to inject into prompts.         |
+| `bank`     | string        | no       | Optional bank id. Defaults to project bank.    |
+| `priority` | number        | no       | Higher priority directives are injected first. |
+| `isActive` | boolean       | no       | Whether this directive is active.              |
+| `tags`     | array<string> | no       | Directive tags.                                |
+
+### `hindsight_update_directive`
+
+Update a bank-owned Hindsight directive.
+
+| Parameter     | Type                  | Required | Description                                 |
+| ------------- | --------------------- | -------- | ------------------------------------------- |
+| `directiveId` | string                | yes      | Directive ID.                               |
+| `bank`        | string                | no       | Optional bank id. Defaults to project bank. |
+| `name`        | string \| null        | no       | New directive name.                         |
+| `content`     | string \| null        | no       | New directive text.                         |
+| `priority`    | number \| null        | no       | New priority.                               |
+| `isActive`    | boolean \| null       | no       | New active status.                          |
+| `tags`        | array<string> \| null | no       | New tags.                                   |
+
+### `hindsight_delete_directive`
+
+Delete a bank-owned Hindsight directive.
+
+| Parameter     | Type   | Required | Description                                 |
+| ------------- | ------ | -------- | ------------------------------------------- |
+| `directiveId` | string | yes      | Directive ID.                               |
+| `bank`        | string | no       | Optional bank id. Defaults to project bank. |
+
 ### `hindsight_get_bank_template_schema`
 
 Fetch the Hindsight bank-template JSON Schema used to validate portable manifests.

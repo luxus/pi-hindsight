@@ -17,6 +17,11 @@ export type ImportToolResult = Awaited<ReturnType<MemoryOperations["importSessio
 export type GatewayImportToolResult = Awaited<
   ReturnType<MemoryOperations["importGatewayTranscript"]>
 >;
+export type ListDirectivesToolResult = Awaited<ReturnType<MemoryOperations["listDirectives"]>>;
+export type GetDirectiveToolResult = Awaited<ReturnType<MemoryOperations["getDirective"]>>;
+export type CreateDirectiveToolResult = Awaited<ReturnType<MemoryOperations["createDirective"]>>;
+export type UpdateDirectiveToolResult = Awaited<ReturnType<MemoryOperations["updateDirective"]>>;
+export type DeleteDirectiveToolResult = Awaited<ReturnType<MemoryOperations["deleteDirective"]>>;
 export type GetBankTemplateSchemaToolResult = Awaited<
   ReturnType<MemoryOperations["getBankTemplateSchema"]>
 >;
@@ -115,6 +120,109 @@ export function importToolResponse(result: ImportToolResult): ToolTextResponse<I
     ? `Import preview: ${result.messageCount} messages would write ${result.documents.length} ${documentLabel} to ${result.bankId}. First document: ${result.documentId}. Manifest unchanged: ${result.manifestPath}.`
     : `Imported ${result.messageCount} messages into ${result.bankId} as ${result.documentId}. Manifest: ${result.manifestPath}.`;
   return { content: [{ type: "text", text }], details: result };
+}
+
+function directiveItems(result: unknown): unknown[] {
+  if (typeof result !== "object" || !result || Array.isArray(result)) return [];
+  const items = (result as { items?: unknown }).items;
+  return Array.isArray(items) ? items : [];
+}
+
+function directiveLabel(value: unknown): string {
+  if (typeof value !== "object" || !value || Array.isArray(value)) return JSON.stringify(value);
+  const record = value as Record<string, unknown>;
+  const id = typeof record.id === "string" ? record.id : "unknown";
+  const name = typeof record.name === "string" ? record.name : "unnamed";
+  const active =
+    typeof record.is_active === "boolean" ? (record.is_active ? "active" : "inactive") : "unknown";
+  const priority = typeof record.priority === "number" ? record.priority : 0;
+  return `${name} (${id}) · ${active} · priority ${priority}`;
+}
+
+export function listDirectivesToolResponse(
+  result: ListDirectivesToolResult,
+): ToolTextResponse<ListDirectivesToolResult> {
+  const items = directiveItems(result.result);
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Directives in ${result.bankId}: ${items.length}`,
+          ...items.map(directiveLabel),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+export function getDirectiveToolResponse(
+  result: GetDirectiveToolResult,
+): ToolTextResponse<GetDirectiveToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Directive ${result.directiveId} in ${result.bankId}.`,
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+export function createDirectiveToolResponse(
+  result: CreateDirectiveToolResult,
+): ToolTextResponse<CreateDirectiveToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Created directive in ${result.bankId}.`,
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+export function updateDirectiveToolResponse(
+  result: UpdateDirectiveToolResult,
+): ToolTextResponse<UpdateDirectiveToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Updated directive ${result.directiveId} in ${result.bankId}.`,
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+export function deleteDirectiveToolResponse(
+  result: DeleteDirectiveToolResult,
+): ToolTextResponse<DeleteDirectiveToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Deleted directive ${result.directiveId} in ${result.bankId}.`,
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
 }
 
 function schemaSummary(schema: unknown): string {

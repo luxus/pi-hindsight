@@ -71,6 +71,56 @@ describe("Hindsight client adapter integration", () => {
         sendJson(res, 200, { title: "BankTemplateManifest", properties: { version: {} } });
         return;
       }
+      if (
+        req.method === "GET" &&
+        req.url ===
+          "/v1/default/banks/test-bank/directives?tags=project&tags_match=all&active_only=false&limit=10&offset=1"
+      ) {
+        sendJson(res, 200, {
+          items: [{ id: "directive-1", bank_id: "test-bank", name: "Rule", content: "Use facts." }],
+        });
+        return;
+      }
+      if (
+        req.method === "GET" &&
+        req.url === "/v1/default/banks/test-bank/directives/directive-1"
+      ) {
+        sendJson(res, 200, {
+          id: "directive-1",
+          bank_id: "test-bank",
+          name: "Rule",
+          content: "Use facts.",
+        });
+        return;
+      }
+      if (req.method === "POST" && req.url === "/v1/default/banks/test-bank/directives") {
+        sendJson(res, 200, {
+          id: "directive-2",
+          bank_id: "test-bank",
+          name: "New",
+          content: "Be exact.",
+        });
+        return;
+      }
+      if (
+        req.method === "PATCH" &&
+        req.url === "/v1/default/banks/test-bank/directives/directive-2"
+      ) {
+        sendJson(res, 200, {
+          id: "directive-2",
+          bank_id: "test-bank",
+          name: "New",
+          content: "Updated.",
+        });
+        return;
+      }
+      if (
+        req.method === "DELETE" &&
+        req.url === "/v1/default/banks/test-bank/directives/directive-2"
+      ) {
+        sendJson(res, 200, { deleted: true });
+        return;
+      }
       if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/config") {
         sendJson(res, 200, { config: { retain_custom_instructions: "Read from db" } });
         return;
@@ -186,6 +236,26 @@ describe("Hindsight client adapter integration", () => {
     );
     const exportedTemplate = await client.exportBankTemplate?.("test-bank");
     const bankTemplateSchema = await client.getBankTemplateSchema?.();
+    const directives = await client.listDirectives?.("test-bank", {
+      tags: ["project"],
+      tagsMatch: "all",
+      activeOnly: false,
+      limit: 10,
+      offset: 1,
+    });
+    const directive = await client.getDirective?.("test-bank", "directive-1");
+    const createdDirective = await client.createDirective?.("test-bank", {
+      name: "New",
+      content: "Be exact.",
+      priority: 3,
+      isActive: true,
+      tags: ["project"],
+    });
+    const updatedDirective = await client.updateDirective?.("test-bank", "directive-2", {
+      content: "Updated.",
+      tags: null,
+    });
+    const deletedDirective = await client.deleteDirective?.("test-bank", "directive-2");
     const bankConfig = await client.getBankConfig?.("test-bank");
     const bankConfigUpdate = await client.updateBankConfig?.("test-bank", {
       retain_custom_instructions: "Write to db",
@@ -221,6 +291,28 @@ describe("Hindsight client adapter integration", () => {
       title: "BankTemplateManifest",
       properties: { version: {} },
     });
+    expect(directives).toEqual({
+      items: [{ id: "directive-1", bank_id: "test-bank", name: "Rule", content: "Use facts." }],
+    });
+    expect(directive).toEqual({
+      id: "directive-1",
+      bank_id: "test-bank",
+      name: "Rule",
+      content: "Use facts.",
+    });
+    expect(createdDirective).toEqual({
+      id: "directive-2",
+      bank_id: "test-bank",
+      name: "New",
+      content: "Be exact.",
+    });
+    expect(updatedDirective).toEqual({
+      id: "directive-2",
+      bank_id: "test-bank",
+      name: "New",
+      content: "Updated.",
+    });
+    expect(deletedDirective).toEqual({ deleted: true });
     expect(bankConfig).toEqual({ config: { retain_custom_instructions: "Read from db" } });
     expect(bankConfigUpdate).toEqual({ updated: true });
     expect(bankConfigReset).toEqual({ reset: true });
@@ -242,6 +334,11 @@ describe("Hindsight client adapter integration", () => {
       "POST /v1/default/banks/test-bank/import?dry_run=true",
       "GET /v1/default/banks/test-bank/export",
       "GET /v1/bank-template-schema",
+      "GET /v1/default/banks/test-bank/directives?tags=project&tags_match=all&active_only=false&limit=10&offset=1",
+      "GET /v1/default/banks/test-bank/directives/directive-1",
+      "POST /v1/default/banks/test-bank/directives",
+      "PATCH /v1/default/banks/test-bank/directives/directive-2",
+      "DELETE /v1/default/banks/test-bank/directives/directive-2",
       "GET /v1/default/banks/test-bank/config",
       "PATCH /v1/default/banks/test-bank/config",
       "DELETE /v1/default/banks/test-bank/config",
@@ -299,15 +396,23 @@ describe("Hindsight client adapter integration", () => {
       version: "1",
       bank: { retain_mission: "Retain useful facts." },
     });
-    expect(requests[10]?.body).toEqual({
+    expect(requests[11]?.body).toEqual({
+      name: "New",
+      content: "Be exact.",
+      priority: 3,
+      is_active: true,
+      tags: ["project"],
+    });
+    expect(requests[12]?.body).toEqual({ content: "Updated.", tags: null });
+    expect(requests[15]?.body).toEqual({
       updates: { retain_custom_instructions: "Write to db" },
     });
-    expect(requests[14]?.body).toEqual({
+    expect(requests[19]?.body).toEqual({
       name: "Model",
       source_query: "What should recur?",
       tags: ["source:pi"],
       max_tokens: 256,
     });
-    expect(requests[15]?.body).toEqual({ source_query: "Updated query", tags: null });
+    expect(requests[20]?.body).toEqual({ source_query: "Updated query", tags: null });
   });
 });

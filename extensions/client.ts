@@ -8,8 +8,11 @@ import {
   bankTemplateExportPath,
   bankTemplateImportPath,
   bankTemplateSchemaPath,
+  createDirectiveRequestBody,
   createHindsightRestTransport,
   createMentalModelRequestBody,
+  directiveItemPath,
+  directivesCollectionPath,
   encodeBankPath,
   mentalModelCollectionPath,
   mentalModelHistoryPath,
@@ -17,6 +20,7 @@ import {
   mentalModelRefreshPath,
   reflectRequestBody,
   updateBankConfigRequestBody,
+  updateDirectiveRequestBody,
   updateMentalModelRequestBody,
 } from "./client-rest.js";
 import { withTimeout } from "./timeout.js";
@@ -140,6 +144,36 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
     getBankTemplateSchema: () =>
       withTimeout("hindsight getBankTemplateSchema", timeoutMs, (signal) =>
         rest.request(bankTemplateSchemaPath(), { signal }),
+      ),
+    // Use direct OpenAPI REST paths for directives so list filters (tags_match, active_only,
+    // limit, offset) and nullable update fields stay aligned with server behavior.
+    listDirectives: (bankId, options) =>
+      withTimeout("hindsight listDirectives", timeoutMs, (signal) =>
+        rest.request(directivesCollectionPath(bankId, options), { signal }),
+      ),
+    getDirective: (bankId, directiveId) =>
+      withTimeout("hindsight getDirective", timeoutMs, (signal) =>
+        rest.request(directiveItemPath(bankId, directiveId), { signal }),
+      ),
+    createDirective: (bankId, request) =>
+      withTimeout("hindsight createDirective", timeoutMs, (signal) =>
+        rest.request(directivesCollectionPath(bankId), {
+          method: "POST",
+          signal,
+          body: JSON.stringify(createDirectiveRequestBody(request)),
+        }),
+      ),
+    updateDirective: (bankId, directiveId, request) =>
+      withTimeout("hindsight updateDirective", timeoutMs, (signal) =>
+        rest.request(directiveItemPath(bankId, directiveId), {
+          method: "PATCH",
+          signal,
+          body: JSON.stringify(updateDirectiveRequestBody(request)),
+        }),
+      ),
+    deleteDirective: (bankId, directiveId) =>
+      withTimeout("hindsight deleteDirective", timeoutMs, (signal) =>
+        rest.request(directiveItemPath(bankId, directiveId), { method: "DELETE", signal }),
       ),
     listMentalModels: (bankId, options) =>
       withTimeout("hindsight listMentalModels", timeoutMs, (signal) =>

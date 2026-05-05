@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { createOperationCatalog } from "../extensions/operation-catalog.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
@@ -11,11 +11,39 @@ function client(): HindsightLikeClient {
     getBankConfig: async () => ({ config: {}, overrides: {} }),
     resetBankConfig: async () => ({ ok: true }),
     getBankTemplateSchema: async () => ({ title: "BankTemplateManifest", properties: {} }),
+    listDirectives: async () => ({ items: [] }),
+    getDirective: async () => ({ id: "directive", name: "Rule", content: "Use facts." }),
+    createDirective: async () => ({ id: "directive", name: "Rule", content: "Use facts." }),
+    updateDirective: async () => ({ id: "directive", name: "Rule", content: "Updated." }),
+    deleteDirective: async () => ({ deleted: true }),
     exportBankTemplate: async () => ({ version: "1" }),
   };
 }
 
 describe("operation catalog", () => {
+  it("passes nullable directive updates through the public tool surface", async () => {
+    const updateDirective = vi.fn(async () => ({ id: "directive", content: "Updated" }));
+    const catalog = createOperationCatalog({
+      getClient: () => ({ ...client(), updateDirective }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+    const tool = catalog.tools.find((candidate) => candidate.name === "hindsight_update_directive");
+
+    await tool?.execute(
+      "call",
+      { directiveId: "directive", bank: "target-bank", content: null, tags: null },
+      new AbortController().signal,
+      () => undefined,
+      { cwd: "/repo", sessionManager: {} } as never,
+    );
+
+    expect(updateDirective).toHaveBeenCalledWith("target-bank", "directive", {
+      content: null,
+      tags: null,
+    });
+  });
+
   it("declares the public tool and command surface in one catalog", () => {
     const catalog = createOperationCatalog({
       getClient: () => client(),
@@ -33,6 +61,11 @@ describe("operation catalog", () => {
       "hindsight_configure",
       "hindsight_get_bank_config",
       "hindsight_reset_bank_config",
+      "hindsight_list_directives",
+      "hindsight_get_directive",
+      "hindsight_create_directive",
+      "hindsight_update_directive",
+      "hindsight_delete_directive",
       "hindsight_get_bank_template_schema",
       "hindsight_export_bank_template",
       "hindsight_import",
