@@ -108,12 +108,14 @@ A change is done only when:
 5. the diff is minimal and focused; and
 6. no new memory anti-pattern is introduced.
 
-## Changelog
+## Changelog and releases
 
-`CHANGELOG.md` is generated from Conventional Commits:
+`CHANGELOG.md` is generated from Conventional Commits. The normal release path is release-please: it opens a release PR that updates version metadata and the changelog, then creates the tag and GitHub release after merge.
+
+Local fallback:
 
 ```bash
 npm run changelog
 ```
 
-The `version` script also regenerates and stages `CHANGELOG.md` during `npm version`. Do not hand-edit generated release entries as the source of truth.
+The `version` script also regenerates and stages `CHANGELOG.md` during `npm version`. Use these scripts for inspection or emergency manual releases, not as the normal source of truth. Do not hand-edit generated release entries as the source of truth.

@@ -1,10 +1,12 @@
 # Release
 
-Release automation publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC. The workflow does not use `NPM_TOKEN`.
+Release automation uses [`release-please`](https://github.com/googleapis/release-please) to turn Conventional Commits on `main` into a release PR. The release PR updates `package.json`, `package-lock.json`, `.release-please-manifest.json`, and `CHANGELOG.md`.
+
+After the release PR merges, release-please creates the tag and GitHub release. The existing `Release` workflow then verifies and publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC. The workflow does not use `NPM_TOKEN`.
 
 ## Release checks
 
-Before publishing or tagging a release:
+Before merging a release PR or manually publishing a release, run or confirm:
 
 ```bash
 npm run check
@@ -27,6 +29,22 @@ npm run smoke:hindsight
 ```bash
 npm run check:release
 ```
+
+## Release PR flow
+
+1. Merge feature and fix PRs into `main` with Conventional Commit subjects.
+2. The `Release Please` workflow opens or updates a release PR.
+3. Review the release PR changelog, version bump, and manifest update.
+4. Confirm release/package verification passes. Use the `ci:package` or `ci:full` labels if additional gates are needed.
+5. Merge the release PR.
+6. Release-please creates the `v*.*.*` tag and GitHub release.
+7. The `Release` workflow verifies the tag and publishes to npm through trusted publishing.
+
+Manual `Release Please` workflow dispatch can refresh the release PR if needed.
+
+## Local changelog fallback
+
+`npm run changelog` and the `version` script remain available for local inspection or emergency manual releases. They are not the normal source of truth once release-please is active. Do not hand-edit generated release entries as the source of truth.
 
 ## Live smoke
 
@@ -86,12 +104,6 @@ Optional secret and variables:
 
 An unconfigured workflow skip is not release proof for memory-path changes.
 
-## Versioning flow
+## Manual publish fallback
 
-1. Ensure `main` is synced.
-2. Run release checks.
-3. Run `npm run changelog` after final Conventional Commits.
-4. Use `npm version <patch|minor|major>` so the version script stages the regenerated changelog.
-5. Push a `v*.*.*` tag to run the release workflow.
-
-Manual workflow dispatch can verify only or publish when `publish=true`.
+Manual workflow dispatch of the `Release` workflow can verify only, or publish when `publish=true`. Use this fallback only when the normal release-please tag flow is blocked and a maintainer explicitly approves the manual release.

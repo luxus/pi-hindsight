@@ -57,7 +57,8 @@
     "check:coverage": "npm run test:coverage",
     "pack:verify": "npm run release:verify && npm pack --dry-run && node scripts/install-smoke.mjs",
     "audit:signatures": "npm audit signatures",
-    "release:verify": "node scripts/verify-release.mjs"
+    "release:verify": "node scripts/verify-release.mjs",
+    "pr:check": "node scripts/check-pr-body.mjs"
   },
   "dependencies": {
     "@vectorize-io/hindsight-client": "^0.5.6",

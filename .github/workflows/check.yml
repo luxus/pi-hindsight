@@ -72,17 +72,17 @@ jobs:
             while IFS= read -r path; do
               [ -z "$path" ] && continue
               case "$path" in
-                extensions/*|tests/*|scripts/*|package.json|package-lock.json|tsconfig.json|vitest.config.ts)
+                extensions/*|tests/*|scripts/*|package.json|package-lock.json|tsconfig.json|vitest.config.ts|.release-please-config.json|.release-please-manifest.json)
                   coverage=true
                   ;;
               esac
               case "$path" in
-                extensions/client*|extensions/queue*|extensions/retain*|extensions/import*|extensions/memory-lifecycle*|extensions/memory-*operations.ts|extensions/bank*|extensions/config*|extensions/commands.ts|extensions/tools.ts|extensions/index.ts|scripts/smoke-*|scripts/verify-release.mjs|scripts/install-smoke.mjs|package.json|package-lock.json|.github/workflows/*)
+                extensions/client*|extensions/queue*|extensions/retain*|extensions/import*|extensions/memory-lifecycle*|extensions/memory-*operations.ts|extensions/bank*|extensions/config*|extensions/commands.ts|extensions/tools.ts|extensions/index.ts|scripts/smoke-*|scripts/verify-release.mjs|scripts/install-smoke.mjs|package.json|package-lock.json|.release-please-config.json|.release-please-manifest.json|.github/workflows/*)
                   full_matrix=true
                   ;;
               esac
               case "$path" in
-                package.json|package-lock.json|scripts/verify-release.mjs|scripts/install-smoke.mjs|.github/workflows/release.yml)
+                package.json|package-lock.json|scripts/verify-release.mjs|scripts/install-smoke.mjs|.release-please-config.json|.release-please-manifest.json|.github/workflows/release.yml|.github/workflows/release-please.yml)
                   package_check=true
                   ;;
               esac
@@ -100,6 +100,18 @@ jobs:
             echo "full_matrix=$full_matrix"
             echo "package_check=$package_check"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  pr-body:
+    name: PR checklist gate
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      !(github.event.pull_request.user.login == 'github-actions[bot]' && startsWith(github.event.pull_request.title, 'chore: release'))
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check PR body checklist
+        run: node scripts/check-pr-body.mjs
 
   pr-fast:
     name: fast PR check (ubuntu-latest)
