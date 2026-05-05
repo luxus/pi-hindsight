@@ -53,17 +53,68 @@ export default defineConfig({
         {
           label: "Architecture",
           items: [
+            { label: "Lifecycle and scope", slug: "architecture/lifecycle-and-scope" },
             {
               label: "Core vs companion adapters",
               slug: "architecture/core-vs-companion-adapters",
+            },
+            { label: "Queue and import architecture", slug: "architecture/queue-and-import" },
+            {
+              label: "Diagnostics and security boundaries",
+              slug: "architecture/diagnostics-and-security",
+            },
+            {
+              label: "ADRs",
+              items: [
+                {
+                  label: "ADR 001: Memory lifecycle and scope",
+                  slug: "architecture/adr/001-memory-lifecycle-and-scope",
+                },
+                {
+                  label: "ADR 002: Explicit routing strategy seam",
+                  slug: "architecture/adr/002-explicit-routing-strategy-seam",
+                },
+                {
+                  label: "ADR 003: TUI memory mode vocabulary",
+                  slug: "architecture/adr/003-tui-memory-mode-vocabulary",
+                },
+              ],
             },
           ],
         },
         {
           label: "Development",
           items: [
+            { label: "Development setup", slug: "development/development" },
+            { label: "Testing and verification", slug: "development/testing-and-verification" },
+            { label: "CI routing", slug: "development/ci-routing" },
+            { label: "Package verification", slug: "development/package-verification" },
+            { label: "Release process", slug: "development/release" },
             { label: "Documentation architecture", slug: "development/documentation-architecture" },
-            { label: "Development", slug: "development/development" },
+            { label: "Internal and agent docs", slug: "development/internal-and-agent-docs" },
+            {
+              label: "Agent docs",
+              items: [
+                { label: "AGENTS.md", slug: "development/agents-root" },
+                { label: "CONTRIBUTING.md", slug: "development/contributing" },
+                { label: "CONTEXT.md", slug: "development/context" },
+                { label: "Issue tracker", slug: "development/agents/issue-tracker" },
+                { label: "Domain docs", slug: "development/agents/domain" },
+                { label: "Triage labels", slug: "development/agents/triage-labels" },
+              ],
+            },
+          ],
+        },
+        {
+          label: "Internal / Archive",
+          items: [
+            { label: "Internal index", slug: "internal" },
+            { label: "Architecture TODOs", slug: "internal/architecture-todos" },
+            { label: "Next opt-out design", slug: "internal/next-opt-out-design" },
+            { label: "Post-MVP roadmap", slug: "internal/post-mvp-roadmap" },
+            { label: "PR roadmap", slug: "internal/pr-roadmap" },
+            { label: "PRD", slug: "internal/prd" },
+            { label: "Coding plan", slug: "internal/coding-plan" },
           ],
         },
       ],
