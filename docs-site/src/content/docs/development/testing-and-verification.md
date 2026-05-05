@@ -25,7 +25,9 @@ For documentation-site changes, run the focused docs check while iterating:
 npm run docs:check
 ```
 
-`docs:check` verifies generated surface-reference freshness, validates internal docs links/sidebar routes, and builds the Astro/Starlight site. `npm run check` includes `docs:check`, so the normal fast local and PR paths catch docs failures before merge.
+`docs:check` verifies generated surface-reference freshness, generated code-map freshness, internal docs links/sidebar routes, and builds the Astro/Starlight site. `npm run check` includes `docs:check`, so the normal fast local and PR paths catch docs failures before merge.
+
+For publishing details, see [Docs site publishing](./docs-site-publishing/).
 
 ## Memory-path changes
 

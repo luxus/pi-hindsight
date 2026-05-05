@@ -97,6 +97,7 @@ export default defineConfig({
             { label: "Release process", slug: "development/release" },
             { label: "Security policy", slug: "development/security" },
             { label: "Documentation architecture", slug: "development/documentation-architecture" },
+            { label: "Docs site publishing", slug: "development/docs-site-publishing" },
             { label: "Code map", slug: "development/code-map" },
             { label: "Internal and agent docs", slug: "development/internal-and-agent-docs" },
             {

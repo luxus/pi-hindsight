@@ -2,6 +2,8 @@
 
 Persistent memory for [Pi](https://github.com/mariozechner/pi) backed by [Hindsight](https://hindsight.vectorize.io/).
 
+Documentation site: <https://luxus.github.io/pi-hindsight/>
+
 Pi Hindsight recalls relevant project memory before model calls, retains structured session deltas after completed agent runs, and exposes explicit memory tools for direct retain/recall/reflect operations.
 
 The extension is heavily inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). This version keeps the same useful idea, then tightens project isolation, queue durability, diagnostics, and release hardening.
