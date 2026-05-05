@@ -186,7 +186,8 @@ Hand-authored documentation:
 
 Generated documentation:
 
-- `docs/surface-reference.md` from `scripts/generate-surface-reference.ts`.
+- `docs/surface-reference.md` and the docs-site surface reference from `scripts/generate-surface-reference.ts`.
+- `docs-site/src/content/docs/development/code-map.md` from `scripts/generate-code-map.mjs`.
 - `CHANGELOG.md` from release/changelog automation.
 - Future generated API tables should remain clearly labeled and reproducible from scripts.
 
