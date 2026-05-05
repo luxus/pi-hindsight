@@ -4,7 +4,7 @@ title: "Import controls reference"
 
 # Import controls reference
 
-Import controls preview and ingest historical Pi sessions or gateway transcripts. For the concept model, see [Historical Import](../concepts/imports/).
+Import controls preview and ingest historical Pi sessions or gateway transcripts. For the concept model, see [Historical Import](/concepts/imports/).
 
 ## Commands
 

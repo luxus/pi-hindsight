@@ -8,6 +8,16 @@ import type { MemoryOperationsDeps } from "../extensions/memory-operation-servic
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = join(root, "docs", "surface-reference.md");
+const docsSiteOutputPath = join(
+  root,
+  "docs-site",
+  "src",
+  "content",
+  "docs",
+  "reference",
+  "surface-reference.md",
+);
+const docsSiteFrontmatter = `---\ntitle: "Generated surface reference"\n---\n\n`;
 
 type JsonSchema = {
   type?: string;
@@ -126,12 +136,15 @@ export function generateSurfaceReference(): string {
 }
 
 const generated = generateSurfaceReference();
+const docsSiteGenerated = `${docsSiteFrontmatter}${generated}`;
 if (process.argv.includes("--check")) {
   const current = readFileSync(outputPath, "utf8");
-  if (current !== generated) {
-    console.error("docs/surface-reference.md is stale. Run npm run surface-reference.");
+  const docsSiteCurrent = readFileSync(docsSiteOutputPath, "utf8");
+  if (current !== generated || docsSiteCurrent !== docsSiteGenerated) {
+    console.error("Surface reference docs are stale. Run npm run surface-reference.");
     process.exit(1);
   }
 } else {
   writeFileSync(outputPath, generated);
+  writeFileSync(docsSiteOutputPath, docsSiteGenerated);
 }

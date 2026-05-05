@@ -4,7 +4,7 @@ title: "Tools and commands"
 
 # Tools and commands
 
-For generated details of registered tools and editable config fields, see [Generated surface reference](./surface-reference/). For related concepts, see [Retain, Recall, and Reflect](../concepts/retain-recall-reflect/) and [Memory Banks](../concepts/memory-banks/).
+For generated details of registered tools and editable config fields, see [Generated surface reference](/reference/surface-reference/). For related concepts, see [Retain, Recall, and Reflect](/concepts/retain-recall-reflect/) and [Memory Banks](/concepts/memory-banks/).
 
 `/hindsight` is the main control center. Commands are convenience shortcuts and escape hatches for advanced workflows.
 
@@ -36,7 +36,7 @@ The `hindsight_configure` tool can write config from agents. Prefer `/hindsight`
 /hindsight:import-project-sessions
 ```
 
-Use dry-run before non-dry-run imports. See [Import controls reference](./import-controls/) and [Importing sessions](../guides/importing-sessions/).
+Use dry-run before non-dry-run imports. See [Import controls reference](/reference/import-controls/) and [Importing sessions](/guides/importing-sessions/).
 
 ## Queue and snapshots
 

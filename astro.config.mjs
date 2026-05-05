@@ -9,6 +9,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Pi Hindsight",
+      disable404Route: true,
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/luxus/pi-hindsight" }],
       sidebar: [
         {
@@ -34,6 +35,10 @@ export default defineConfig({
             { label: "Historical Import", slug: "concepts/imports" },
             { label: "Memory behavior", slug: "concepts/memory-behavior" },
             { label: "Hindsight core functions", slug: "concepts/hindsight-core-functions" },
+            {
+              label: "Starter mental model suggestions",
+              slug: "concepts/starter-mental-model-suggestions",
+            },
           ],
         },
         {

@@ -8,9 +8,9 @@ Pi Hindsight resolves configuration from defaults, global config, project config
 
 For concepts behind Project Banks, Global/User Banks, tags, metadata, Document IDs, and Update Modes, see:
 
-- [Memory Banks](../concepts/memory-banks/)
-- [Document IDs and update modes](../concepts/document-ids-update-modes/)
-- [Retain, Recall, and Reflect](../concepts/retain-recall-reflect/)
+- [Memory Banks](/concepts/memory-banks/)
+- [Document IDs and update modes](/concepts/document-ids-update-modes/)
+- [Retain, Recall, and Reflect](/concepts/retain-recall-reflect/)
 
 ## Precedence
 
@@ -132,4 +132,4 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
 
 ## Generated editable-field reference
 
-The exact generated tool and editable config field surface lives in [Generated surface reference](./surface-reference/). Do not edit that generated page by hand; update the operation catalog, config editing registry, or generator.
+The exact generated tool and editable config field surface lives in [Generated surface reference](/reference/surface-reference/). Do not edit that generated page by hand; update the operation catalog, config editing registry, or generator.

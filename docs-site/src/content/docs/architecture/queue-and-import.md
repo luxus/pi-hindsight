@@ -10,7 +10,7 @@ Retain delivery and historical import both prioritize durability, provenance, an
 
 The Retain Queue writes jobs to disk before delivery. It handles retry, stale locks, malformed line quarantine, bounded shutdown flushes, and dead-letter rollover.
 
-See [Retain Queue durability](../concepts/queue-durability/) for user-facing concepts.
+See [Retain Queue durability](/concepts/queue-durability/) for user-facing concepts.
 
 ## Import architecture
 
@@ -26,4 +26,4 @@ Important boundaries:
 
 Curated imports may chunk by user turns. Raw and forensic imports preserve legacy document IDs and payload shape.
 
-See [Historical Import](../concepts/imports/) and [Import controls reference](../reference/import-controls/).
+See [Historical Import](/concepts/imports/) and [Import controls reference](/reference/import-controls/).
