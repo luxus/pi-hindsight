@@ -11,10 +11,27 @@ export default defineConfig({
       title: "Pi Hindsight",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/luxus/pi-hindsight" }],
       sidebar: [
-        { label: "Start", items: [{ label: "Getting started", slug: "start/getting-started" }] },
+        {
+          label: "Start",
+          items: [
+            { label: "Getting started", slug: "start/getting-started" },
+            { label: "Installation", slug: "start/installation" },
+            { label: "Setup TUI", slug: "start/setup-tui" },
+            { label: "Memory profiles", slug: "start/memory-profiles" },
+            { label: "Minimal configuration", slug: "start/minimal-config" },
+          ],
+        },
         {
           label: "Concepts",
           items: [
+            { label: "Memory Banks", slug: "concepts/memory-banks" },
+            { label: "Retain, Recall, and Reflect", slug: "concepts/retain-recall-reflect" },
+            {
+              label: "Document IDs and update modes",
+              slug: "concepts/document-ids-update-modes",
+            },
+            { label: "Retain Queue durability", slug: "concepts/queue-durability" },
+            { label: "Historical Import", slug: "concepts/imports" },
             { label: "Memory behavior", slug: "concepts/memory-behavior" },
             { label: "Hindsight core functions", slug: "concepts/hindsight-core-functions" },
           ],
