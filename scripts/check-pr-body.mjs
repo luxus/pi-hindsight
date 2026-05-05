@@ -45,7 +45,7 @@ export function validatePrBody(body) {
   }
 
   const verification = section(text, "Verification");
-  if (!/- \[[xX]\] `?npm run check`?/.test(verification)) {
+  if (!/^- \[[xX]\] (?:`npm run check`|npm run check)(?:\s|$)/m.test(verification)) {
     errors.push("Verification section must check `npm run check`.");
   }
   if (

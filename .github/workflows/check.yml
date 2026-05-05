@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'pull_request' &&
-      !(github.event.pull_request.user.login == 'github-actions[bot]' && startsWith(github.event.pull_request.title, 'chore: release'))
+      !(github.event.pull_request.user.login == 'github-actions[bot]' && startsWith(github.event.pull_request.title, 'chore') && contains(github.event.pull_request.title, ': release'))
     steps:
       - uses: actions/checkout@v6
 

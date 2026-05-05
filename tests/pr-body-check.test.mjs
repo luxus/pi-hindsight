@@ -54,4 +54,13 @@ describe("check-pr-body", () => {
       "Agent checklist must confirm AGENTS.md and CONTRIBUTING.md were read and followed.",
     ]);
   });
+
+  it("does not accept check:coverage as proof that check ran", () => {
+    const body = validBody.replace(
+      "- [x] `npm run check`\n- [ ] `npm run check:coverage` — not needed because docs-only.",
+      "- [ ] `npm run check` — not run because example.\n- [x] `npm run check:coverage`",
+    );
+
+    expect(validatePrBody(body)).toContain("Verification section must check `npm run check`.");
+  });
 });
