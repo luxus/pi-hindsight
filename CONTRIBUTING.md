@@ -58,6 +58,37 @@ Do not rely on local scratch files, private harness TODOs, chat-only plans, or h
 
 Every PR should reference the issue it advances. If a follow-up remains, add it as an issue or as a comment on the existing issue rather than leaving it only in a local note.
 
+## Continuous issue iteration
+
+When a maintainer asks an agent to continue through the backlog, the expected loop is continuous but bounded. Continue issue-by-issue until there are no appropriate open issues left, the maintainer stops the loop, or a blocker requires human judgment. Respect explicit deferrals, roadmap ordering, and source-of-truth priorities.
+
+For each slice:
+
+1. Select or create a GitHub issue before implementation starts.
+2. Create a focused branch from up-to-date `main`.
+3. Implement the smallest vertical slice that satisfies the issue.
+4. Run targeted tests during development, then the repository checks required by the change impact.
+5. Commit with a Conventional Commit subject and do not bypass hooks.
+6. Run a review pass before opening a PR. A subagent reviewer is acceptable and encouraged for non-trivial changes.
+7. Fix review findings before PR creation unless the PR explicitly documents why a recommendation was rejected.
+8. Push the branch and open a PR with the required template completed.
+9. Watch CI without blocking foreground planning. Use a managed process, scheduled reminder, or subagent/checker. If checks are still pending, set a short reminder instead of repeatedly polling. If checks fail, inspect and fix before merge.
+10. Merge only after required checks pass and review blockers are resolved.
+11. Comment on and close the issue with delivered behavior, verification, and follow-up issue links.
+12. Return to `main`, sync with `origin/main`, and continue with the next slice.
+
+Keep one implementation slice active at a time unless a maintainer explicitly asks for parallel work. Do not mix unrelated cleanup, formatting sweeps, or drive-by refactors into the current branch. If review uncovers work outside the slice, create a follow-up issue and continue after the current PR is complete.
+
+## Commit and PR discipline for agents
+
+Agents must not push directly to `main`, tag releases, publish packages, or merge PRs unless a maintainer explicitly asks for that action. A maintainer instruction to run the continuous issue loop counts as merge authorization for PRs that satisfy the documented loop. Work should happen on a branch and flow through a PR.
+
+Before implementation starts, link the change to a GitHub issue. Keep each branch and PR to one focused vertical slice. Do not bundle drive-by refactors, formatting sweeps, or unrelated cleanup unless the issue explicitly asks for them.
+
+Use Conventional Commits for final commit subjects because release automation, changelog generation, and release notes consume them as source of truth. Keep commits small and logical. Clean up noisy WIP commits before review when the workflow allows it. Never bypass Git hooks or checks with `--no-verify` or equivalent flags.
+
+Every PR must complete the repository PR template. The template is intentionally machine-checkable: linked issue, scope, verification, release impact, risk and rollback, follow-ups, and agent checklist. If a check was skipped, the PR must say why. If follow-up work remains, link a GitHub issue.
+
 ## Memory invariants
 
 Every code change must preserve these rules:
