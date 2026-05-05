@@ -42,9 +42,9 @@ Keep `base` set to `/pi-hindsight` unless the repository moves to a root-domain 
 
 The workflow:
 
-1. checks out the repository,
-2. installs dependencies with `npm ci --engine-strict`,
-3. configures GitHub Pages,
+1. enables/configures GitHub Pages for the repository,
+2. checks out the repository,
+3. installs dependencies with `npm ci --engine-strict`,
 4. runs `npm run docs:check`,
 5. uploads `docs-site/dist`, and
 6. deploys the artifact to GitHub Pages.
