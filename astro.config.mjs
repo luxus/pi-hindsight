@@ -1,0 +1,52 @@
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
+
+export default defineConfig({
+  site: "https://luxus.github.io/pi-hindsight",
+  base: "/pi-hindsight",
+  srcDir: "./docs-site/src",
+  outDir: "./docs-site/dist",
+  integrations: [
+    starlight({
+      title: "Pi Hindsight",
+      social: [{ icon: "github", label: "GitHub", href: "https://github.com/luxus/pi-hindsight" }],
+      sidebar: [
+        { label: "Start", items: [{ label: "Getting started", slug: "start/getting-started" }] },
+        {
+          label: "Concepts",
+          items: [
+            { label: "Memory behavior", slug: "concepts/memory-behavior" },
+            { label: "Hindsight core functions", slug: "concepts/hindsight-core-functions" },
+          ],
+        },
+        {
+          label: "Guides",
+          items: [{ label: "Importing sessions", slug: "guides/importing-sessions" }],
+        },
+        {
+          label: "Reference",
+          items: [
+            { label: "Tools and commands", slug: "reference/tools-and-commands" },
+            { label: "Surface reference", slug: "reference/surface-reference" },
+          ],
+        },
+        {
+          label: "Architecture",
+          items: [
+            {
+              label: "Core vs companion adapters",
+              slug: "architecture/core-vs-companion-adapters",
+            },
+          ],
+        },
+        {
+          label: "Development",
+          items: [
+            { label: "Documentation architecture", slug: "development/documentation-architecture" },
+            { label: "Development", slug: "development/development" },
+          ],
+        },
+      ],
+    }),
+  ],
+});

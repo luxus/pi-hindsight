@@ -39,8 +39,8 @@
     "typecheck:tsc": "tsc --noEmit",
     "lint": "oxlint --type-aware --type-check extensions tests",
     "lint:fix": "oxlint --type-aware --type-check --fix extensions tests",
-    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\"",
-    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\"",
+    "format": "oxfmt --check --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\" \"docs-site/src/content/docs/**/*.md\" \"docs-site/src/content/docs/**/*.mdx\" \"astro.config.mjs\" \"docs-site/src/content.config.ts\"",
+    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\" \"docs-site/src/content/docs/**/*.md\" \"docs-site/src/content/docs/**/*.mdx\" \"astro.config.mjs\" \"docs-site/src/content.config.ts\"",
     "surface-reference": "tsx scripts/generate-surface-reference.ts",
     "surface-reference:check": "tsx scripts/generate-surface-reference.ts --check",
     "check": "npm run surface-reference:check && npm run format && npm run lint && npm run typecheck && npm test",
@@ -58,19 +58,23 @@
     "pack:verify": "npm run release:verify && npm pack --dry-run && node scripts/install-smoke.mjs",
     "audit:signatures": "npm audit signatures",
     "release:verify": "node scripts/verify-release.mjs",
-    "pr:check": "node scripts/check-pr-body.mjs"
+    "pr:check": "node scripts/check-pr-body.mjs",
+    "docs:dev": "astro dev",
+    "docs:build": "astro build"
   },
   "dependencies": {
     "@vectorize-io/hindsight-client": "^0.5.6",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
+    "@astrojs/starlight": "^0.38.4",
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.3",
     "@mariozechner/pi-coding-agent": "0.72.1",
     "@types/node": "^24.12.2",
     "@typescript/native-preview": "7.0.0-dev.20260426.1",
     "@vitest/coverage-v8": "^3.2.4",
+    "astro": "^6.2.2",
     "oxfmt": "^0.47.0",
     "oxlint": "^1.61.0",
     "oxlint-tsgolint": "^0.22.0",

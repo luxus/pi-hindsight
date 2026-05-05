@@ -15,3 +15,7 @@ tmp/
 .env
 .env.*
 /.pi
+
+# Astro generated docs artifacts
+.astro/
+docs-site/dist/
