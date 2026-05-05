@@ -2,8 +2,6 @@
 title: "coding-plan.md"
 ---
 
-# coding-plan.md
-
 ## Overview
 
 Build a Pi extension package that integrates Hindsight as long-term memory for coding sessions.

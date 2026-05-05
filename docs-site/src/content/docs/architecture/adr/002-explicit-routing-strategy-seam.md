@@ -2,8 +2,6 @@
 title: "ADR 002: Explicit routing strategy seam"
 ---
 
-# ADR 002: Explicit routing strategy seam
-
 ## Status
 
 Proposed.

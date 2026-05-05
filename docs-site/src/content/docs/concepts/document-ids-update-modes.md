@@ -2,8 +2,6 @@
 title: "Document IDs and update modes"
 ---
 
-# Document IDs and update modes
-
 A **Document ID** is the stable Hindsight document identifier for retained content. A stable ID prevents duplicate memory documents and makes deletion/reimport behavior inspectable.
 
 ## Live sessions

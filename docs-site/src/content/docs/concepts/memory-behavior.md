@@ -2,8 +2,6 @@
 title: "Memory behavior"
 ---
 
-# Memory behavior
-
 This document describes the runtime memory path: recall, retain, queues, scopes, and safety behavior.
 
 ## Recall

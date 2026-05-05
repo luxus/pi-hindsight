@@ -2,8 +2,6 @@
 title: "Historical Import"
 ---
 
-# Historical Import
-
 **Import** is the historical session ingestion path. It parses Pi JSONL sessions or gateway transcripts, builds deterministic source documents, queues Retain Jobs, and records manifests/checkpoints.
 
 Import is not generic summarization. Curated import keeps filtered structured source material so Hindsight still receives evidence with provenance.

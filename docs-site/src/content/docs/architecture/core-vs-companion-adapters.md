@@ -2,8 +2,6 @@
 title: "Core vs companion adapter boundary"
 ---
 
-# Core vs companion adapter boundary
-
 Pi Hindsight is a Pi extension first. Its core should stay small, conservative, and directly useful inside Pi. Framework-specific integrations belong in companion packages, examples, or cookbook docs unless they are required for Pi's own memory path.
 
 This boundary prevents scope creep while still leaving room for Hindsight patterns that help many tools.

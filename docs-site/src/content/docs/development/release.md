@@ -2,8 +2,6 @@
 title: "Release"
 ---
 
-# Release
-
 Release automation uses [`release-please`](https://github.com/googleapis/release-please) to turn Conventional Commits on `main` into a release PR. The release PR updates `package.json`, `package-lock.json`, `.release-please-manifest.json`, and `CHANGELOG.md`.
 
 After the release PR merges, release-please creates the tag and GitHub release. The existing `Release` workflow then verifies and publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC. The workflow does not use `NPM_TOKEN`.

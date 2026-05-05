@@ -2,8 +2,6 @@
 title: "Memory profiles"
 ---
 
-# Memory profiles
-
 Choose the narrowest memory route that fits the repository.
 
 ## `project-only`

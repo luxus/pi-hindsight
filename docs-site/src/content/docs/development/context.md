@@ -2,8 +2,6 @@
 title: "pi-hindsight Context"
 ---
 
-# pi-hindsight Context
-
 ## Purpose
 
 `pi-hindsight` is a Pi extension that gives Pi durable long-term memory through Hindsight while keeping project memory isolated, recall ephemeral, and writes inspectable. The extension is designed around explicit memory boundaries: what is recalled into a turn, what is retained after a turn, what is queued for durability, and what is imported from historical sessions.

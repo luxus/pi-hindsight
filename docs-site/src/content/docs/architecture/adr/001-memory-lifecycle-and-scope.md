@@ -2,8 +2,6 @@
 title: "ADR-001: Memory lifecycle and scope policy"
 ---
 
-# ADR-001: Memory lifecycle and scope policy
-
 ## Status
 
 Accepted

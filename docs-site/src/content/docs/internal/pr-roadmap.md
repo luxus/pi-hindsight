@@ -2,8 +2,6 @@
 title: "PR Roadmap"
 ---
 
-# PR Roadmap
-
 This roadmap records the completed MVP hardening plan for `@luxusai/pi-hindsight`. Current and future work lives in GitHub Issues; treat this file as historical context, not the task ledger.
 
 The goal is to keep the extension simple by default while preserving enough flexibility for real Pi and Hindsight workflows.

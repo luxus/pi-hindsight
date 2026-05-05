@@ -2,8 +2,6 @@
 title: "AGENTS.md"
 ---
 
-# AGENTS.md
-
 ## Project mission
 
 Build a Pi extension that gives Pi durable long-term memory through Hindsight.

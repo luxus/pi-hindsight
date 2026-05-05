@@ -2,8 +2,6 @@
 title: "Diagnostics and security boundaries"
 ---
 
-# Diagnostics and security boundaries
-
 Diagnostics should make memory behavior inspectable without exposing secrets or raw retained content unnecessarily.
 
 ## Diagnostics boundaries

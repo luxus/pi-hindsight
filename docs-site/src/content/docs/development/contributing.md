@@ -2,8 +2,6 @@
 title: "Contributing to pi-hindsight"
 ---
 
-# Contributing to pi-hindsight
-
 Thank you for helping improve `pi-hindsight`. This repository is a Pi extension that integrates with Hindsight, so changes must protect durable memory, project/global isolation, queue durability, and secret safety.
 
 ## Start here

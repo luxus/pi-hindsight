@@ -2,8 +2,6 @@
 title: "Development"
 ---
 
-# Development
-
 ## Install dependencies
 
 ```bash

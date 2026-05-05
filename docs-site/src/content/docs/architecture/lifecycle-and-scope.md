@@ -2,8 +2,6 @@
 title: "Lifecycle and scope"
 ---
 
-# Lifecycle and scope
-
 Pi Hindsight maps documented Pi extension hooks to Hindsight memory operations.
 
 ## Hook flow

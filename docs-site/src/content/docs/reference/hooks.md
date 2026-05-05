@@ -2,8 +2,6 @@
 title: "Hooks reference"
 ---
 
-# Hooks reference
-
 Pi Hindsight uses documented Pi extension lifecycle hooks. This page is a reference for what each hook path owns.
 
 For the conceptual behavior behind Retain, Recall, and queue durability, see:

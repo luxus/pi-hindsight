@@ -2,8 +2,6 @@
 title: "Retain Queue durability"
 ---
 
-# Retain Queue durability
-
 Pi Hindsight is queue-first. A **Retain Job** is written to disk before delivery to Hindsight.
 
 This protects memory during:

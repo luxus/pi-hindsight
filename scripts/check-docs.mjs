@@ -11,6 +11,8 @@ const astroConfigPath = process.env.ASTRO_CONFIG_PATH
 const markdownExtensions = new Set([".md", ".mdx"]);
 const sidebarSlugPattern = /slug:\s*["']([^"']+)["']/g;
 const markdownLinkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
+const frontmatterPattern = /^---\n([\s\S]*?)\n---\n?/u;
+const titlePattern = /^title:\s*(?:"([^"]+)"|'([^']+)'|(.+))\s*$/mu;
 const allowedUnlistedSlugs = new Set([
   "",
   "404",
@@ -62,6 +64,24 @@ function isExternalOrAnchor(href) {
   return /^(https?:|mailto:|#)/iu.test(href);
 }
 
+function frontmatterTitle(content) {
+  const frontmatter = frontmatterPattern.exec(content)?.[1];
+  if (!frontmatter) return undefined;
+  const title = titlePattern.exec(frontmatter);
+  return title?.[1] ?? title?.[2] ?? title?.[3]?.trim();
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasDuplicateTitleHeading(content) {
+  const title = frontmatterTitle(content);
+  if (!title) return false;
+  const body = content.replace(frontmatterPattern, "");
+  return new RegExp(`^\\s*#\\s+${escapeRegExp(title)}\\s*$`, "imu").test(body);
+}
+
 const astroConfig = readFileSync(astroConfigPath, "utf8");
 const baseMatch = astroConfig.match(/base:\s*["']([^"']+)["']/u);
 const astroBase = baseMatch?.[1]?.replace(/^\//u, "").replace(/[\\/]$/u, "");
@@ -85,6 +105,10 @@ for (const slug of slugs) {
 
 for (const file of files) {
   const content = readFileSync(file, "utf8");
+  if (hasDuplicateTitleHeading(content)) {
+    errors.push(`${relative(process.cwd(), file)} repeats its frontmatter title as an H1`);
+  }
+
   for (const match of content.matchAll(markdownLinkPattern)) {
     const rawHref = match[1].trim().replace(/^<|>$/gu, "");
     const href = rawHref.split(/[\s#?]/u)[0];

@@ -2,8 +2,6 @@
 title: "ADR 003: TUI memory mode vocabulary"
 ---
 
-# ADR 003: TUI memory mode vocabulary
-
 ## Status
 
 Proposed.

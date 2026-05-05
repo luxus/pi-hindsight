@@ -2,8 +2,6 @@
 title: "CI routing"
 ---
 
-# CI routing
-
 GitHub PR CI is tiered by change impact.
 
 ## Fast checks

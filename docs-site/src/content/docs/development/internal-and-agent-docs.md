@@ -2,8 +2,6 @@
 title: "Internal and agent docs"
 ---
 
-# Internal and agent docs
-
 Agent-facing, maintainer-only, and historical planning documents are linked from the documentation site so they are discoverable, but they are not primary user-facing product docs.
 
 ## Agent docs

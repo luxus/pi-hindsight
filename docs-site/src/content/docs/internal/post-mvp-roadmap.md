@@ -2,8 +2,6 @@
 title: "Post-MVP Roadmap"
 ---
 
-# Post-MVP Roadmap
-
 This roadmap records the completed post-MVP hardening pass after `docs/pr-roadmap.md`. Current and future work lives in GitHub Issues; treat this file as historical context, not the task ledger.
 
 ## Product rule

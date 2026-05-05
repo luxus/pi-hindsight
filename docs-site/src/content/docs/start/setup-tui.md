@@ -2,8 +2,6 @@
 title: "Setup TUI"
 ---
 
-# Setup TUI
-
 Run the setup TUI from Pi:
 
 ```text

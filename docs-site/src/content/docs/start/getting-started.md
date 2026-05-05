@@ -2,8 +2,6 @@
 title: "Getting started"
 ---
 
-# Getting started
-
 Pi Hindsight gives Pi durable project memory through Hindsight. The default setup keeps memory scoped to the current repository.
 
 ## 1. Install

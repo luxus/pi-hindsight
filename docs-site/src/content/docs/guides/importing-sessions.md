@@ -2,8 +2,6 @@
 title: "Importing Pi sessions"
 ---
 
-# Importing Pi sessions
-
 Historical import is for seeding or rebuilding Hindsight memory from Pi session JSONL files.
 
 ## What can be imported

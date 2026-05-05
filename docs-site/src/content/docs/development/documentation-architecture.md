@@ -2,8 +2,6 @@
 title: "Documentation architecture"
 ---
 
-# Documentation architecture
-
 This note defines the target information architecture for Pi Hindsight documentation. It is the stable migration map for documentation-site work and for future documentation reviews.
 
 ## Goals

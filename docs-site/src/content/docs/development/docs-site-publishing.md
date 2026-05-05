@@ -2,8 +2,6 @@
 title: "Docs site publishing"
 ---
 
-# Docs site publishing
-
 Pi Hindsight publishes the Astro/Starlight documentation site to GitHub Pages from GitHub Actions.
 
 Published URL: <https://luxus.github.io/pi-hindsight/>

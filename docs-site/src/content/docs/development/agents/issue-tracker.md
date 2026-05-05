@@ -2,8 +2,6 @@
 title: "Issue tracker: GitHub"
 ---
 
-# Issue tracker: GitHub
-
 Issues, PRDs, roadmap slices, current work, blockers, and follow-ups for this repo live as GitHub issues for `luxus/pi-hindsight`. Use the `gh` CLI for all operations.
 
 GitHub Issues are the project task ledger. Do not use harness-private TODOs, chat-only plans, local scratch reports, or hidden task lists as the source of truth for project work. If work needs tracking, create or update an issue before continuing.

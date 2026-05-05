@@ -2,8 +2,6 @@
 title: "Security Policy"
 ---
 
-# Security Policy
-
 ## Supported versions
 
 Security fixes target the current `main` branch and the latest published npm package version when a package has been released. Runtime compatibility is defined in `package.json`.

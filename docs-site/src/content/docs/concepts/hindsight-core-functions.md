@@ -2,8 +2,6 @@
 title: "Hindsight core functions"
 ---
 
-# Hindsight core functions
-
 This page is infographic copy and onboarding text for explaining how Hindsight memory works.
 
 ## One-sentence model

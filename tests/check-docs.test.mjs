@@ -66,6 +66,16 @@ describe("docs quality check", () => {
     expect(runCheck(paths)).toContain("Documentation quality checks passed");
   });
 
+  it("fails when a page repeats its frontmatter title as an H1", () => {
+    const paths = fixture();
+    writeFileSync(
+      join(paths.docsRoot, "start", "getting-started.md"),
+      "---\ntitle: Start\n---\n\n# Start\n\nIntro.\n",
+    );
+
+    expect(() => runCheck(paths)).toThrow(/repeats its frontmatter title as an H1/u);
+  });
+
   it("fails when an internal docs link points to a missing page", () => {
     const paths = fixture();
     writeFileSync(

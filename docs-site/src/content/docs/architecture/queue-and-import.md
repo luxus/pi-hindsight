@@ -2,8 +2,6 @@
 title: "Queue and import architecture"
 ---
 
-# Queue and import architecture
-
 Retain delivery and historical import both prioritize durability, provenance, and deterministic replay.
 
 ## Retain Queue

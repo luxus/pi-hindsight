@@ -2,8 +2,6 @@
 title: "One-turn memory opt-out design"
 ---
 
-# One-turn memory opt-out design
-
 This document defines the preferred one-turn memory control for Pi Hindsight. It intentionally avoids prompt hashtag parsing such as `#nomem`.
 
 ## Problem

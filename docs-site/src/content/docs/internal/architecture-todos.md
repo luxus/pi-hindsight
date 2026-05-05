@@ -2,8 +2,6 @@
 title: "Architecture Notes"
 ---
 
-# Architecture Notes
-
 These notes record deepening work completed after the mission/global-memory pass and the remaining conditions for reopening broader architecture changes.
 
 ## Memory routing

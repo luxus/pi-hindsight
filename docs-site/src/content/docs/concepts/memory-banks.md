@@ -2,8 +2,6 @@
 title: "Memory Banks"
 ---
 
-# Memory Banks
-
 A **Memory Bank** is an isolated Hindsight namespace. Banks are the main boundary that prevents unrelated memory from mixing.
 
 ## Project Bank

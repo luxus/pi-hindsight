@@ -2,8 +2,6 @@
 title: "Package verification"
 ---
 
-# Package verification
-
 Pi Hindsight is distributed as an npm package. Packaging checks protect installed runtime behavior.
 
 ## Published contents

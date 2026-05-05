@@ -2,8 +2,6 @@
 title: "Minimal configuration"
 ---
 
-# Minimal configuration
-
 A minimal project-local config points Pi Hindsight at your Hindsight server:
 
 ```json

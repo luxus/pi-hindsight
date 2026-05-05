@@ -2,8 +2,6 @@
 title: Starter mental model suggestions
 ---
 
-# Starter mental model suggestions
-
 Mental models should start as explicit, inspectable user choices. Pi Hindsight may suggest useful recurring questions, but it must not create or refresh mental models automatically during setup.
 
 ## Placement decision

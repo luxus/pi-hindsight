@@ -2,8 +2,6 @@
 title: "Configuration reference"
 ---
 
-# Configuration reference
-
 Pi Hindsight resolves configuration from defaults, global config, project config, and environment variables.
 
 For concepts behind Project Banks, Global/User Banks, tags, metadata, Document IDs, and Update Modes, see:

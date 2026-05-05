@@ -2,8 +2,6 @@
 title: "Retain, Recall, and Reflect"
 ---
 
-# Retain, Recall, and Reflect
-
 Pi Hindsight uses the three core Hindsight operations without collapsing them into one generic “memory” action.
 
 ```text

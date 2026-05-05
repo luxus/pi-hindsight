@@ -2,8 +2,6 @@
 title: "prd.md"
 ---
 
-# prd.md
-
 ## Product name
 
 Pi Hindsight Extension

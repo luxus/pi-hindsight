@@ -2,8 +2,6 @@
 title: "Installation"
 ---
 
-# Installation
-
 Pi Hindsight is a Pi package. Install it into Pi, then point it at a Hindsight server.
 
 ## Install from GitHub

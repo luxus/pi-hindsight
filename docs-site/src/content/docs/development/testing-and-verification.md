@@ -2,8 +2,6 @@
 title: "Testing and verification"
 ---
 
-# Testing and verification
-
 Before considering a change done, run the checks required by its impact.
 
 ## Default checks
