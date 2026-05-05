@@ -95,6 +95,7 @@ export default defineConfig({
             { label: "CI routing", slug: "development/ci-routing" },
             { label: "Package verification", slug: "development/package-verification" },
             { label: "Release process", slug: "development/release" },
+            { label: "Security policy", slug: "development/security" },
             { label: "Documentation architecture", slug: "development/documentation-architecture" },
             { label: "Internal and agent docs", slug: "development/internal-and-agent-docs" },
             {

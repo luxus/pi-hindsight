@@ -19,11 +19,13 @@ npm run check:coverage
 npm run typecheck:tsc
 ```
 
-For documentation-site changes, run:
+For documentation-site changes, run the focused docs check while iterating:
 
 ```bash
-npm run docs:build
+npm run docs:check
 ```
+
+`docs:check` verifies generated surface-reference freshness, validates internal docs links/sidebar routes, and builds the Astro/Starlight site. `npm run check` includes `docs:check`, so the normal fast local and PR paths catch docs failures before merge.
 
 ## Memory-path changes
 

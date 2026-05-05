@@ -43,7 +43,7 @@
     "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"extensions/**/*.ts\" \"tests/**/*.ts\" \"tests/**/*.mjs\" \"scripts/**/*.mjs\" \"scripts/**/*.ts\" \"docs/**/*.md\" \"README.md\" \"CONTEXT.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"CHANGELOG.md\" \"package.json\" \"package-lock.json\" \"tsconfig.json\" \"vitest.config.ts\" \".oxfmtrc.json\" \".commitlintrc.json\" \"*.yml\" \".github/**/*.yml\" \".github/**/*.md\" \"docs-site/src/content/docs/**/*.md\" \"docs-site/src/content/docs/**/*.mdx\" \"astro.config.mjs\" \"docs-site/src/content.config.ts\"",
     "surface-reference": "tsx scripts/generate-surface-reference.ts",
     "surface-reference:check": "tsx scripts/generate-surface-reference.ts --check",
-    "check": "npm run surface-reference:check && npm run format && npm run lint && npm run typecheck && npm test",
+    "check": "npm run docs:check && npm run format && npm run lint && npm run typecheck && npm test",
     "check:ci": "npm run check && npm run check:coverage",
     "check:release": "npm run check && npm run check:coverage && npm run typecheck:tsc && npm run audit:signatures && npm run pack:verify && npm run smoke:hindsight",
     "install-hooks": "node scripts/install-hooks.mjs",
@@ -60,7 +60,9 @@
     "release:verify": "node scripts/verify-release.mjs",
     "pr:check": "node scripts/check-pr-body.mjs",
     "docs:dev": "astro dev",
-    "docs:build": "astro build"
+    "docs:build": "astro build",
+    "docs:links": "node scripts/check-docs.mjs",
+    "docs:check": "npm run surface-reference:check && npm run docs:links && npm run docs:build"
   },
   "dependencies": {
     "@vectorize-io/hindsight-client": "^0.5.6",
