@@ -79,6 +79,22 @@ Write project Hindsight config (.pi/hindsight.json), including project bank over
 | `enabled`          | boolean | no       | Enable or disable Hindsight extension.                           |
 | `queuePath`        | string  | no       | Retain queue path. Defaults to .pi/hindsight/retain-queue.jsonl. |
 
+### `hindsight_get_bank_config`
+
+Read resolved Hindsight bank config and override counts for a selected bank.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_reset_bank_config`
+
+Reset Hindsight bank config overrides for a selected bank.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+
 ### `hindsight_export_bank_template`
 
 Export a portable Hindsight bank template manifest for reuse in another project or bank.

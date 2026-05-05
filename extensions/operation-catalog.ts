@@ -12,7 +12,9 @@ import {
   deleteDocumentToolResponse,
   exportBankTemplateToolResponse,
   gatewayImportToolResponse,
+  getBankConfigToolResponse,
   importToolResponse,
+  resetBankConfigToolResponse,
   retainReceiptListToolResponse,
   retainToolResponse,
   routeMemoryToolResponse,
@@ -226,6 +228,36 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         useCwd(ctx.cwd);
         const result = await operations.configure(ctx.cwd, params);
         return configureToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_get_bank_config",
+      label: "Hindsight Get Bank Config",
+      description: "Read resolved Hindsight bank config and override counts for a selected bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.getBankConfig(params.bank ? { bank: params.bank } : {});
+        return getBankConfigToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_reset_bank_config",
+      label: "Hindsight Reset Bank Config",
+      description: "Reset Hindsight bank config overrides for a selected bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.resetBankConfig(params.bank ? { bank: params.bank } : {});
+        return resetBankConfigToolResponse(result);
       },
     }),
     defineCatalogTool({

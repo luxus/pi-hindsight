@@ -75,6 +75,10 @@ describe("Hindsight client adapter integration", () => {
         sendJson(res, 200, { updated: true });
         return;
       }
+      if (req.method === "DELETE" && req.url === "/v1/default/banks/test-bank/config") {
+        sendJson(res, 200, { reset: true });
+        return;
+      }
       if (
         req.method === "GET" &&
         req.url ===
@@ -181,6 +185,7 @@ describe("Hindsight client adapter integration", () => {
     const bankConfigUpdate = await client.updateBankConfig?.("test-bank", {
       retain_custom_instructions: "Write to db",
     });
+    const bankConfigReset = await client.resetBankConfig?.("test-bank");
     const models = await client.listMentalModels?.("test-bank", {
       tags: ["source:pi"],
       tagsMatch: "all",
@@ -209,6 +214,7 @@ describe("Hindsight client adapter integration", () => {
     expect(exportedTemplate).toEqual({ version: "1", bank: { retain_mission: "Exported" } });
     expect(bankConfig).toEqual({ config: { retain_custom_instructions: "Read from db" } });
     expect(bankConfigUpdate).toEqual({ updated: true });
+    expect(bankConfigReset).toEqual({ reset: true });
     expect(models).toEqual({ items: [{ id: "model-1", name: "Model" }] });
     expect(model).toEqual({ id: "model-1", name: "Model", content: "full" });
     expect(createdModel).toEqual({ operation_id: "create-op", status: "queued" });
@@ -228,6 +234,7 @@ describe("Hindsight client adapter integration", () => {
       "GET /v1/default/banks/test-bank/export",
       "GET /v1/default/banks/test-bank/config",
       "PATCH /v1/default/banks/test-bank/config",
+      "DELETE /v1/default/banks/test-bank/config",
       "GET /v1/default/banks/test-bank/mental-models?tags=source%3Api&tags_match=all&detail=metadata&limit=10&offset=2",
       "GET /v1/default/banks/test-bank/mental-models/model-1?detail=full",
       "POST /v1/default/banks/test-bank/mental-models",
@@ -285,12 +292,12 @@ describe("Hindsight client adapter integration", () => {
     expect(requests[9]?.body).toEqual({
       updates: { retain_custom_instructions: "Write to db" },
     });
-    expect(requests[12]?.body).toEqual({
+    expect(requests[13]?.body).toEqual({
       name: "Model",
       source_query: "What should recur?",
       tags: ["source:pi"],
       max_tokens: 256,
     });
-    expect(requests[13]?.body).toEqual({ source_query: "Updated query", tags: null });
+    expect(requests[14]?.body).toEqual({ source_query: "Updated query", tags: null });
   });
 });

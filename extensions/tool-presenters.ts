@@ -1,4 +1,7 @@
-import { exportedBankTemplateSummaryLines } from "./bank-settings-presenter.js";
+import {
+  bankConfigOverrideSummaryLines,
+  exportedBankTemplateSummaryLines,
+} from "./bank-settings-presenter.js";
 import type { MemoryOperations } from "./memory-operation-service.js";
 
 type ToolTextResponse<Details> = {
@@ -17,6 +20,8 @@ export type GatewayImportToolResult = Awaited<
 export type ExportBankTemplateToolResult = Awaited<
   ReturnType<MemoryOperations["exportBankTemplate"]>
 >;
+export type GetBankConfigToolResult = Awaited<ReturnType<MemoryOperations["getBankConfig"]>>;
+export type ResetBankConfigToolResult = Awaited<ReturnType<MemoryOperations["resetBankConfig"]>>;
 export type RetainReceiptListResult = Awaited<ReturnType<MemoryOperations["listRetainReceipts"]>>;
 
 export function retainToolResponse(result: RetainToolResult): ToolTextResponse<RetainToolResult> {
@@ -107,6 +112,48 @@ export function importToolResponse(result: ImportToolResult): ToolTextResponse<I
     ? `Import preview: ${result.messageCount} messages would write ${result.documents.length} ${documentLabel} to ${result.bankId}. First document: ${result.documentId}. Manifest unchanged: ${result.manifestPath}.`
     : `Imported ${result.messageCount} messages into ${result.bankId} as ${result.documentId}. Manifest: ${result.manifestPath}.`;
   return { content: [{ type: "text", text }], details: result };
+}
+
+export function getBankConfigToolResponse(
+  result: GetBankConfigToolResult,
+): ToolTextResponse<GetBankConfigToolResult> {
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Read bank config for ${result.bankId}.`,
+          bankConfigOverrideSummaryLines(result.result).join("; "),
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+export function resetBankConfigToolResponse(
+  result: ResetBankConfigToolResult,
+): ToolTextResponse<ResetBankConfigToolResult> {
+  const before = result.before
+    ? bankConfigOverrideSummaryLines(result.before).join("; ")
+    : "unavailable";
+  const after = result.after
+    ? bankConfigOverrideSummaryLines(result.after).join("; ")
+    : "unavailable";
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Reset bank config overrides for ${result.bankId}.`,
+          `Before: ${before}`,
+          `After: ${after}`,
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
 }
 
 export function exportBankTemplateToolResponse(

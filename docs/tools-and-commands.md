@@ -77,7 +77,11 @@ Required tools:
 Additional tools:
 
 - `hindsight_configure`
+- `hindsight_get_bank_config`
+- `hindsight_reset_bank_config`
+- `hindsight_export_bank_template`
 - `hindsight_import`
+- `hindsight_import_gateway`
 - `hindsight_retain_global`
 - `hindsight_route_memory`
 - `hindsight_retain_receipts`

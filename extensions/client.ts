@@ -101,6 +101,10 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
           body: JSON.stringify(updateBankConfigRequestBody(updates)),
         }),
       ),
+    resetBankConfig: (bankId) =>
+      withTimeout("hindsight resetBankConfig", timeoutMs, (signal) =>
+        rest.request(bankConfigPath(bankId), { method: "DELETE", signal }),
+      ),
     health: () =>
       withTimeout("hindsight health", timeoutMs, async (signal) =>
         assertHealthResponse(await rest.request("/health", { signal })),

@@ -155,6 +155,25 @@ describe("memory operations", () => {
     ]);
   });
 
+  it("reports unavailable bank config APIs", async () => {
+    const operations = createMemoryOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await expect(operations.getBankConfig({ bank: "project" })).rejects.toThrow(
+      "Hindsight client does not support bank config read.",
+    );
+    await expect(operations.resetBankConfig({ bank: "project" })).rejects.toThrow(
+      "Hindsight client does not support bank config reset.",
+    );
+  });
+
   it("resolves project/global bank aliases for explicit operations", async () => {
     const calls: Array<{ method: string; bank: string; request?: unknown }> = [];
     const config = {
@@ -178,6 +197,14 @@ describe("memory operations", () => {
         deleteDocument: async (bank) => {
           calls.push({ method: "delete", bank });
           return {};
+        },
+        getBankConfig: async (bank) => {
+          calls.push({ method: "getBankConfig", bank });
+          return { config: {}, overrides: {} };
+        },
+        resetBankConfig: async (bank) => {
+          calls.push({ method: "resetBankConfig", bank });
+          return { ok: true };
         },
         listMentalModels: async (bank) => {
           calls.push({ method: "listMentalModels", bank });
@@ -206,6 +233,8 @@ describe("memory operations", () => {
     });
     await operations.reflect(cwd, "query", undefined, "project");
     await operations.deleteDocument({ bank: "global", documentId: "doc" });
+    await operations.getBankConfig({ bank: "global" });
+    await operations.resetBankConfig({ bank: "global" });
     await operations.listMentalModels({ bank: "global" });
     await operations.createMentalModel({
       bank: "project",
@@ -240,6 +269,9 @@ describe("memory operations", () => {
         { method: "retain", bank: "global-luxus" },
         { method: "reflect", bank: "project-bank" },
         { method: "delete", bank: "global-luxus" },
+        { method: "getBankConfig", bank: "global-luxus" },
+        { method: "resetBankConfig", bank: "global-luxus" },
+        { method: "getBankConfig", bank: "global-luxus" },
         { method: "listMentalModels", bank: "global-luxus" },
         {
           method: "createMentalModel",
