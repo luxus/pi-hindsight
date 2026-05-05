@@ -59,6 +59,10 @@ Or install the checkout path:
 pi install /path/to/pi-hindsight
 ```
 
+## Documentation architecture
+
+Use `docs/documentation-architecture.md` as the migration map for documentation-site work, navigation changes, generated reference placement, and archive decisions.
+
 ## Work tracking
 
 Use GitHub Issues as the project task ledger. Backlog items, current work, blockers, decisions, and follow-ups should be visible in issues or issue comments. Do not rely on local scratch files, chat-only plans, or private harness TODOs as the source of truth for project work.
