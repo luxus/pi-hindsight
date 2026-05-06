@@ -25,6 +25,8 @@ export type FieldId =
   | "queuePath"
   | "importMode"
   | "importBranches"
+  | "importToolResults"
+  | "importToolSummaryMaxChars"
   | "importManifest"
   | "importCheckpoint"
   | "importReplaceExisting"
@@ -64,6 +66,8 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   queuePath: ["retain", "queuePath"],
   importMode: ["import", "mode"],
   importBranches: ["import", "includeBranches"],
+  importToolResults: ["import", "toolResults"],
+  importToolSummaryMaxChars: ["import", "toolResultSummaryMaxChars"],
   importManifest: ["import", "manifestPath"],
   importCheckpoint: ["import", "checkpointPath"],
   importReplaceExisting: ["import", "replaceExistingImportedDocs"],
@@ -147,6 +151,8 @@ export const CONFIG_RESET_PATHS = {
   "retain.queuePath": [["retain", "queuePath"]],
   "import.mode": [["import", "mode"]],
   "import.includeBranches": [["import", "includeBranches"]],
+  "import.toolResults": [["import", "toolResults"]],
+  "import.toolResultSummaryMaxChars": [["import", "toolResultSummaryMaxChars"]],
   "import.manifestPath": [["import", "manifestPath"]],
   "import.checkpointPath": [["import", "checkpointPath"]],
   "import.replaceExistingImportedDocs": [["import", "replaceExistingImportedDocs"]],
@@ -189,6 +195,8 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   queuePath: "retain.queuePath",
   importMode: "import.mode",
   importBranches: "import.includeBranches",
+  importToolResults: "import.toolResults",
+  importToolSummaryMaxChars: "import.toolResultSummaryMaxChars",
   importManifest: "import.manifestPath",
   importCheckpoint: "import.checkpointPath",
   importReplaceExisting: "import.replaceExistingImportedDocs",

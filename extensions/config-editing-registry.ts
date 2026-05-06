@@ -356,6 +356,27 @@ export function buildBaseConfigEditingFields(
       resetKey: "import.includeBranches",
       choices: ["current-only", "all-leaves"],
     }),
+    selectField({
+      id: "importToolResults",
+      tab: "Import",
+      label: "Successful tool results",
+      description:
+        "Curated import defaults to errors-only; summary keeps bounded low-noise successful tool output; content keeps allowed full successful tool content.",
+      value: config.import.toolResults,
+      defaultValue: defaults.import.toolResults,
+      resetKey: "import.toolResults",
+      choices: ["errors-only", "summary", "content"],
+    }),
+    positiveIntField({
+      id: "importToolSummaryMaxChars",
+      tab: "Import",
+      label: "Tool summary max chars",
+      description: "Maximum characters kept for successful tool summaries in curated imports.",
+      value: config.import.toolResultSummaryMaxChars,
+      defaultValue: defaults.import.toolResultSummaryMaxChars,
+      resetKey: "import.toolResultSummaryMaxChars",
+      advanced: true,
+    }),
     textField({
       id: "importManifest",
       tab: "Import",
@@ -470,6 +491,8 @@ export const PROJECT_ONLY_FIELD_IDS = new Set<FieldId>([
   "queuePath",
   "importMode",
   "importBranches",
+  "importToolResults",
+  "importToolSummaryMaxChars",
   "importManifest",
   "importCheckpoint",
   "importReplaceExisting",
@@ -603,6 +626,10 @@ export function patchForConfigEditingField(
       return { importMode: value as "curated" | "raw" | "forensic" };
     case "importBranches":
       return { importIncludeBranches: value as "current-only" | "all-leaves" };
+    case "importToolResults":
+      return { importToolResults: value as "errors-only" | "summary" | "content" };
+    case "importToolSummaryMaxChars":
+      return { importToolResultSummaryMaxChars: Number(value) };
     case "importManifest":
       return { importManifestPath: value.trim() };
     case "importCheckpoint":
@@ -666,6 +693,8 @@ export function inputDefaultForConfigEditingField(
       return config.hindsight.baseUrl;
     case "queuePath":
       return config.retain.queuePath;
+    case "importToolSummaryMaxChars":
+      return String(config.import.toolResultSummaryMaxChars);
     case "importManifest":
       return config.import.manifestPath;
     case "importCheckpoint":

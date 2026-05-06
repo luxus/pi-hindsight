@@ -32,7 +32,7 @@ hindsight_import({ dryRun: true })
 hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
 ```
 
-Pi session preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise without replacing the raw structured source payload.
+Pi session preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise before writing the filtered structured source payload.
 
 Gateway preview output includes kept event count, retained user-turn count, dropped event count/type totals, malformed-line count, target user bank, content hash, and byte count.
 
@@ -123,7 +123,9 @@ Then rerun the import. Use `--dry-run` first.
 
 ## Import modes
 
-The default import mode is `curated`. It keeps deterministic raw historical documents as the retained source payload, then computes projection metrics using the live retain filter so previews show how much successful tool-output noise is likely irrelevant.
+The default import mode is `curated`. It writes deterministic filtered historical documents as retained source evidence and computes projection metrics using the live retain filter so previews show how much successful tool-output noise is likely irrelevant.
+
+Curated import defaults to `import.toolResults: "errors-only"`. Successful tool results are dropped unless you deliberately configure `summary` or `content`; even then, existing tool filters still exclude noisy tools such as `read`, `grep`, `find`, and `ls`. `import.toolResultSummaryMaxChars` bounds successful-tool summaries.
 
 Use `raw` when you want the previous branch-document behavior without curated drop metrics. Raw mode still filters Hindsight recall blocks to avoid re-retaining injected memory.
 

@@ -61,3 +61,11 @@ Gateway dry-runs report items such as:
 ## Checkpoints and manifests
 
 Historical import writes an Import Manifest and Import Checkpoint so work is inspectable, resumable, and idempotent. Curated document IDs include profile/projection/chunk information. Raw and forensic modes preserve legacy IDs.
+
+Curated import has a successful-tool-result policy:
+
+- `errors-only` (default): drop successful tool output and keep failed tool evidence.
+- `summary`: keep bounded summaries for allowed successful tools.
+- `content`: keep full content for allowed successful tools.
+
+Tool filters still apply in `summary` and `content`, so noisy tools remain excluded unless explicitly allowed.

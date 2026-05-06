@@ -39,6 +39,12 @@ describe("config editing model", () => {
     expect(fields.find((field) => field.id === "importBranches")?.editableScopes).toEqual([
       "project",
     ]);
+    expect(fields.find((field) => field.id === "importToolResults")?.editableScopes).toEqual([
+      "project",
+    ]);
+    expect(
+      fields.find((field) => field.id === "importToolSummaryMaxChars")?.editableScopes,
+    ).toEqual(["project"]);
     expect(fields.find((field) => field.id === "importManifest")?.editableScopes).toEqual([
       "project",
     ]);
@@ -79,12 +85,18 @@ describe("config editing model", () => {
     const fields = buildConfigEditingFields(DEFAULT_CONFIG, "bank", layers());
     const memoryProfile = fields.find((field) => field.id === "memoryProfile");
     const queuePath = fields.find((field) => field.id === "queuePath");
+    const importToolResults = fields.find((field) => field.id === "importToolResults");
 
     expect(memoryProfile).toMatchObject({
       kind: "select",
       choices: ["project-only", "project+global", "global-only"],
     });
     expect(queuePath).toMatchObject({ kind: "text" });
+    expect(importToolResults).toMatchObject({
+      kind: "select",
+      choices: ["errors-only", "summary", "content"],
+      value: "errors-only",
+    });
     expect(fields.find((field) => field.id === "projectRetainMission")).toBeUndefined();
     expect(fields.find((field) => field.id === "apiKeyDirect")).toMatchObject({
       kind: "text",
@@ -123,6 +135,12 @@ describe("config editing model", () => {
     expect(patchForConfigEditingField("recallMaxTokens", "1234", DEFAULT_CONFIG)).toEqual({
       recallMaxTokens: 1234,
     });
+    expect(patchForConfigEditingField("importToolResults", "summary", DEFAULT_CONFIG)).toEqual({
+      importToolResults: "summary",
+    });
+    expect(patchForConfigEditingField("importToolSummaryMaxChars", "250", DEFAULT_CONFIG)).toEqual({
+      importToolResultSummaryMaxChars: 250,
+    });
     expect(inputDefaultForConfigEditingField("apiKeyEnv", DEFAULT_CONFIG, "bank")).toBe(
       "HINDSIGHT_API_KEY",
     );
@@ -133,6 +151,9 @@ describe("config editing model", () => {
     expect(() =>
       parseConfigEditingFieldInput({ id: "recallMaxTokens", kind: "positive-int" }, "0"),
     ).toThrow("recallMaxTokens must be a positive integer");
+    expect(
+      inputDefaultForConfigEditingField("importToolSummaryMaxChars", DEFAULT_CONFIG, "bank"),
+    ).toBe("500");
   });
 
   it("hides advanced fields unless advanced mode is enabled", () => {

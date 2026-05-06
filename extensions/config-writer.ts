@@ -96,6 +96,8 @@ export interface ProjectConfigPatchInput {
   queuePath?: string;
   importMode?: "curated" | "raw" | "forensic";
   importIncludeBranches?: "current-only" | "all-leaves";
+  importToolResults?: "errors-only" | "summary" | "content";
+  importToolResultSummaryMaxChars?: number;
   importManifestPath?: string;
   importCheckpointPath?: string;
   importReplaceExistingDocs?: boolean;
@@ -214,6 +216,8 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   if (
     input.importMode ||
     input.importIncludeBranches ||
+    input.importToolResults ||
+    input.importToolResultSummaryMaxChars !== undefined ||
     input.importManifestPath ||
     input.importCheckpointPath ||
     input.importReplaceExistingDocs !== undefined ||
@@ -222,6 +226,10 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     patch.import = {
       ...(input.importMode ? { mode: input.importMode } : {}),
       ...(input.importIncludeBranches ? { includeBranches: input.importIncludeBranches } : {}),
+      ...(input.importToolResults ? { toolResults: input.importToolResults } : {}),
+      ...(input.importToolResultSummaryMaxChars !== undefined
+        ? { toolResultSummaryMaxChars: input.importToolResultSummaryMaxChars }
+        : {}),
       ...(input.importManifestPath ? { manifestPath: input.importManifestPath } : {}),
       ...(input.importCheckpointPath ? { checkpointPath: input.importCheckpointPath } : {}),
       ...(input.importReplaceExistingDocs !== undefined
