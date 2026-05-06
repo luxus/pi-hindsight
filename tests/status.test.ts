@@ -58,6 +58,41 @@ describe("formatHindsightStatus", () => {
     ).toBe("🧠 recalling");
   });
 
+  it("shows import activity labels without implying retain success", () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      status: {
+        style: "text" as const,
+        detail: "activity" as const,
+        maxLength: 40,
+        showActivity: true,
+      },
+    };
+    expect(
+      formatHindsightStatus(config, {
+        cwd: "/repo",
+        projectBankId: "bank",
+        activity: "importing",
+      }),
+    ).toBe("mem:importing");
+    expect(
+      formatHindsightStatus(config, {
+        cwd: "/repo",
+        projectBankId: "bank",
+        activity: "imported",
+        queueRemaining: 2,
+      }),
+    ).toBe("mem:imported+queued:2");
+    expect(
+      formatHindsightStatus(config, {
+        cwd: "/repo",
+        projectBankId: "bank",
+        activity: "import-queued",
+        queueRemaining: 3,
+      }),
+    ).toBe("mem:import-queued:3");
+  });
+
   it("uses connected and offline health labels", () => {
     const config = {
       ...DEFAULT_CONFIG,
@@ -76,7 +111,7 @@ describe("formatHindsightStatus", () => {
     ).toBe("🤯 offline");
   });
 
-  it("uses brain explosion for failed emoji status", () => {
+  it("uses error prefixes for failed emoji and nerdfont status", () => {
     const config = {
       ...DEFAULT_CONFIG,
       status: {
@@ -93,6 +128,23 @@ describe("formatHindsightStatus", () => {
         activity: "recall-failed",
       }),
     ).toBe("🤯 recall-failed");
+
+    const nerdfontConfig = {
+      ...DEFAULT_CONFIG,
+      status: {
+        style: "nerdfont" as const,
+        detail: "activity" as const,
+        maxLength: 40,
+        showActivity: true,
+      },
+    };
+    expect(
+      formatHindsightStatus(nerdfontConfig, {
+        cwd: "/repo",
+        projectBankId: "bank",
+        activity: "import-failed",
+      }),
+    ).toBe("󰧑 import-failed");
   });
 
   it("uses idle text instead of implying verified connectivity", () => {

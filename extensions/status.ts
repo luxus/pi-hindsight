@@ -12,7 +12,11 @@ export type HindsightActivity =
   | "retaining"
   | "retained"
   | "retain-queued"
-  | "retain-failed";
+  | "retain-failed"
+  | "importing"
+  | "imported"
+  | "import-queued"
+  | "import-failed";
 
 export interface HindsightStatusState {
   projectBankId: string;
@@ -62,6 +66,14 @@ export function formatHindsightActivity(
       return queueRemaining !== undefined ? `queued:${queueRemaining}` : "queued";
     case "retain-failed":
       return "retain-failed";
+    case "importing":
+      return "importing";
+    case "imported":
+      return queueRemaining ? `imported+queued:${queueRemaining}` : "imported";
+    case "import-queued":
+      return queueRemaining !== undefined ? `import-queued:${queueRemaining}` : "import-queued";
+    case "import-failed":
+      return "import-failed";
     default:
       return "idle";
   }
@@ -76,6 +88,8 @@ function prefix(style: StatusStyle, activity: HindsightActivity): string {
     if (activity.includes("failed") || activity === "offline") return "󰧑";
     if (activity === "recalling" || activity === "recalled") return "󰑓";
     if (activity === "retaining" || activity === "retained") return "󰆓";
+    if (activity === "importing" || activity === "imported" || activity === "import-queued")
+      return "󰋺";
     return "󰍛";
   }
   return "mem";
