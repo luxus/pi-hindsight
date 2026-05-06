@@ -260,7 +260,7 @@ npm run check:coverage
 npm run typecheck:tsc
 ```
 
-GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Runtime-sensitive paths, queue/import/memory-path changes, package/release changes, workflow changes, and `ci:full` run the full Ubuntu/macOS/Windows matrix. Package/release changes and `ci:package` also run package verification. Manual `workflow_dispatch` can run the full matrix for any PR.
+GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Memory-path changes run live smoke when configured. The full Ubuntu/macOS/Windows matrix is reserved for release PRs/release verification, manual workflow dispatch, non-PR events, or PRs explicitly labeled `ci:full`. Package/release changes and `ci:package` also run package verification.
 
 If release or package dependencies changed, also run:
 

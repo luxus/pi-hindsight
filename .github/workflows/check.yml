@@ -46,6 +46,8 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           FULL_INPUT: ${{ inputs.full || 'true' }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
           set -euo pipefail
 
@@ -56,6 +58,10 @@ jobs:
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$FULL_INPUT" = "false" ]; then
             :
           elif [ "$EVENT_NAME" != "pull_request" ]; then
+            coverage=true
+            full_matrix=true
+            package_check=true
+          elif [ "$PR_AUTHOR" = "github-actions[bot]" ] && [[ "$PR_TITLE" == chore*": release"* ]]; then
             coverage=true
             full_matrix=true
             package_check=true
@@ -74,11 +80,6 @@ jobs:
               case "$path" in
                 extensions/*|tests/*|scripts/*|package.json|package-lock.json|tsconfig.json|vitest.config.ts|.release-please-config.json|.release-please-manifest.json)
                   coverage=true
-                  ;;
-              esac
-              case "$path" in
-                extensions/client*|extensions/queue*|extensions/retain*|extensions/import*|extensions/memory-lifecycle*|extensions/memory-*operations.ts|extensions/bank*|extensions/config*|extensions/commands.ts|extensions/tools.ts|extensions/index.ts|scripts/smoke-*|scripts/verify-release.mjs|scripts/install-smoke.mjs|package.json|package-lock.json|.release-please-config.json|.release-please-manifest.json|.github/workflows/*)
-                  full_matrix=true
                   ;;
               esac
               case "$path" in

@@ -208,7 +208,7 @@ After the MVP hardening pass and global review loop, a second small-PR hardening
 
 Completed outcomes:
 
-- Cross-platform CI now runs normal checks on Ubuntu, macOS, and Windows.
+- Cross-platform CI remains available through release verification, manual dispatch, and `ci:full`; normal PR checks prioritize Ubuntu plus targeted gates.
 - Dependency review, Dependabot, npm audit signatures, trusted publishing, and GitHub default CodeQL cover the supply-chain/release path.
 - The release workflow publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC and no npm token in the workflow.
 - Live smoke covers the official Hindsight client, extension Adapter, memory operations service, import flow, GitHub step summary output, and successful temporary-bank cleanup.

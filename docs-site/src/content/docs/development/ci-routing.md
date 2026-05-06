@@ -14,7 +14,9 @@ Source, tests, critical paths, or explicit `ci:coverage` work runs coverage and 
 
 ## Full matrix
 
-Runtime-sensitive paths, queue/import/memory-path changes, package/release changes, workflow changes, and `ci:full` run the full Ubuntu/macOS/Windows matrix.
+Normal pull requests do not run macOS/Windows matrix lanes by default. Runtime-sensitive paths, queue/import/memory-path changes, and source/test changes use Ubuntu fast checks plus coverage/compiler fallback and live smoke when applicable.
+
+Run the full Ubuntu/macOS/Windows matrix for release PRs/release verification, manual `workflow_dispatch`, non-PR events, or PRs explicitly labeled `ci:full`.
 
 ## Package verification
 

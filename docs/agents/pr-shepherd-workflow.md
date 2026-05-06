@@ -6,6 +6,7 @@ Use the `pr-shepherd` project subagent when a PR needs end-to-end CI, Codex, and
 
 - **Parent/orchestrator** selects the issue slice, decides whether parallel work is safe, creates or names the worktree, and launches the shepherd.
 - **PR shepherd** owns exactly one branch and one PR from the supplied worktree.
+- **Reviewer** is the project agent defined at `.pi/agents/reviewer.md`; the shepherd launches it for non-trivial diffs before PR creation or final push.
 - **Codex** remains a required review signal before merge.
 
 ## Worktree layout
@@ -42,12 +43,14 @@ The shepherd must:
 1. Confirm issue, branch, base, and cwd before editing.
 2. Keep the slice focused and issue-linked.
 3. Run targeted checks and `npm run check` before committing.
-4. Commit with a Conventional Commit subject without bypassing hooks.
-5. Open or update a PR with the full template completed.
-6. Watch CI and request Codex review when needed.
-7. Fix CI or Codex findings, comment with verification, and resolve fixed review threads.
-8. Merge only after required checks pass and Codex has commented, reviewed, or clearly approved.
-9. Report merge result, verification, and follow-up issues to the parent.
+4. Launch a `reviewer` subagent for non-trivial diffs before PR creation or final push, then fix accepted findings.
+5. Commit with a Conventional Commit subject without bypassing hooks.
+6. Open or update a PR with the full template completed.
+7. Watch CI and request Codex review when needed.
+8. Stay alive while the PR is open and merely waiting for CI, Codex, or review. Waiting is not completion.
+9. Fix CI or Codex findings, comment with verification, and resolve fixed review threads.
+10. Merge only after required checks pass and Codex has commented, reviewed, or clearly approved.
+11. Report merge result, verification, and follow-up issues to the parent.
 
 ## Parent responsibilities
 
@@ -68,6 +71,17 @@ git worktree prune
 ## Parallel work rule
 
 Parallel next-slice work is safe when it touches separate files or is documentation-only. If the next slice changes the same modules or depends on the PR under review, wait for merge or deliberately stack the new branch on the shepherd branch and rebase after merge.
+
+## Terminal states
+
+The shepherd may finish only when one of these is true:
+
+- The PR is merged and completion was reported to the parent.
+- The parent explicitly closed or cancelled the PR.
+- A blocker requires a parent decision.
+- An unrecoverable authentication or infrastructure issue remains after one retry.
+
+Waiting for CI, Codex, or review is not a terminal state.
 
 ## Stop conditions
 

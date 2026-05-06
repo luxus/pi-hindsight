@@ -128,7 +128,7 @@ npm run check:coverage
 npm run typecheck:tsc
 ```
 
-GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Runtime-sensitive paths, queue/import/memory-path changes, package/release changes, workflow changes, and `ci:full` run the full Ubuntu/macOS/Windows matrix. Package/release changes and `ci:package` also run package verification. Manual `workflow_dispatch` can run the full matrix for any PR.
+GitHub PR CI is tiered. Low-impact docs/TUI changes run the fast Ubuntu check by default. Source, tests, critical paths, and `ci:coverage` run coverage and the TypeScript compiler fallback. Memory-path changes run live smoke when configured. The full Ubuntu/macOS/Windows matrix is reserved for release PRs/release verification, manual workflow dispatch, non-PR events, or PRs explicitly labeled `ci:full`. Package/release changes and `ci:package` also run package verification.
 
 For release-path or packaging changes, also run:
 
@@ -194,7 +194,7 @@ Before opening or marking a PR ready:
 - [ ] I ran `npm run check`.
 - [ ] I ran `npm run check:coverage` when touching source, tests, or critical paths.
 - [ ] I ran `npm run typecheck:tsc` when touching source or critical paths.
-- [ ] I requested or confirmed full matrix when touching runtime-sensitive paths, queue/import/memory paths, package/release code, workflows, or platform-sensitive behavior.
+- [ ] I requested or confirmed full matrix when preparing release verification, using `ci:full`, or changing platform-sensitive behavior that needs macOS/Windows proof.
 - [ ] I ran `npm run audit:signatures` when touching release/package dependencies.
 - [ ] I ran `npm run smoke:hindsight` or confirmed a configured `Hindsight Integration` pass when memory-path behavior changed; if unavailable, I documented the limitation.
 
