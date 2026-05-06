@@ -80,6 +80,7 @@ export function reflectRequestBody(
     responseSchema?: unknown;
     tags?: string[];
     tagsMatch?: string;
+    tagGroups?: unknown[];
   } = {},
 ): Record<string, unknown> {
   return {
@@ -87,8 +88,9 @@ export function reflectRequestBody(
     ...(options.context ? { context: options.context } : {}),
     budget: options.budget ?? "low",
     ...(options.responseSchema ? { response_schema: options.responseSchema } : {}),
-    ...(options.tags ? { tags: options.tags } : {}),
-    ...(options.tagsMatch ? { tags_match: options.tagsMatch } : {}),
+    ...(options.tagGroups ? { tag_groups: options.tagGroups } : {}),
+    ...(options.tagGroups ? {} : options.tags ? { tags: options.tags } : {}),
+    ...(options.tagGroups ? {} : options.tagsMatch ? { tags_match: options.tagsMatch } : {}),
   };
 }
 

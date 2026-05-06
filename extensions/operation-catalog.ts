@@ -28,6 +28,52 @@ import {
 
 export type ToolOperation = Parameters<ExtensionAPI["registerTool"]>[0];
 
+const tagMatchSchema = Type.Union([
+  Type.Literal("any"),
+  Type.Literal("all"),
+  Type.Literal("any_strict"),
+  Type.Literal("all_strict"),
+]);
+
+const tagGroupJsonSchema = {
+  $id: "HindsightTagGroup",
+  anyOf: [
+    {
+      type: "object",
+      required: ["tags"],
+      properties: {
+        tags: { type: "array", items: { type: "string" } },
+        match: { enum: ["any", "all", "any_strict", "all_strict"] },
+      },
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      required: ["and"],
+      properties: { and: { type: "array", items: { $ref: "HindsightTagGroup" } } },
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      required: ["or"],
+      properties: { or: { type: "array", items: { $ref: "HindsightTagGroup" } } },
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      required: ["not"],
+      properties: { not: { $ref: "HindsightTagGroup" } },
+      additionalProperties: false,
+    },
+  ],
+};
+
+const tagGroupSchema = Type.Unsafe<import("./types.js").HindsightTagGroup>(tagGroupJsonSchema);
+
+function tagGroupsSchema(description: string) {
+  return Type.Optional(Type.Array(tagGroupSchema, { description }));
+}
+
 function defineCatalogTool<TParams extends ToolDefinition["parameters"], TDetails = unknown>(
   tool: ToolDefinition<TParams, TDetails>,
 ): ToolOperation {
@@ -60,8 +106,13 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         queryTimestamp: Type.Optional(
           Type.String({ description: "Optional ISO timestamp for time-scoped recall." }),
         ),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Additional tag filter." })),
+        tagsMatch: Type.Optional(tagMatchSchema),
+        tagGroups: tagGroupsSchema(
+          "Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.",
+        ),
       }),
-      async execute(_id, params, _signal, _onUpdate, ctx) {
+      async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         const sessionFile = ctx.sessionManager.getSessionFile?.();
         const { bankId, result } = await operations.recall(
@@ -69,7 +120,15 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           params.query,
           params.bank,
           sessionFile,
-          params.queryTimestamp,
+          {
+            ...(params.queryTimestamp ? { queryTimestamp: params.queryTimestamp } : {}),
+            ...(params.tags ? { tags: params.tags } : {}),
+            ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
+            ...(params.tagGroups
+              ? { tagGroups: params.tagGroups as import("./types.js").HindsightTagGroup[] }
+              : {}),
+            ...(signal ? { signal } : {}),
+          },
         );
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -99,7 +158,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           ),
         ),
       }),
-      async execute(_id, params, _signal, _onUpdate, ctx) {
+      async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         const sessionFile = ctx.sessionManager.getSessionFile?.();
         const result = await operations.retainExplicit({
@@ -512,8 +571,13 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         context: Type.Optional(Type.String()),
         bank: Type.Optional(Type.String()),
         responseSchema: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Additional tag filter." })),
+        tagsMatch: Type.Optional(tagMatchSchema),
+        tagGroups: tagGroupsSchema(
+          "Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.",
+        ),
       }),
-      async execute(_id, params, _signal, _onUpdate, ctx) {
+      async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         const { bankId, result } = await operations.reflect(
           ctx.cwd,
@@ -521,6 +585,14 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           params.context,
           params.bank,
           params.responseSchema,
+          {
+            ...(params.tags ? { tags: params.tags } : {}),
+            ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
+            ...(params.tagGroups
+              ? { tagGroups: params.tagGroups as import("./types.js").HindsightTagGroup[] }
+              : {}),
+            ...(signal ? { signal } : {}),
+          },
         );
         return {
           content: [

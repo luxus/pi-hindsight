@@ -219,8 +219,10 @@ describe("Hindsight client adapter integration", () => {
       observationScopes: [["repo:abc"], ["bank:test-bank"]],
     });
     const recall = await client.recall("test-bank", "query", {
-      tags: ["source:pi"],
-      tagsMatch: "any_strict",
+      tagGroups: [
+        { tags: ["source:pi"], match: "any_strict" },
+        { or: [{ tags: ["kind:decision"], match: "any_strict" }] },
+      ],
       maxTokens: 123,
       budget: "low",
       queryTimestamp: "2024-01-01T00:00:00Z",
@@ -228,6 +230,7 @@ describe("Hindsight client adapter integration", () => {
     const reflection = await client.reflect("test-bank", "query", {
       budget: "low",
       responseSchema: { type: "object", properties: { answer: { type: "string" } } },
+      tagGroups: [{ tags: ["source:pi"], match: "any_strict" }],
     });
     const templateDryRun = await client.importBankTemplate?.(
       "test-bank",
@@ -384,13 +387,16 @@ describe("Hindsight client adapter integration", () => {
       max_tokens: 123,
       budget: "low",
       query_timestamp: "2024-01-01T00:00:00Z",
-      tags: ["source:pi"],
-      tags_match: "any_strict",
+      tag_groups: [
+        { tags: ["source:pi"], match: "any_strict" },
+        { or: [{ tags: ["kind:decision"], match: "any_strict" }] },
+      ],
     });
     expect(requests[5]?.body).toMatchObject({
       query: "query",
       budget: "low",
       response_schema: { type: "object", properties: { answer: { type: "string" } } },
+      tag_groups: [{ tags: ["source:pi"], match: "any_strict" }],
     });
     expect(requests[6]?.body).toEqual({
       version: "1",

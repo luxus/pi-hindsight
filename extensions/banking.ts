@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { basename, resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
+import { dirname } from "node:path";
+import { execFileSync } from "node:child_process";
 import type { BankSelection, ResolvedConfig } from "./types.js";
 
 function slug(value: string): string {
@@ -17,13 +19,47 @@ function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex").slice(0, 12);
 }
 
+function canonicalPath(path: string): string {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
 export function findRepoRoot(cwd: string): string {
+  const gitRoot = findMainGitWorktreeRoot(cwd);
+  if (gitRoot) return canonicalPath(gitRoot);
+
   let current = resolve(cwd);
   while (true) {
-    if (existsSync(`${current}/.git`)) return current;
+    if (existsSync(`${current}/.git`)) return canonicalPath(current);
     const parent = resolve(current, "..");
-    if (parent === current) return resolve(cwd);
+    if (parent === current) return canonicalPath(cwd);
     current = parent;
+  }
+}
+
+function findMainGitWorktreeRoot(cwd: string): string | undefined {
+  try {
+    const git = (args: string[]) =>
+      execFileSync("git", ["rev-parse", "--path-format=absolute", ...args], {
+        cwd,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: 1000,
+      }).trim();
+
+    const commonDir = git(["--git-common-dir"]);
+    if (!commonDir) return undefined;
+    const gitDir = git(["--git-dir"]);
+
+    if (commonDir !== gitDir && basename(commonDir) === ".git") return dirname(commonDir);
+
+    const topLevel = git(["--show-toplevel"]);
+    return topLevel || (basename(commonDir) === ".git" ? dirname(commonDir) : commonDir);
+  } catch {
+    return undefined;
   }
 }
 

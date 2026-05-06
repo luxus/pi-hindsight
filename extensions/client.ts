@@ -53,7 +53,8 @@ async function reflect(
   },
   signal: AbortSignal,
 ): Promise<unknown> {
-  if (!args.options?.responseSchema) return args.raw.reflect(args.bankId, args.query, args.options);
+  if (!args.options?.responseSchema)
+    return args.raw.reflect(args.bankId, args.query, { ...args.options, signal });
   const response = await args.rest.request(encodeBankPath(args.bankId, "/reflect"), {
     method: "POST",
     signal,
@@ -72,24 +73,54 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
   const timeoutMs = config.hindsight.timeoutMs;
   return {
     retain: (bankId, content, options) =>
-      withTimeout("hindsight retain", timeoutMs, () =>
-        raw.retainBatch(
-          bankId,
-          [retainBatchItem(content, options)],
-          options?.async !== undefined ? { async: options.async } : {},
-        ),
+      withTimeout(
+        "hindsight retain",
+        timeoutMs,
+        (signal) =>
+          raw.retainBatch(
+            bankId,
+            [retainBatchItem(content, options)],
+            options?.async !== undefined ? { async: options.async, signal } : { signal },
+          ),
+        options?.signal,
       ),
     retainBatch: (...args) =>
-      withTimeout("hindsight retainBatch", timeoutMs, () => raw.retainBatch(...args)),
-    recall: (...args) => withTimeout("hindsight recall", timeoutMs, () => raw.recall(...args)),
+      withTimeout(
+        "hindsight retainBatch",
+        timeoutMs,
+        (signal) => {
+          const [bankId, items, options] = args;
+          return raw.retainBatch(bankId, items, { ...options, signal });
+        },
+        args[2]?.signal,
+      ),
+    recall: (...args) => {
+      const [bankId, query, options] = args;
+      return withTimeout(
+        "hindsight recall",
+        timeoutMs,
+        (signal) => {
+          return raw.recall(bankId, query, { ...options, signal });
+        },
+        options?.signal,
+      );
+    },
     reflect: (bankId, query, options) =>
-      withTimeout("hindsight reflect", timeoutMs, (signal) =>
-        reflect({ raw, rest, bankId, query, options }, signal),
+      withTimeout(
+        "hindsight reflect",
+        timeoutMs,
+        (signal) => reflect({ raw, rest, bankId, query, options }, signal),
+        options?.signal,
       ),
     createBank: (...args) =>
-      withTimeout("hindsight createBank", timeoutMs, () => raw.createBank(...args)),
+      withTimeout("hindsight createBank", timeoutMs, (signal) => {
+        const [bankId, options] = args;
+        return raw.createBank(bankId, { ...options, signal });
+      }),
     getBankProfile: (...args) =>
-      withTimeout("hindsight getBankProfile", timeoutMs, () => raw.getBankProfile(...args)),
+      withTimeout("hindsight getBankProfile", timeoutMs, (signal) =>
+        raw.getBankProfile(args[0], { signal }),
+      ),
     getBankStats: (bankId) =>
       withTimeout("hindsight getBankStats", timeoutMs, (signal) =>
         rest.request(encodeBankPath(bankId, "/stats"), { signal }),

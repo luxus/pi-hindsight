@@ -15,7 +15,7 @@ A **Project Bank** is selected for the current repository. It stores repository-
 - import history
 - repo-local preferences
 
-Project recall is scoped with repository tags so unrelated project memories do not leak in.
+Project recall is scoped with repository tags so unrelated project memories do not leak in. In Git worktrees, Pi Hindsight resolves the main Git worktree root so linked worktrees of the same repository share the same Project Bank.
 
 ## Global Bank / User Bank
 

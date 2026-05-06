@@ -8,11 +8,14 @@ This reference is generated from the operation catalog and config editing regist
 
 Recall raw memories from Hindsight for this project.
 
-| Parameter        | Type   | Required | Description                                    |
-| ---------------- | ------ | -------- | ---------------------------------------------- |
-| `query`          | string | yes      | Natural language memory query                  |
-| `bank`           | string | no       | Optional bank id. Defaults to project bank.    |
-| `queryTimestamp` | string | no       | Optional ISO timestamp for time-scoped recall. |
+| Parameter        | Type                                        | Required | Description                                                                                   |
+| ---------------- | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `query`          | string                                      | yes      | Natural language memory query                                                                 |
+| `bank`           | string                                      | no       | Optional bank id. Defaults to project bank.                                                   |
+| `queryTimestamp` | string                                      | no       | Optional ISO timestamp for time-scoped recall.                                                |
+| `tags`           | array<string>                               | no       | Additional tag filter.                                                                        |
+| `tagsMatch`      | string \| string \| string \| string        | no       |                                                                                               |
+| `tagGroups`      | array<object \| object \| object \| object> | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter. |
 
 ### `hindsight_retain`
 
@@ -192,12 +195,15 @@ Import a gateway/chat transcript JSONL file into the configured user memory bank
 
 Ask Hindsight to synthesize an answer from memory. Use explicitly, not for default recall.
 
-| Parameter        | Type   | Required | Description |
-| ---------------- | ------ | -------- | ----------- |
-| `query`          | string | yes      |             |
-| `context`        | string | no       |             |
-| `bank`           | string | no       |             |
-| `responseSchema` | object | no       |             |
+| Parameter        | Type                                        | Required | Description                                                                                   |
+| ---------------- | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `query`          | string                                      | yes      |                                                                                               |
+| `context`        | string                                      | no       |                                                                                               |
+| `bank`           | string                                      | no       |                                                                                               |
+| `responseSchema` | object                                      | no       |                                                                                               |
+| `tags`           | array<string>                               | no       | Additional tag filter.                                                                        |
+| `tagsMatch`      | string \| string \| string \| string        | no       |                                                                                               |
+| `tagGroups`      | array<object \| object \| object \| object> | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter. |
 
 ## Commands
 

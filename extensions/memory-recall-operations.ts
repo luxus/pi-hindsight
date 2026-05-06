@@ -4,7 +4,15 @@ import { resolveOperationBank } from "./bank-selection.js";
 import { readLastRecallSnapshot, resolveLastRecallPath } from "./recall-visibility.js";
 import { pruneTranscriptRecallBlocks, scanTranscriptForRecallBlocks } from "./recall-cleanup.js";
 import { getEffectiveSessionMemoryMode, readSessionMemoryMeta } from "./session-memory-meta.js";
-import type { ResolvedConfig } from "./types.js";
+import type { HindsightTagGroup, ResolvedConfig, TagsMatch } from "./types.js";
+
+interface ExplicitRecallFilters {
+  queryTimestamp?: string;
+  tags?: string[];
+  tagsMatch?: TagsMatch;
+  tagGroups?: HindsightTagGroup[];
+  signal?: AbortSignal;
+}
 
 function recallTagsForBank(
   cwd: string,
@@ -17,6 +25,23 @@ function recallTagsForBank(
     : recallScopeTags(cwd);
 }
 
+function scopedTagFilterOptions(scopeTags: string[], filters: ExplicitRecallFilters = {}) {
+  const scopeGroup = { tags: scopeTags, match: "any_strict" } satisfies HindsightTagGroup;
+  const callerGroups = filters.tagGroups ?? [];
+  if (callerGroups.length || filters.tags?.length) {
+    const flatTagGroup = filters.tags?.length
+      ? [
+          {
+            tags: filters.tags,
+            match: filters.tagsMatch ?? "any_strict",
+          } satisfies HindsightTagGroup,
+        ]
+      : [];
+    return { tagGroups: [scopeGroup, ...flatTagGroup, ...callerGroups] };
+  }
+  return { tags: scopeTags, tagsMatch: "any_strict" as const };
+}
+
 export function createRecallOperations(deps: MemoryOperationsDeps) {
   return {
     async recall(
@@ -24,7 +49,7 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
       query: string,
       bank?: string,
       sessionFile?: string,
-      queryTimestamp?: string,
+      filters: ExplicitRecallFilters = {},
     ) {
       const meta = await readSessionMemoryMeta(cwd, sessionFile);
       if (!getEffectiveSessionMemoryMode(meta).recall)
@@ -35,14 +60,15 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         config,
         projectBankId: deps.getProjectBankId(),
       });
+      const scopeTags = recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId);
       const result = await deps.getClient().recall(bankId, query, {
         budget: config.recall.budget,
         maxTokens: config.recall.maxTokens,
-        ...(queryTimestamp || config.recall.queryTimestamp
-          ? { queryTimestamp: queryTimestamp ?? config.recall.queryTimestamp }
+        ...(filters.queryTimestamp || config.recall.queryTimestamp
+          ? { queryTimestamp: filters.queryTimestamp ?? config.recall.queryTimestamp }
           : {}),
-        tags: recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId),
-        tagsMatch: "any_strict",
+        ...scopedTagFilterOptions(scopeTags, filters),
+        ...(filters.signal ? { signal: filters.signal } : {}),
       });
       return { bankId, result };
     },
@@ -53,6 +79,7 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
       context?: string,
       bank?: string,
       responseSchema?: Record<string, unknown>,
+      filters: Omit<ExplicitRecallFilters, "queryTimestamp"> = {},
     ) {
       const config = deps.getConfig();
       const bankId = resolveOperationBank({
@@ -60,12 +87,13 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         config,
         projectBankId: deps.getProjectBankId(),
       });
+      const scopeTags = recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId);
       const result = await deps.getClient().reflect(bankId, query, {
         ...(context ? { context } : {}),
         budget: config.recall.budget,
         ...(responseSchema ? { responseSchema } : {}),
-        tags: recallTagsForBank(cwd, config, deps.getProjectBankId(), bankId),
-        tagsMatch: "any_strict",
+        ...scopedTagFilterOptions(scopeTags, filters),
+        ...(filters.signal ? { signal: filters.signal } : {}),
       });
       return { bankId, result };
     },

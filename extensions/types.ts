@@ -1,3 +1,9 @@
+import type {
+  TagGroupAndInput,
+  TagGroupLeaf,
+  TagGroupNotInput,
+  TagGroupOrInput,
+} from "@vectorize-io/hindsight-client";
 import type { BankTemplateManifest } from "./bank-template-catalog.js";
 
 export type Budget = "low" | "mid" | "high";
@@ -6,6 +12,11 @@ export type RetainUserContent = "text";
 export type RetainAssistantContent = "text" | "toolCall" | "thinking";
 export type RetainToolResultContent = "error" | "summary" | "content";
 export type TagsMatch = "any" | "all" | "any_strict" | "all_strict";
+export type HindsightTagGroup =
+  | TagGroupLeaf
+  | TagGroupAndInput
+  | TagGroupOrInput
+  | TagGroupNotInput;
 export type MentalModelDetail = "metadata" | "content" | "full";
 export type MentalModelTagsMatch = "any" | "all" | "exact";
 export type StatusStyle = "off" | "text" | "emoji" | "nerdfont";
@@ -262,6 +273,7 @@ export interface HindsightLikeClient {
       tags?: string[];
       updateMode?: UpdateMode;
       observationScopes?: string[][];
+      signal?: AbortSignal;
     },
   ): Promise<unknown>;
   retainBatch?(
@@ -277,7 +289,12 @@ export interface HindsightLikeClient {
       observation_scopes?: string[][];
       update_mode?: UpdateMode;
     }>,
-    options?: { documentId?: string; documentTags?: string[]; async?: boolean },
+    options?: {
+      documentId?: string;
+      documentTags?: string[];
+      async?: boolean;
+      signal?: AbortSignal;
+    },
   ): Promise<unknown>;
   recall(
     bankId: string,
@@ -289,6 +306,8 @@ export interface HindsightLikeClient {
       queryTimestamp?: string;
       tags?: string[];
       tagsMatch?: TagsMatch;
+      tagGroups?: HindsightTagGroup[];
+      signal?: AbortSignal;
     },
   ): Promise<unknown>;
   reflect(
@@ -300,6 +319,8 @@ export interface HindsightLikeClient {
       responseSchema?: Record<string, unknown>;
       tags?: string[];
       tagsMatch?: TagsMatch;
+      tagGroups?: HindsightTagGroup[];
+      signal?: AbortSignal;
     },
   ): Promise<unknown>;
   createBank?(

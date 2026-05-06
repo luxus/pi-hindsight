@@ -103,17 +103,30 @@ describe("memory operations", () => {
     });
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ops-"));
 
-    await operations.recall(cwd, "query", undefined, undefined, "2024-02-01T00:00:00Z");
+    await operations.recall(cwd, "query", undefined, undefined, {
+      queryTimestamp: "2024-02-01T00:00:00Z",
+    });
     await operations.retainExplicit({
       cwd,
       content: "content",
       context: "context",
       entities: [{ text: "Alice", type: "person" }],
     });
-    await operations.reflect(cwd, "query", undefined, undefined, {
-      type: "object",
-      properties: { answer: { type: "string" } },
-    });
+    await operations.reflect(
+      cwd,
+      "query",
+      undefined,
+      undefined,
+      {
+        type: "object",
+        properties: { answer: { type: "string" } },
+      },
+      {
+        tags: ["topic:hindsight"],
+        tagsMatch: "all_strict",
+        tagGroups: [{ tags: ["kind:decision"], match: "any_strict" }],
+      },
+    );
 
     expect(calls.find((call) => call.method === "recall")?.options).toMatchObject({
       queryTimestamp: "2024-02-01T00:00:00Z",
@@ -123,6 +136,11 @@ describe("memory operations", () => {
     });
     expect(calls.find((call) => call.method === "reflect")?.options).toMatchObject({
       responseSchema: { type: "object", properties: { answer: { type: "string" } } },
+      tagGroups: [
+        { tags: [expect.stringMatching(/^repo:/)], match: "any_strict" },
+        { tags: ["topic:hindsight"], match: "all_strict" },
+        { tags: ["kind:decision"], match: "any_strict" },
+      ],
     });
   });
 
