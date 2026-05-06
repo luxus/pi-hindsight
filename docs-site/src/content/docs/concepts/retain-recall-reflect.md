@@ -32,6 +32,8 @@ Automatic recall runs in Pi's `context` hook. It injects an ephemeral Recall Blo
 
 Recall returns candidates, not final answers.
 
+Before rendering, Pi Hindsight drops blank memories, duplicate memory text, and prior Hindsight recall artifacts. This keeps Recall Blocks useful and prevents recall contamination from re-entering provider context.
+
 ## Reflect
 
 **Reflect** asks Hindsight to reason over stored memory for a specific question.

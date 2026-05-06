@@ -13,6 +13,7 @@ import { projectMessageText } from "./messages.js";
 import { createMemoryIdentity } from "./memory-identity.js";
 import { redactError } from "./sanitize.js";
 import { withTimeout } from "./timeout.js";
+import { filterRecallQuality } from "./recall-quality-policy.js";
 
 export interface RecallScope {
   kind?: "project" | "global";
@@ -176,7 +177,7 @@ export async function recallForContext(args: {
           ...(scope.tagsMatch ? { tagsMatch: scope.tagsMatch } : {}),
         }),
       );
-      const results = textFromRecallResponse(response);
+      const results = filterRecallQuality(textFromRecallResponse(response)).items;
       blocks.push({
         bankId: scope.bankId,
         query,
