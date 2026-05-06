@@ -100,6 +100,26 @@ A configured scope passed with retain jobs so Hindsight observations are isolate
 
 The historical session ingestion path. Import parses Pi JSONL sessions, selects branches, builds deterministic import documents, queues retain jobs, records checkpoints/manifests, and can run as a dry-run preview before writing.
 
+### Durable Signal
+
+Raw source evidence worth keeping in memory because it records a fact, decision, task, bug, error, verification result, issue/PR/commit reference, blocker, follow-up, or project workflow outcome.
+
+### Import Noise
+
+Transcript material that should not become durable source truth by default, such as streaming UI records, process/status chatter, repeated successful command output, large file reads, and other replay artifacts.
+
+### Tool Evidence
+
+Tool output that carries memory value. Failed tool results are usually durable evidence when kept concise. Large successful tool output is usually import noise unless a strict policy explicitly keeps a small low-noise summary.
+
+### Workflow Signal
+
+Durable Signal about project execution: selected issues, branches, PRs, commits, review decisions, CI and smoke verification, release gates, blockers, and follow-up work.
+
+### Recall Contamination
+
+Persisting a Recall Block, Last-Recall Snapshot, or other previously injected memory back into Hindsight as if it were new source evidence. Recall contamination must be prevented in live retain and historical import.
+
 ### Import Manifest
 
 The durable record of historical import work that has been planned or completed. It makes imports inspectable, resumable, and idempotent across repeated runs.

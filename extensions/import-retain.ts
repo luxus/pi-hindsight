@@ -4,11 +4,16 @@ import { baseTags } from "./banking.js";
 import { redactSecrets } from "./sanitize.js";
 import { hashImportContent, type ImportManifestEntry } from "./import-manifest.js";
 import { createMemoryIdentity } from "./memory-identity.js";
-import { isInjectedHindsightMemory, projectMessages } from "./messages.js";
+import { isInjectedHindsightMemory } from "./messages.js";
 import { expandObservationScopes } from "./observation-scopes.js";
 import type { ImportBranch } from "./import-branches.js";
 import type { ParsedSession } from "./import-parser.js";
 import { deliverImportRetain } from "./import-delivery.js";
+import {
+  buildCuratedImportProjection,
+  importByteLength,
+  stableProjectionMessage,
+} from "./import-curation-policy.js";
 
 export interface ImportRetainArgs {
   sessionFile: string;
@@ -35,6 +40,7 @@ export interface ImportDocumentPreview {
   topDroppedTools?: Array<{ name: string; count: number; bytes: number }>;
   keptToolErrorCount?: number;
   keptToolErrorBytes?: number;
+  classificationReasonCounts?: Record<string, number>;
   estimatedDocumentCount?: number;
   estimatedChunkCount?: number;
   importMode?: ResolvedConfig["import"]["mode"];
@@ -81,92 +87,6 @@ function resolvedParentSessionId(parsed: ParsedSession, cwd: string): string | u
     parsed.parentSessionId ??
     (parsed.parentSessionFile ? stableSessionId(parsed.parentSessionFile, cwd) : undefined)
   );
-}
-
-function byteLength(value: unknown): number {
-  return Buffer.byteLength(JSON.stringify(value), "utf8");
-}
-
-function toolName(message: Record<string, unknown>): string {
-  const name = message.name ?? message.toolName ?? message.tool;
-  return typeof name === "string" && name.trim() ? name : "unknown";
-}
-
-function stableProjectionMessage(message: Record<string, unknown>): Record<string, unknown> {
-  const timestamp = message.timestamp;
-  const parsedTimestamp = typeof timestamp === "string" ? Date.parse(timestamp) : undefined;
-  return {
-    ...message,
-    timestamp:
-      typeof timestamp === "number"
-        ? timestamp
-        : typeof parsedTimestamp === "number" && Number.isFinite(parsedTimestamp)
-          ? parsedTimestamp
-          : 0,
-  };
-}
-
-function buildCuratedImportProjection(
-  messages: Array<{ data: Record<string, unknown> }>,
-  config: ResolvedConfig,
-): {
-  messages: Record<string, unknown>[];
-  rawBytes: number;
-  projectedBytes: number;
-  droppedToolResultCount: number;
-  droppedToolResultBytes: number;
-  topDroppedTools: Array<{ name: string; count: number; bytes: number }>;
-  keptToolErrorCount: number;
-  keptToolErrorBytes: number;
-  estimatedChunkCount: number;
-} {
-  const droppedTools = new Map<string, { count: number; bytes: number }>();
-  let keptToolErrorCount = 0;
-  let keptToolErrorBytes = 0;
-  const projected = messages.flatMap((message) => {
-    const stableMessage = stableProjectionMessage(message.data);
-    const projectedMessage = projectMessages([stableMessage as never], config);
-    if (
-      projectedMessage.length &&
-      stableMessage.role === "toolResult" &&
-      stableMessage.isError === true
-    ) {
-      keptToolErrorCount += 1;
-      keptToolErrorBytes += byteLength(stableMessage);
-    }
-    if (!projectedMessage.length && stableMessage.role === "toolResult") {
-      const name = toolName(stableMessage);
-      const bytes = byteLength(stableMessage);
-      const current = droppedTools.get(name) ?? { count: 0, bytes: 0 };
-      droppedTools.set(name, { count: current.count + 1, bytes: current.bytes + bytes });
-    }
-    return projectedMessage;
-  });
-  return {
-    messages: projected,
-    rawBytes: messages.reduce((total, message) => total + byteLength(message.data), 0),
-    projectedBytes: byteLength(projected),
-    droppedToolResultCount: [...droppedTools.values()].reduce(
-      (total, tool) => total + tool.count,
-      0,
-    ),
-    droppedToolResultBytes: [...droppedTools.values()].reduce(
-      (total, tool) => total + tool.bytes,
-      0,
-    ),
-    keptToolErrorCount,
-    keptToolErrorBytes,
-    estimatedChunkCount: Math.max(1, Math.ceil(byteLength(projected) / 8_000)),
-    topDroppedTools: [...droppedTools]
-      .map(([name, value]) => ({ name, ...value }))
-      .sort(
-        (left, right) =>
-          right.bytes - left.bytes ||
-          right.count - left.count ||
-          left.name.localeCompare(right.name),
-      )
-      .slice(0, 5),
-  };
 }
 
 const CURATED_PROJECTION_VERSION = "curated-turns-v1";
@@ -223,7 +143,8 @@ function chunkCuratedMessages(
     const wouldOverflowTurns = turnCount >= config.import.turnsPerDocument;
     const wouldOverflowBytes =
       chunk.length > 0 &&
-      byteLength(nextMessages.map((entry) => entry.message.data)) > config.import.maxDocumentBytes;
+      importByteLength(nextMessages.map((entry) => entry.message.data)) >
+        config.import.maxDocumentBytes;
     if (wouldOverflowTurns || wouldOverflowBytes) flush();
     chunk.push(...turn.messages);
     turnCount += 1;
@@ -284,8 +205,11 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
         ? buildCuratedImportProjection(chunkMessages, args.config)
         : {
             messages: chunkMessages.map((message) => stableProjectionMessage(message.data)),
-            rawBytes: chunkMessages.reduce((total, message) => total + byteLength(message.data), 0),
-            projectedBytes: byteLength(chunkMessages.map((message) => message.data)),
+            rawBytes: chunkMessages.reduce(
+              (total, message) => total + importByteLength(message.data),
+              0,
+            ),
+            projectedBytes: importByteLength(chunkMessages.map((message) => message.data)),
             droppedToolResultCount: 0,
             droppedToolResultBytes: 0,
             topDroppedTools: [],
@@ -296,10 +220,10 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
               .filter(
                 (message) => message.data.role === "toolResult" && message.data.isError === true,
               )
-              .reduce((total, message) => total + byteLength(message.data), 0),
+              .reduce((total, message) => total + importByteLength(message.data), 0),
             estimatedChunkCount: Math.max(
               1,
-              Math.ceil(byteLength(chunkMessages.map((message) => message.data)) / 8_000),
+              Math.ceil(importByteLength(chunkMessages.map((message) => message.data)) / 8_000),
             ),
           };
     const importProfile = mode === "curated" ? curatedImportProfile(args.config) : undefined;
@@ -331,7 +255,8 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
               : "raw-v1",
         ...(mode === "curated" ? { chunkIndex: chunk.index, messageRange } : {}),
         projectedMessageCount: projection.messages.length,
-        messages: chunkMessages.map((message) => message.data),
+        messages:
+          mode === "curated" ? projection.messages : chunkMessages.map((message) => message.data),
       },
       null,
       2,
@@ -359,6 +284,9 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
       topDroppedTools: projection.topDroppedTools,
       keptToolErrorCount: projection.keptToolErrorCount,
       keptToolErrorBytes: projection.keptToolErrorBytes,
+      ...("classificationReasonCounts" in projection
+        ? { classificationReasonCounts: projection.classificationReasonCounts }
+        : {}),
       estimatedDocumentCount: chunks.length,
       estimatedChunkCount: projection.estimatedChunkCount,
       importMode: mode,
