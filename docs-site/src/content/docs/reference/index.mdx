@@ -1,15 +1,36 @@
 ---
 title: Reference
+description: Exact config fields, tools, commands, hooks, import controls, generated surface output, and external API pointers.
 ---
 
-Reference pages contain exact tool names, command names, config fields, generated surface output, and schema-oriented material.
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Reference pages:
+Reference pages are for exact names and contracts. Use Guides when you want a workflow.
 
-- [Configuration reference](./configuration/)
-- [Tools and commands](./tools-and-commands/)
-- [Hooks reference](./hooks/)
-- [Import controls reference](./import-controls/)
-- [Generated surface reference](./surface-reference/)
-
-Generated or tool-derived pages are marked as such. Concept explanations live in [Concepts](../concepts/) and are linked from reference pages rather than repeated inconsistently.
+<CardGrid>
+  <Card title="Configuration" icon="setting">
+    Config file locations, precedence, environment variables, and bank derivation fields.
+    [Open](./configuration/)
+  </Card>
+  <Card title="Tools and commands" icon="puzzle">
+    Explicit memory tools, command shortcuts, and command intent groups.
+    [Open](./tools-and-commands/)
+  </Card>
+  <Card title="Hooks" icon="laptop">
+    Pi extension hook mapping for session start, context, agent end, and shutdown. [Open](./hooks/)
+  </Card>
+  <Card title="Memory modes" icon="open-book">
+    Exact behavior for normal, read-only, disabled, and next-turn opt-out modes.
+    [Open](./memory-modes/)
+  </Card>
+  <Card title="Bank templates" icon="document">
+    Bank template manifest import/export shape and safety rules. [Open](./bank-template-manifest/)
+  </Card>
+  <Card title="Hindsight API links" icon="external">
+    Official Hindsight docs and API references that remain the behavior source of truth.
+    [Open](./hindsight-api-links/)
+  </Card>
+  <Card title="Generated surface" icon="information">
+    Generated tools, commands, config fields, and diagnostics surface. [Open](./surface-reference/)
+  </Card>
+</CardGrid>

@@ -1,18 +1,39 @@
 ---
 title: Concepts
+description: Memory model, bank boundaries, Retain, Recall, Reflect, imports, queue durability, and safety invariants.
 ---
 
-Concept pages explain how Pi Hindsight uses Hindsight Memory Banks, Retain, Recall, Reflect, imports, session memory modes, and safety boundaries.
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Core concepts:
+Concept pages explain how Pi Hindsight uses Hindsight without repeating command or schema reference.
 
-- [Memory Banks](./memory-banks/)
-- [Retain, Recall, and Reflect](./retain-recall-reflect/)
-- [Document IDs and update modes](./document-ids-update-modes/)
-- [Retain Queue durability](./queue-durability/)
-- [Historical Import](./imports/)
+<CardGrid>
+  <Card title="Memory Banks" icon="laptop">
+    Project and Global/User Bank boundaries, scope isolation, and default bank policy.
+    [Read](./memory-banks/)
+  </Card>
+  <Card title="Retain, Recall, Reflect" icon="open-book">
+    The three Hindsight operations and how Pi Hindsight routes them.
+    [Read](./retain-recall-reflect/)
+  </Card>
+  <Card title="Document IDs" icon="document">
+    Stable live-session IDs, append mode, replace mode, and import idempotency.
+    [Read](./document-ids-update-modes/)
+  </Card>
+  <Card title="Queue durability" icon="refresh">
+    Queue-first retain, retry, malformed-line quarantine, and dead-letter behavior.
+    [Read](./queue-durability/)
+  </Card>
+  <Card title="Session memory modes" icon="setting">
+    Risk boundaries for read-only, opt-out, and deferred memory controls.
+    [Read](./session-memory-modes/)
+  </Card>
+  <Card title="Historical Import" icon="puzzle">
+    Import manifests, checkpoints, deterministic document IDs, and safe previews. [Read](./imports/)
+  </Card>
+</CardGrid>
 
-Additional concept references:
+Additional background:
 
 - [Memory behavior](./memory-behavior/)
 - [Hindsight core functions](./hindsight-core-functions/)

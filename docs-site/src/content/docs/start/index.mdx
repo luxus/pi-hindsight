@@ -1,12 +1,26 @@
 ---
 title: Start
+description: Install Pi Hindsight, connect a Hindsight server, choose a memory profile, and run first checks.
 ---
 
-Begin with [Getting started](./getting-started/) to install Pi Hindsight, choose a Hindsight server, run guided setup, and verify the first memory profile.
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
-First journey:
+Start pages get you from no memory to a verified Pi Hindsight setup with minimal conceptual load.
 
-- [Installation](./installation/)
-- [Setup TUI](./setup-tui/)
-- [Memory profiles](./memory-profiles/)
-- [Minimal configuration](./minimal-config/)
+<CardGrid>
+  <Card title="Getting started" icon="rocket">
+    The shortest path from install to verified project memory. [Start here](./getting-started/)
+  </Card>
+  <Card title="Installation" icon="download">
+    Install from GitHub or a local checkout and confirm runtime compatibility.
+    [Install](./installation/)
+  </Card>
+  <Card title="Guided setup" icon="setting">
+    Use `/hindsight` to configure the server, banks, profile, and queue state. [Open setup
+    guide](./setup-tui/)
+  </Card>
+  <Card title="Memory profiles" icon="laptop">
+    Pick project-only, project+global, or global-only memory scope. [Compare
+    profiles](./memory-profiles/)
+  </Card>
+</CardGrid>

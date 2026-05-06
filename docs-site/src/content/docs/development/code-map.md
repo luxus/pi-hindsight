@@ -25,7 +25,7 @@ Disable by removing this page from `astro.config.mjs` navigation and excluding `
 
 ## Extension entrypoint and lifecycle
 
-Related hand-authored docs: [Extension entrypoint and lifecycle](/architecture/lifecycle-and-scope/)
+Related hand-authored docs: [Extension entrypoint and lifecycle](/pi-hindsight/architecture/lifecycle-and-scope/)
 
 - `extensions/index.ts` — Registers Pi hooks, tools, commands, and setup surface.
 - `extensions/memory-lifecycle.ts` — Coordinates session start, context recall, agent-end retain, and shutdown.
@@ -35,7 +35,7 @@ Related hand-authored docs: [Extension entrypoint and lifecycle](/architecture/l
 
 ## Operation service and explicit surface
 
-Related hand-authored docs: [Operation service and explicit surface](/reference/tools-and-commands/)
+Related hand-authored docs: [Operation service and explicit surface](/pi-hindsight/reference/tools-and-commands/)
 
 - `extensions/memory-operation-service.ts` — Shared service used by tools, commands, setup, and maintenance intents.
 - `extensions/operation-catalog.ts` — Registry for command/tool operation metadata.
@@ -45,7 +45,7 @@ Related hand-authored docs: [Operation service and explicit surface](/reference/
 
 ## Identity, scope, and routing
 
-Related hand-authored docs: [Identity, scope, and routing](/concepts/memory-banks/)
+Related hand-authored docs: [Identity, scope, and routing](/pi-hindsight/concepts/memory-banks/)
 
 - `extensions/memory-identity.ts` — Derives stable repo/session/document identity.
 - `extensions/memory-scope.ts` — Selects project/global scopes and tags.
@@ -55,7 +55,7 @@ Related hand-authored docs: [Identity, scope, and routing](/concepts/memory-bank
 
 ## Retain Queue and durable delivery
 
-Related hand-authored docs: [Retain Queue and durable delivery](/concepts/queue-durability/)
+Related hand-authored docs: [Retain Queue and durable delivery](/pi-hindsight/concepts/queue-durability/)
 
 - `extensions/retain-queue.ts` — Queues retain jobs before delivery.
 - `extensions/queue.ts` — Queue record helpers and public queue operations.
@@ -67,7 +67,7 @@ Related hand-authored docs: [Retain Queue and durable delivery](/concepts/queue-
 
 ## Historical import
 
-Related hand-authored docs: [Historical import](/guides/importing-sessions/)
+Related hand-authored docs: [Historical import](/pi-hindsight/guides/importing-sessions/)
 
 - `extensions/import-sessions.ts` — Imports Pi session JSONL history.
 - `extensions/import-gateway-transcript.ts` — Imports gateway/chat transcript JSONL.
@@ -80,7 +80,7 @@ Related hand-authored docs: [Historical import](/guides/importing-sessions/)
 
 ## Diagnostics, status, and safety
 
-Related hand-authored docs: [Diagnostics, status, and safety](/architecture/diagnostics-and-security/)
+Related hand-authored docs: [Diagnostics, status, and safety](/pi-hindsight/architecture/diagnostics-and-security/)
 
 - `extensions/diagnostics.ts` — Collects doctor/diagnostic results.
 - `extensions/status.ts` — Builds user-facing status summaries.
@@ -91,7 +91,7 @@ Related hand-authored docs: [Diagnostics, status, and safety](/architecture/diag
 
 ## Configuration and setup TUI
 
-Related hand-authored docs: [Configuration and setup TUI](/start/setup-tui/)
+Related hand-authored docs: [Configuration and setup TUI](/pi-hindsight/start/setup-tui/)
 
 - `extensions/config.ts` — Loads and resolves extension config.
 - `extensions/config-normalize.ts` — Normalizes config defaults and legacy shapes.

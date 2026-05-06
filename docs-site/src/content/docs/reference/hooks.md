@@ -6,8 +6,8 @@ Pi Hindsight uses documented Pi extension lifecycle hooks. This page is a refere
 
 For the conceptual behavior behind Retain, Recall, and queue durability, see:
 
-- [Retain, Recall, and Reflect](/concepts/retain-recall-reflect/)
-- [Retain Queue durability](/concepts/queue-durability/)
+- [Retain, Recall, and Reflect](/pi-hindsight/concepts/retain-recall-reflect/)
+- [Retain Queue durability](/pi-hindsight/concepts/queue-durability/)
 
 ## `session_start`
 
@@ -64,4 +64,4 @@ Shutdown must not silently discard queued memory.
 
 Tools and commands are registered through the Operation Catalog and delegate to the Memory Operation Service. This keeps explicit user intents shared across tools, commands, setup flows, diagnostics, and smoke helpers.
 
-See [Tools and commands](/reference/tools-and-commands/) and [Generated surface reference](/reference/surface-reference/) for the exact public surface.
+See [Tools and commands](/pi-hindsight/reference/tools-and-commands/) and [Generated surface reference](/pi-hindsight/reference/surface-reference/) for the exact public surface.

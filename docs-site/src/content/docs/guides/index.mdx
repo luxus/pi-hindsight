@@ -1,5 +1,33 @@
 ---
 title: Guides
+description: Task-focused workflows for setup, imports, diagnostics, recovery, and verification.
 ---
 
-Guides are task-oriented workflows for configuration, setup, imports, diagnostics, template export/import, and outage recovery.
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+Guides answer “how do I do this now?” Use Concepts for mental models and Reference for exact fields.
+
+<CardGrid>
+  <Card title="Configure memory profiles" icon="setting">
+    Choose project-only, project+global, or global-only behavior and map that choice to config.
+    [Configure profiles](./configure-memory-profiles/)
+  </Card>
+  <Card title="Use `/hindsight` status" icon="information">
+    Inspect server reachability, active banks, retain queue state, imports, and receipts. [Check
+    status](./use-hindsight-status/)
+  </Card>
+  <Card title="Import sessions" icon="refresh">
+    Preview and import historical Pi session JSONL files. [Import sessions](./importing-sessions/)
+  </Card>
+  <Card title="Inspect recalls and receipts" icon="magnifier">
+    Debug what memory was recalled and what retain jobs were accepted. [Inspect
+    memory](./inspect-recalls-and-receipts/)
+  </Card>
+  <Card title="Recover retain queue" icon="puzzle">
+    Flush queued jobs, inspect failed jobs, and recover after a Hindsight outage. [Recover
+    queue](./recover-retain-queue/)
+  </Card>
+  <Card title="Run smoke tests" icon="check-circle">
+    Prove the live memory path after memory-path changes. [Run smoke test](./run-local-smoke-test/)
+  </Card>
+</CardGrid>

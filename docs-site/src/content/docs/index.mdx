@@ -1,14 +1,79 @@
 ---
 title: Pi Hindsight documentation
+description: Durable Hindsight-backed memory for Pi, scoped by repository and safe by default.
+template: splash
+hero:
+  tagline: Durable memory for Pi, scoped by repo.
+  actions:
+    - text: Get started
+      link: /pi-hindsight/start/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Configuration reference
+      link: /pi-hindsight/reference/configuration/
+      icon: document
 ---
 
-Pi Hindsight gives Pi durable project memory through Hindsight while keeping memory scoped, inspectable, and safe.
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Use this documentation through the target information architecture defined in [Documentation architecture](./development/documentation-architecture/):
+Pi Hindsight recalls relevant project memory before model calls, retains structured session deltas after agent runs, and exposes explicit memory tools when you want direct control.
 
-- **Start**: installation and first setup.
-- **Concepts**: memory model, banks, retain, recall, reflect, imports, and safety.
-- **Guides**: task-focused setup, import, diagnostics, and recovery workflows.
-- **Reference**: exact tools, commands, config, and generated surface details.
-- **Architecture**: design seams, ADRs, and implementation boundaries.
-- **Development**: contributor workflow, checks, release process, and agent guidance.
+<CardGrid>
+  <Card title="Start" icon="rocket">
+    Install the extension, connect Hindsight, choose a memory profile, and verify the first run.
+    [Begin setup →](/pi-hindsight/start/getting-started/)
+  </Card>
+  <Card title="Concepts" icon="open-book">
+    Understand Memory Banks, Retain, Recall, Reflect, queue durability, imports, and safety rules.
+    [Learn the model →](/pi-hindsight/concepts/)
+  </Card>
+  <Card title="Guides" icon="setting">
+    Follow task workflows for profiles, setup/status checks, imports, recall inspection, queue
+    recovery, and smoke tests. [Pick a workflow →](/pi-hindsight/guides/)
+  </Card>
+  <Card title="Reference" icon="document">
+    Look up exact config fields, tools, commands, hooks, import controls, and generated surface
+    details. [Open reference →](/pi-hindsight/reference/)
+  </Card>
+</CardGrid>
+
+## Memory path
+
+```mermaid
+flowchart LR
+  conversation[Pi conversation] --> retain[Retain raw structured content]
+  retain --> bank[Project Memory Bank]
+  prompt[Future prompt] --> recall[Recall relevant candidates]
+  bank --> recall
+  recall --> context[Ephemeral context block]
+  bank --> reflect[Reflect for synthesis]
+```
+
+## Safety defaults
+
+- Project memory stays in a project bank by default.
+- Global/user memory is opt-in and explicitly configured.
+- Recall injection is ephemeral; recalled memory is not written back into transcripts.
+- Retain uses stable document IDs and queue durability.
+- Automatic retain redacts common secrets before writing memory.
+
+## Where to go next
+
+<CardGrid>
+  <Card title="Five-minute setup" icon="right-arrow">
+    Use the shortest successful path from install to verified memory. [Getting
+    started](/pi-hindsight/start/getting-started/)
+  </Card>
+  <Card title="Choose memory scope" icon="laptop">
+    Compare project-only, project+global, and global-only modes. [Memory
+    profiles](/pi-hindsight/start/memory-profiles/)
+  </Card>
+  <Card title="Import old sessions" icon="refresh">
+    Preview and import Pi session JSONL history with deterministic document IDs. [Importing
+    sessions](/pi-hindsight/guides/importing-sessions/)
+  </Card>
+  <Card title="Troubleshoot memory" icon="information">
+    Inspect status, recalls, receipts, queue state, and smoke-test output. [Status and setup
+    guide](/pi-hindsight/guides/use-hindsight-status/)
+  </Card>
+</CardGrid>

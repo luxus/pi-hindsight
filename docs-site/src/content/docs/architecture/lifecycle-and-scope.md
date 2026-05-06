@@ -25,5 +25,5 @@ Pi Hindsight owns Pi integration policy. Hindsight owns Retain, Recall, Reflect,
 See also:
 
 - [ADR 001](./adr/001-memory-lifecycle-and-scope/)
-- [Hooks reference](/reference/hooks/)
-- [Memory Banks](/concepts/memory-banks/)
+- [Hooks reference](/pi-hindsight/reference/hooks/)
+- [Memory Banks](/pi-hindsight/concepts/memory-banks/)

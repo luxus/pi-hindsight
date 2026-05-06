@@ -15,7 +15,7 @@ const outputPath = join(
 const sections = [
   {
     title: "Extension entrypoint and lifecycle",
-    doc: "/architecture/lifecycle-and-scope/",
+    doc: "/pi-hindsight/architecture/lifecycle-and-scope/",
     files: [
       ["extensions/index.ts", "Registers Pi hooks, tools, commands, and setup surface."],
       [
@@ -35,7 +35,7 @@ const sections = [
   },
   {
     title: "Operation service and explicit surface",
-    doc: "/reference/tools-and-commands/",
+    doc: "/pi-hindsight/reference/tools-and-commands/",
     files: [
       [
         "extensions/memory-operation-service.ts",
@@ -49,7 +49,7 @@ const sections = [
   },
   {
     title: "Identity, scope, and routing",
-    doc: "/concepts/memory-banks/",
+    doc: "/pi-hindsight/concepts/memory-banks/",
     files: [
       ["extensions/memory-identity.ts", "Derives stable repo/session/document identity."],
       ["extensions/memory-scope.ts", "Selects project/global scopes and tags."],
@@ -60,7 +60,7 @@ const sections = [
   },
   {
     title: "Retain Queue and durable delivery",
-    doc: "/concepts/queue-durability/",
+    doc: "/pi-hindsight/concepts/queue-durability/",
     files: [
       ["extensions/retain-queue.ts", "Queues retain jobs before delivery."],
       ["extensions/queue.ts", "Queue record helpers and public queue operations."],
@@ -73,7 +73,7 @@ const sections = [
   },
   {
     title: "Historical import",
-    doc: "/guides/importing-sessions/",
+    doc: "/pi-hindsight/guides/importing-sessions/",
     files: [
       ["extensions/import-sessions.ts", "Imports Pi session JSONL history."],
       ["extensions/import-gateway-transcript.ts", "Imports gateway/chat transcript JSONL."],
@@ -87,7 +87,7 @@ const sections = [
   },
   {
     title: "Diagnostics, status, and safety",
-    doc: "/architecture/diagnostics-and-security/",
+    doc: "/pi-hindsight/architecture/diagnostics-and-security/",
     files: [
       ["extensions/diagnostics.ts", "Collects doctor/diagnostic results."],
       ["extensions/status.ts", "Builds user-facing status summaries."],
@@ -99,7 +99,7 @@ const sections = [
   },
   {
     title: "Configuration and setup TUI",
-    doc: "/start/setup-tui/",
+    doc: "/pi-hindsight/start/setup-tui/",
     files: [
       ["extensions/config.ts", "Loads and resolves extension config."],
       ["extensions/config-normalize.ts", "Normalizes config defaults and legacy shapes."],

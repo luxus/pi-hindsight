@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import mermaid from "astro-mermaid";
 import starlight from "@astrojs/starlight";
 
 export default defineConfig({
@@ -7,6 +8,15 @@ export default defineConfig({
   srcDir: "./docs-site/src",
   outDir: "./docs-site/dist",
   integrations: [
+    mermaid({
+      autoTheme: true,
+      enableLog: false,
+      mermaidConfig: {
+        flowchart: {
+          curve: "basis",
+        },
+      },
+    }),
     starlight({
       title: "Pi Hindsight",
       disable404Route: true,
@@ -32,6 +42,7 @@ export default defineConfig({
               slug: "concepts/document-ids-update-modes",
             },
             { label: "Retain Queue durability", slug: "concepts/queue-durability" },
+            { label: "Session memory modes", slug: "concepts/session-memory-modes" },
             { label: "Historical Import", slug: "concepts/imports" },
             { label: "Memory behavior", slug: "concepts/memory-behavior" },
             { label: "Hindsight core functions", slug: "concepts/hindsight-core-functions" },
@@ -43,7 +54,14 @@ export default defineConfig({
         },
         {
           label: "Guides",
-          items: [{ label: "Importing sessions", slug: "guides/importing-sessions" }],
+          items: [
+            { label: "Configure memory profiles", slug: "guides/configure-memory-profiles" },
+            { label: "Use /hindsight status", slug: "guides/use-hindsight-status" },
+            { label: "Importing sessions", slug: "guides/importing-sessions" },
+            { label: "Inspect recalls and receipts", slug: "guides/inspect-recalls-and-receipts" },
+            { label: "Recover Retain Queue", slug: "guides/recover-retain-queue" },
+            { label: "Run local smoke test", slug: "guides/run-local-smoke-test" },
+          ],
         },
         {
           label: "Reference",
@@ -51,7 +69,10 @@ export default defineConfig({
             { label: "Configuration", slug: "reference/configuration" },
             { label: "Tools and commands", slug: "reference/tools-and-commands" },
             { label: "Hooks", slug: "reference/hooks" },
+            { label: "Memory modes", slug: "reference/memory-modes" },
             { label: "Import controls", slug: "reference/import-controls" },
+            { label: "Bank template manifest", slug: "reference/bank-template-manifest" },
+            { label: "Hindsight API links", slug: "reference/hindsight-api-links" },
             { label: "Generated surface reference", slug: "reference/surface-reference" },
           ],
         },
@@ -101,6 +122,18 @@ export default defineConfig({
             { label: "Code map", slug: "development/code-map" },
             { label: "Internal and agent docs", slug: "development/internal-and-agent-docs" },
             {
+              label: "Maintainer archive",
+              items: [
+                { label: "Internal index", slug: "internal" },
+                { label: "Architecture TODOs", slug: "internal/architecture-todos" },
+                { label: "Next opt-out design", slug: "internal/next-opt-out-design" },
+                { label: "Post-MVP roadmap", slug: "internal/post-mvp-roadmap" },
+                { label: "PR roadmap", slug: "internal/pr-roadmap" },
+                { label: "PRD", slug: "internal/prd" },
+                { label: "Coding plan", slug: "internal/coding-plan" },
+              ],
+            },
+            {
               label: "Agent docs",
               items: [
                 { label: "AGENTS.md", slug: "development/agents-root" },
@@ -111,18 +144,6 @@ export default defineConfig({
                 { label: "Triage labels", slug: "development/agents/triage-labels" },
               ],
             },
-          ],
-        },
-        {
-          label: "Internal / Archive",
-          items: [
-            { label: "Internal index", slug: "internal" },
-            { label: "Architecture TODOs", slug: "internal/architecture-todos" },
-            { label: "Next opt-out design", slug: "internal/next-opt-out-design" },
-            { label: "Post-MVP roadmap", slug: "internal/post-mvp-roadmap" },
-            { label: "PR roadmap", slug: "internal/pr-roadmap" },
-            { label: "PRD", slug: "internal/prd" },
-            { label: "Coding plan", slug: "internal/coding-plan" },
           ],
         },
       ],

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
 
 const docsRoot = process.env.DOCS_ROOT
@@ -8,10 +8,20 @@ const docsRoot = process.env.DOCS_ROOT
 const astroConfigPath = process.env.ASTRO_CONFIG_PATH
   ? resolve(process.env.ASTRO_CONFIG_PATH)
   : join(process.cwd(), "astro.config.mjs");
+const packageManifestPath = process.env.PACKAGE_MANIFEST_PATH
+  ? resolve(process.env.PACKAGE_MANIFEST_PATH)
+  : join(process.cwd(), "package.json");
+const explicitLinkCheckPaths = process.env.README_LINK_PATHS
+  ? process.env.README_LINK_PATHS.split(",")
+      .map((path) => path.trim())
+      .filter(Boolean)
+      .map((path) => resolve(path))
+  : undefined;
 const markdownExtensions = new Set([".md", ".mdx"]);
 const sidebarSlugPattern = /slug:\s*["']([^"']+)["']/g;
 const markdownLinkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
 const frontmatterPattern = /^---\n([\s\S]*?)\n---\n?/u;
+const frontmatterLinkPattern = /^\s*link:\s*["']?([^"'\s]+)["']?\s*$/gmu;
 const titlePattern = /^title:\s*(?:"([^"]+)"|'([^']+)'|(.+))\s*$/mu;
 const allowedUnlistedSlugs = new Set([
   "",
@@ -34,6 +44,15 @@ function walk(dir) {
   });
 }
 
+function walkAllFiles(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return walkAllFiles(path);
+    return [path];
+  });
+}
+
 function slugForFile(file) {
   const withoutExtension = relative(docsRoot, file).replace(/\.(md|mdx)$/u, "");
   return withoutExtension
@@ -52,12 +71,16 @@ function slugExists(slug) {
   return candidatesForSlug(slug).some((candidate) => existsSync(candidate));
 }
 
-function relativeLinkExists(fromFile, href) {
+function resolveRelativeLink(fromFile, href) {
   const target = normalize(join(dirname(fromFile), href)).replace(/[\\/]$/u, "");
   const candidates = extname(target)
     ? [target]
     : [`${target}.md`, `${target}.mdx`, join(target, "index.md"), join(target, "index.mdx")];
-  return candidates.some((candidate) => existsSync(candidate));
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
+function relativeLinkExists(fromFile, href) {
+  return Boolean(resolveRelativeLink(fromFile, href));
 }
 
 function isExternalOrAnchor(href) {
@@ -80,6 +103,65 @@ function hasDuplicateTitleHeading(content) {
   if (!title) return false;
   const body = content.replace(frontmatterPattern, "");
   return new RegExp(`^\\s*#\\s+${escapeRegExp(title)}\\s*$`, "imu").test(body);
+}
+
+function validateDocsHref(file, rawHref) {
+  const href = rawHref
+    .trim()
+    .replace(/^<|>$/gu, "")
+    .split(/[\s#?]/u)[0];
+  if (!href || isExternalOrAnchor(href)) return;
+
+  if (href.startsWith("/")) {
+    const rawSlug = href.replace(/^\//u, "").replace(/[\\/]$/u, "");
+    if (astroBase && rawSlug !== astroBase && !rawSlug.startsWith(`${astroBase}/`)) {
+      errors.push(
+        `${relative(process.cwd(), file)} links to unbased docs route: ${href}; use /${astroBase}/... so published GitHub Pages links resolve`,
+      );
+      return;
+    }
+
+    const slug =
+      astroBase && rawSlug === astroBase
+        ? ""
+        : astroBase && rawSlug.startsWith(`${astroBase}/`)
+          ? rawSlug.slice(astroBase.length + 1)
+          : rawSlug;
+    if (!slugExists(slug)) {
+      errors.push(`${relative(process.cwd(), file)} links to missing docs route: ${href}`);
+    }
+    return;
+  }
+
+  if (!relativeLinkExists(file, href)) {
+    errors.push(`${relative(process.cwd(), file)} links to missing file: ${href}`);
+  }
+}
+
+function packageFileSet() {
+  if (!existsSync(packageManifestPath)) return new Set();
+
+  const manifestDir = dirname(packageManifestPath);
+  const manifest = JSON.parse(readFileSync(packageManifestPath, "utf8"));
+  const files = new Set(
+    ["package.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE.md"]
+      .map((path) => join(manifestDir, path))
+      .filter((path) => existsSync(path))
+      .map((path) => resolve(path)),
+  );
+
+  for (const entry of manifest.files ?? []) {
+    const path = join(manifestDir, entry);
+    if (!existsSync(path)) continue;
+
+    if (statSync(path).isDirectory()) {
+      for (const file of walkAllFiles(path)) files.add(resolve(file));
+    } else {
+      files.add(resolve(path));
+    }
+  }
+
+  return files;
 }
 
 const astroConfig = readFileSync(astroConfigPath, "utf8");
@@ -109,25 +191,45 @@ for (const file of files) {
     errors.push(`${relative(process.cwd(), file)} repeats its frontmatter title as an H1`);
   }
 
+  const frontmatter = frontmatterPattern.exec(content)?.[1];
+  for (const match of frontmatter?.matchAll(frontmatterLinkPattern) ?? []) {
+    validateDocsHref(file, match[1]);
+  }
+
+  for (const match of content.matchAll(markdownLinkPattern)) {
+    validateDocsHref(file, match[1]);
+  }
+}
+
+const packagedFiles = packageFileSet();
+const linkCheckPaths =
+  explicitLinkCheckPaths ??
+  [...packagedFiles].filter((file) => markdownExtensions.has(extname(file)));
+
+for (const file of linkCheckPaths) {
+  if (!existsSync(file)) {
+    errors.push(`README link check target does not exist: ${relative(process.cwd(), file)}`);
+    continue;
+  }
+
+  const content = readFileSync(file, "utf8");
+  const isPackagedSource = packagedFiles.has(resolve(file));
+
   for (const match of content.matchAll(markdownLinkPattern)) {
     const rawHref = match[1].trim().replace(/^<|>$/gu, "");
     const href = rawHref.split(/[\s#?]/u)[0];
-    if (!href || isExternalOrAnchor(href)) continue;
+    if (!href || isExternalOrAnchor(href) || href.startsWith("/")) continue;
 
-    if (href.startsWith("/")) {
-      const rawSlug = href.replace(/^\//u, "").replace(/[\\/]$/u, "");
-      const slug =
-        astroBase && rawSlug.startsWith(`${astroBase}/`)
-          ? rawSlug.slice(astroBase.length + 1)
-          : rawSlug;
-      if (!slugExists(slug)) {
-        errors.push(`${relative(process.cwd(), file)} links to missing docs route: ${href}`);
-      }
+    const target = resolveRelativeLink(file, href);
+    if (!target) {
+      errors.push(`${relative(process.cwd(), file)} links to missing file: ${href}`);
       continue;
     }
 
-    if (!relativeLinkExists(file, href)) {
-      errors.push(`${relative(process.cwd(), file)} links to missing file: ${href}`);
+    if (isPackagedSource && !packagedFiles.has(resolve(target))) {
+      errors.push(
+        `${relative(process.cwd(), file)} links to unpackaged local file: ${href}; use a published docs URL or include the target in package files`,
+      );
     }
   }
 }
