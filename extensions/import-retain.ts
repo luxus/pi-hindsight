@@ -37,6 +37,7 @@ export interface ImportDocumentPreview {
   projectedBytes?: number;
   droppedToolResultCount?: number;
   droppedToolResultBytes?: number;
+  droppedTools?: Array<{ name: string; count: number; bytes: number }>;
   topDroppedTools?: Array<{ name: string; count: number; bytes: number }>;
   keptToolErrorCount?: number;
   keptToolErrorBytes?: number;
@@ -212,6 +213,7 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
             projectedBytes: importByteLength(chunkMessages.map((message) => message.data)),
             droppedToolResultCount: 0,
             droppedToolResultBytes: 0,
+            droppedTools: [],
             topDroppedTools: [],
             keptToolErrorCount: chunkMessages.filter(
               (message) => message.data.role === "toolResult" && message.data.isError === true,
@@ -281,6 +283,7 @@ function buildImportBranch(args: Omit<ImportRetainArgs, "client">): ImportBranch
       projectedBytes: projection.projectedBytes,
       droppedToolResultCount: projection.droppedToolResultCount,
       droppedToolResultBytes: projection.droppedToolResultBytes,
+      ...("droppedTools" in projection ? { droppedTools: projection.droppedTools } : {}),
       topDroppedTools: projection.topDroppedTools,
       keptToolErrorCount: projection.keptToolErrorCount,
       keptToolErrorBytes: projection.keptToolErrorBytes,

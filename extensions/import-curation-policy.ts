@@ -36,6 +36,7 @@ export interface CuratedImportProjection {
   projectedBytes: number;
   droppedToolResultCount: number;
   droppedToolResultBytes: number;
+  droppedTools: Array<{ name: string; count: number; bytes: number }>;
   topDroppedTools: Array<{ name: string; count: number; bytes: number }>;
   keptToolErrorCount: number;
   keptToolErrorBytes: number;
@@ -211,6 +212,14 @@ export function buildCuratedImportProjection(
       0,
     ),
     estimatedChunkCount: Math.max(1, Math.ceil(importByteLength(projected) / 8_000)),
+    droppedTools: [...droppedTools]
+      .map(([name, value]) => ({ name, ...value }))
+      .sort(
+        (left, right) =>
+          right.bytes - left.bytes ||
+          right.count - left.count ||
+          left.name.localeCompare(right.name),
+      ),
     topDroppedTools: [...droppedTools]
       .map(([name, value]) => ({ name, ...value }))
       .sort(
