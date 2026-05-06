@@ -12,7 +12,7 @@ For generated details of registered tools and editable config fields, see [Gener
 /hindsight
 ```
 
-Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI. Press `m` to open the read-only mental model list/detail view; use the Hindsight web interface for create, edit, refresh, or delete.
+Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. Status activity can distinguish recall, retain, and import work, including `importing`, `imported`, `import-queued`, and `import-failed`. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI. Press `m` to open the read-only mental model list/detail view; use the Hindsight web interface for create, edit, refresh, or delete.
 
 ## Setup and config
 
