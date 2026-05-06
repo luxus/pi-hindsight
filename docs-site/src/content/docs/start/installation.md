@@ -19,12 +19,14 @@ pi install /path/to/pi-hindsight
 
 ## Choose a Hindsight server
 
-Use Hindsight Cloud or a local Hindsight API server:
+Use Hindsight Cloud or a self-hosted Hindsight API server:
 
 - [Hindsight Cloud signup](https://ui.hindsight.vectorize.io/signup)
-- [Local Hindsight installation](https://hindsight.vectorize.io/developer/installation)
+- [Self-hosted Hindsight installation](https://hindsight.vectorize.io/developer/installation)
 
-For local development, the conventional URL is:
+For self-hosted setup, prefer Hindsight's built-in llama.cpp/local-LLM option when you want a private setup without an external LLM API key. That path requires Hindsight's `local-llm` extra; otherwise configure a normal LLM provider and API key as described in the Hindsight installation and model docs.
+
+The conventional self-hosted URL is:
 
 ```text
 http://localhost:8888

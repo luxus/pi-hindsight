@@ -4,6 +4,17 @@ title: "Package verification"
 
 Pi Hindsight is distributed as an npm package. Packaging checks protect installed runtime behavior.
 
+## Runtime compatibility
+
+Supported runtime and package ranges are declared in `package.json` and enforced in CI with `npm ci --engine-strict`.
+
+- Node.js: `>=24 <25`
+- npm: `>=11 <12`
+- Pi peer package: `@mariozechner/pi-coding-agent >=0.72.1 <0.73.0`
+- TypeBox peer package: `typebox >=1.1.24 <2`
+
+Keep this compatibility detail in maintainer docs instead of the README unless the install story changes.
+
 ## Published contents
 
 The `package.json` `files` array is the source of truth for package contents. Documentation-site source and generated build output are not runtime package files unless explicitly added.

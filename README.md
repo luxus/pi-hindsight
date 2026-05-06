@@ -8,15 +8,6 @@ Pi Hindsight recalls relevant project memory before model calls, retains structu
 
 The extension is inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). This version keeps the same useful idea, then tightens project isolation, queue durability, diagnostics, and release hardening.
 
-## Compatibility
-
-Supported runtime and package ranges are declared in `package.json` and enforced in CI with `npm ci --engine-strict`.
-
-- Node.js: `>=24 <25`
-- npm: `>=11 <12`
-- Pi peer package: `@mariozechner/pi-coding-agent >=0.72.1 <0.73.0`
-- TypeBox peer package: `typebox >=1.1.24 <2`
-
 ## Install
 
 Install from GitHub:
@@ -37,9 +28,9 @@ Package name: `@luxusai/pi-hindsight`.
 
 1. Start or choose a Hindsight server:
    - [Hindsight Cloud signup](https://ui.hindsight.vectorize.io/signup)
-   - [Local Hindsight installation](https://hindsight.vectorize.io/developer/installation)
+   - [Self-hosted Hindsight installation](https://hindsight.vectorize.io/developer/installation); use Hindsight's built-in llama.cpp/local-LLM option when you want a no-LLM-API-key private setup
 2. Open Pi in your repo and run `/hindsight`.
-3. Configure the Hindsight API URL. The default local URL is `http://localhost:8888`.
+3. Configure the Hindsight API URL. The default self-hosted URL is `http://localhost:8888`.
 4. Choose the narrowest memory profile that fits the repo: `project-only`, `project+global`, or `global-only`.
 5. Start coding. Recall happens before provider calls; retain happens after completed agent runs.
 
