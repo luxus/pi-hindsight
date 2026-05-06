@@ -1,6 +1,7 @@
 import { defineConfig } from "astro/config";
 import mermaid from "astro-mermaid";
 import starlight from "@astrojs/starlight";
+import starlightLLMButton from "starlight-llm-button";
 
 export default defineConfig({
   site: "https://luxus.github.io/pi-hindsight",
@@ -20,6 +21,17 @@ export default defineConfig({
     starlight({
       title: "Pi Hindsight",
       disable404Route: true,
+      plugins: [
+        starlightLLMButton({
+          customText: {
+            copy: "Copy page for LLM",
+            copied: "Copied page markdown",
+            error: "Could not copy page markdown",
+          },
+          preCopyPrompt:
+            "Use this Pi Hindsight documentation page as source context. Preserve technical terms and cite page headings when useful.\n\n",
+        }),
+      ],
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/luxus/pi-hindsight" }],
       sidebar: [
         {
