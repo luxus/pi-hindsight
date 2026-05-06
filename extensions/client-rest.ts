@@ -78,6 +78,9 @@ export function reflectRequestBody(
     context?: string;
     budget?: string;
     responseSchema?: unknown;
+    factTypes?: Array<"world" | "experience" | "observation">;
+    excludeMentalModels?: boolean;
+    excludeMentalModelIds?: string[];
     tags?: string[];
     tagsMatch?: string;
     tagGroups?: unknown[];
@@ -88,6 +91,13 @@ export function reflectRequestBody(
     ...(options.context ? { context: options.context } : {}),
     budget: options.budget ?? "low",
     ...(options.responseSchema ? { response_schema: options.responseSchema } : {}),
+    ...(options.factTypes ? { fact_types: options.factTypes } : {}),
+    ...(options.excludeMentalModels !== undefined
+      ? { exclude_mental_models: options.excludeMentalModels }
+      : {}),
+    ...(options.excludeMentalModelIds
+      ? { exclude_mental_model_ids: options.excludeMentalModelIds }
+      : {}),
     ...(options.tagGroups ? { tag_groups: options.tagGroups } : {}),
     ...(options.tagGroups ? {} : options.tags ? { tags: options.tags } : {}),
     ...(options.tagGroups ? {} : options.tagsMatch ? { tags_match: options.tagsMatch } : {}),

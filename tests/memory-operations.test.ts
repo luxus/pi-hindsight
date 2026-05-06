@@ -105,6 +105,14 @@ describe("memory operations", () => {
 
     await operations.recall(cwd, "query", undefined, undefined, {
       queryTimestamp: "2024-02-01T00:00:00Z",
+      types: ["observation"],
+      trace: true,
+      includeEntities: false,
+      maxEntityTokens: 128,
+      includeChunks: true,
+      maxChunkTokens: 512,
+      includeSourceFacts: true,
+      maxSourceFactsTokens: 1024,
     });
     await operations.retainExplicit({
       cwd,
@@ -122,6 +130,9 @@ describe("memory operations", () => {
         properties: { answer: { type: "string" } },
       },
       {
+        factTypes: ["observation"],
+        excludeMentalModels: true,
+        excludeMentalModelIds: ["model:stale"],
         tags: ["topic:hindsight"],
         tagsMatch: "all_strict",
         tagGroups: [{ tags: ["kind:decision"], match: "any_strict" }],
@@ -130,12 +141,23 @@ describe("memory operations", () => {
 
     expect(calls.find((call) => call.method === "recall")?.options).toMatchObject({
       queryTimestamp: "2024-02-01T00:00:00Z",
+      types: ["observation"],
+      trace: true,
+      includeEntities: false,
+      maxEntityTokens: 128,
+      includeChunks: true,
+      maxChunkTokens: 512,
+      includeSourceFacts: true,
+      maxSourceFactsTokens: 1024,
     });
     expect(calls.find((call) => call.method === "retain")?.options).toMatchObject({
       entities: [{ text: "Alice", type: "person" }],
     });
     expect(calls.find((call) => call.method === "reflect")?.options).toMatchObject({
       responseSchema: { type: "object", properties: { answer: { type: "string" } } },
+      factTypes: ["observation"],
+      excludeMentalModels: true,
+      excludeMentalModelIds: ["model:stale"],
       tagGroups: [
         { tags: [expect.stringMatching(/^repo:/)], match: "any_strict" },
         { tags: ["topic:hindsight"], match: "all_strict" },

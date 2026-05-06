@@ -306,6 +306,13 @@ export interface HindsightLikeClient {
       maxTokens?: number;
       budget?: Budget;
       queryTimestamp?: string;
+      trace?: boolean;
+      includeEntities?: boolean;
+      maxEntityTokens?: number;
+      includeChunks?: boolean;
+      maxChunkTokens?: number;
+      includeSourceFacts?: boolean;
+      maxSourceFactsTokens?: number;
       tags?: string[];
       tagsMatch?: TagsMatch;
       tagGroups?: HindsightTagGroup[];
@@ -319,6 +326,9 @@ export interface HindsightLikeClient {
       context?: string;
       budget?: Budget;
       responseSchema?: Record<string, unknown>;
+      factTypes?: Array<"world" | "experience" | "observation">;
+      excludeMentalModels?: boolean;
+      excludeMentalModelIds?: string[];
       tags?: string[];
       tagsMatch?: TagsMatch;
       tagGroups?: HindsightTagGroup[];

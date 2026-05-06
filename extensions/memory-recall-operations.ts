@@ -8,10 +8,24 @@ import type { HindsightTagGroup, ResolvedConfig, TagsMatch } from "./types.js";
 
 interface ExplicitRecallFilters {
   queryTimestamp?: string;
+  types?: string[];
+  trace?: boolean;
+  includeEntities?: boolean;
+  maxEntityTokens?: number;
+  includeChunks?: boolean;
+  maxChunkTokens?: number;
+  includeSourceFacts?: boolean;
+  maxSourceFactsTokens?: number;
   tags?: string[];
   tagsMatch?: TagsMatch;
   tagGroups?: HindsightTagGroup[];
   signal?: AbortSignal;
+}
+
+interface ExplicitReflectFilters extends Omit<ExplicitRecallFilters, "queryTimestamp" | "types"> {
+  factTypes?: Array<"world" | "experience" | "observation">;
+  excludeMentalModels?: boolean;
+  excludeMentalModelIds?: string[];
 }
 
 function recallTagsForBank(
@@ -67,6 +81,22 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         ...(filters.queryTimestamp || config.recall.queryTimestamp
           ? { queryTimestamp: filters.queryTimestamp ?? config.recall.queryTimestamp }
           : {}),
+        ...(filters.types ? { types: filters.types } : {}),
+        ...(filters.trace !== undefined ? { trace: filters.trace } : {}),
+        ...(filters.includeEntities !== undefined
+          ? { includeEntities: filters.includeEntities }
+          : {}),
+        ...(filters.maxEntityTokens !== undefined
+          ? { maxEntityTokens: filters.maxEntityTokens }
+          : {}),
+        ...(filters.includeChunks !== undefined ? { includeChunks: filters.includeChunks } : {}),
+        ...(filters.maxChunkTokens !== undefined ? { maxChunkTokens: filters.maxChunkTokens } : {}),
+        ...(filters.includeSourceFacts !== undefined
+          ? { includeSourceFacts: filters.includeSourceFacts }
+          : {}),
+        ...(filters.maxSourceFactsTokens !== undefined
+          ? { maxSourceFactsTokens: filters.maxSourceFactsTokens }
+          : {}),
         ...scopedTagFilterOptions(scopeTags, filters),
         ...(filters.signal ? { signal: filters.signal } : {}),
       });
@@ -79,7 +109,7 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
       context?: string,
       bank?: string,
       responseSchema?: Record<string, unknown>,
-      filters: Omit<ExplicitRecallFilters, "queryTimestamp"> = {},
+      filters: ExplicitReflectFilters = {},
     ) {
       const config = deps.getConfig();
       const bankId = resolveOperationBank({
@@ -92,6 +122,13 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         ...(context ? { context } : {}),
         budget: config.recall.budget,
         ...(responseSchema ? { responseSchema } : {}),
+        ...(filters.factTypes ? { factTypes: filters.factTypes } : {}),
+        ...(filters.excludeMentalModels !== undefined
+          ? { excludeMentalModels: filters.excludeMentalModels }
+          : {}),
+        ...(filters.excludeMentalModelIds
+          ? { excludeMentalModelIds: filters.excludeMentalModelIds }
+          : {}),
         ...scopedTagFilterOptions(scopeTags, filters),
         ...(filters.signal ? { signal: filters.signal } : {}),
       });
