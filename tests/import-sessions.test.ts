@@ -216,6 +216,91 @@ describe("Pi session import", () => {
     expect(calls).toHaveLength(2);
   });
 
+  it("records strict curated quality context in pending and completed checkpoints", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-quality-checkpoint-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-quality-checkpoint", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "u1",
+          parentId: null,
+          message: { role: "user", content: "inspect checkpoint quality" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "a1",
+          parentId: "u1",
+          message: { role: "assistant", content: "using tool" },
+        }),
+        JSON.stringify({
+          type: "message",
+          id: "tool1",
+          parentId: "a1",
+          message: { role: "toolResult", name: "custom-tool", content: "useful short output" },
+        }),
+      ].join("\n"),
+    );
+    const config = {
+      ...DEFAULT_CONFIG,
+      import: {
+        ...DEFAULT_CONFIG.import,
+        qualityProfile: "strict" as const,
+        toolResults: "summary" as const,
+      },
+    };
+    const documentId =
+      "pi-import:session-quality-checkpoint:leaf:tool1:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-2";
+    let pendingCheckpointSeen = false;
+
+    const result = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config,
+      client: {
+        retain: async () => {
+          const checkpoint = await readImportCheckpoint(
+            join(dir, ".pi/hindsight/import-checkpoint.json"),
+          );
+          expect(checkpoint).toMatchObject({
+            importMode: "curated",
+            toolResults: "summary",
+            importQualityProfile: "strict",
+          });
+          expect(checkpoint?.documents[documentId]).toMatchObject({
+            status: "pending",
+            importMode: "curated",
+            toolResults: "summary",
+            importQualityProfile: "strict",
+            projectionVersion: "curated-turns-v1",
+            importProfile: "turns-12-bytes-80000",
+            chunkIndex: 0,
+            messageRange: { start: 0, end: 2 },
+          });
+          pendingCheckpointSeen = true;
+        },
+        recall: async () => [],
+        reflect: async () => ({}),
+      },
+    });
+
+    expect(pendingCheckpointSeen).toBe(true);
+    const completedCheckpoint = await readImportCheckpoint(result.checkpointPath);
+    expect(completedCheckpoint?.documents[documentId]).toMatchObject({
+      status: "completed",
+      toolResults: "summary",
+      importQualityProfile: "strict",
+    });
+    const manifest = await readImportManifest(result.manifestPath);
+    expect(manifest.imports[documentId]).toMatchObject({
+      toolResults: "summary",
+      importQualityProfile: "strict",
+    });
+  });
+
   it("supports raw and forensic import modes as explicit escape hatches", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-mode-"));
     mkdirSync(join(dir, ".git"));
@@ -508,12 +593,20 @@ describe("Pi session import", () => {
         }),
       ].join("\n"),
     );
+    const config = {
+      ...DEFAULT_CONFIG,
+      import: {
+        ...DEFAULT_CONFIG.import,
+        qualityProfile: "strict" as const,
+        toolResults: "content" as const,
+      },
+    };
 
     await expect(
       importPiSession({
         sessionFile,
         bankId: "bank",
-        config: DEFAULT_CONFIG,
+        config,
         client: {
           retain: async () => {
             throw new Error("offline");
@@ -527,20 +620,81 @@ describe("Pi session import", () => {
     const checkpoint = await readImportCheckpoint(
       join(dir, ".pi/hindsight/import-checkpoint.json"),
     );
-    expect(
-      checkpoint?.documents[
-        "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0"
-      ]?.status,
-    ).toBe("queued");
-    expect(
-      checkpoint?.documents[
-        "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0"
-      ]?.error,
-    ).toContain("queued");
-    const queue = await readRetainQueue(resolveQueuePath(dir, DEFAULT_CONFIG.retain.queuePath));
-    expect(queue.map((job) => job.documentId)).toEqual([
-      "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0",
-    ]);
+    const documentId =
+      "pi-import:session-queued:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0";
+    expect(checkpoint).toMatchObject({
+      toolResults: "content",
+      importQualityProfile: "strict",
+    });
+    expect(checkpoint?.documents[documentId]).toMatchObject({
+      status: "queued",
+      toolResults: "content",
+      importQualityProfile: "strict",
+      error: expect.stringContaining("queued"),
+    });
+    const queue = await readRetainQueue(resolveQueuePath(dir, config.retain.queuePath));
+    expect(queue.map((job) => job.documentId)).toEqual([documentId]);
+  });
+
+  it("records strict curated quality context on failed checkpoint documents", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-"));
+    mkdirSync(join(dir, ".git"));
+    mkdirSync(join(dir, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(join(dir, ".pi/hindsight/queue-blocker"), "not a directory");
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-failed", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "root",
+          parentId: null,
+          message: { role: "user", content: "failed import" },
+        }),
+      ].join("\n"),
+    );
+    const config = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        queuePath: ".pi/hindsight/queue-blocker/retain-queue.jsonl",
+      },
+      import: {
+        ...DEFAULT_CONFIG.import,
+        qualityProfile: "strict" as const,
+        toolResults: "summary" as const,
+      },
+    };
+
+    await expect(
+      importPiSession({
+        sessionFile,
+        bankId: "bank",
+        config,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+      }),
+    ).rejects.toThrow();
+
+    const documentId =
+      "pi-import:session-failed:leaf:root:turns-12-bytes-80000:curated-turns-v1:chunk-0-0-0";
+    const checkpoint = await readImportCheckpoint(
+      join(dir, ".pi/hindsight/import-checkpoint.json"),
+    );
+    expect(checkpoint).toMatchObject({
+      toolResults: "summary",
+      importQualityProfile: "strict",
+    });
+    expect(checkpoint?.documents[documentId]).toMatchObject({
+      status: "failed",
+      toolResults: "summary",
+      importQualityProfile: "strict",
+      error: expect.any(String),
+    });
   });
 
   it("imports all leaves only when includeBranches is all-leaves", async () => {

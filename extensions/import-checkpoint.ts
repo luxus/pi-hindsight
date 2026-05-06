@@ -1,6 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
-import type { ImportMode, UpdateMode } from "./types.js";
+import type { ImportMode, ImportQualityProfile, ResolvedConfig, UpdateMode } from "./types.js";
+
+type ImportToolResults = ResolvedConfig["import"]["toolResults"];
 
 export type ImportDocumentStatus = "pending" | "queued" | "completed" | "failed" | "skipped";
 
@@ -10,6 +12,8 @@ export interface ImportCheckpointDocument {
   contentHash: string;
   messageCount: number;
   importMode?: ImportMode;
+  toolResults?: ImportToolResults;
+  importQualityProfile?: ImportQualityProfile;
   projectionVersion?: string;
   importProfile?: string;
   chunkIndex?: number;
@@ -28,6 +32,8 @@ export interface ImportCheckpoint {
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
   importMode?: ImportMode;
+  toolResults?: ImportToolResults;
+  importQualityProfile?: ImportQualityProfile;
   importProfile?: string;
   updateMode: UpdateMode;
   startedAt: string;
@@ -70,6 +76,39 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isImportMode(value: unknown): value is ImportMode {
+  return value === "curated" || value === "raw" || value === "forensic";
+}
+
+function isImportToolResults(value: unknown): value is ImportToolResults {
+  return value === "errors-only" || value === "summary" || value === "content";
+}
+
+function isImportQualityProfile(value: unknown): value is ImportQualityProfile {
+  return value === "compatible" || value === "strict";
+}
+
+function isUpdateMode(value: unknown): value is UpdateMode {
+  return value === "append" || value === "replace";
+}
+
+function isMessageRange(value: unknown): value is { start: number; end: number } {
+  return isPlainRecord(value) && typeof value.start === "number" && typeof value.end === "number";
+}
+
+function hasValidCheckpointRunFields(value: Record<string, unknown>): boolean {
+  return (
+    (value.includeBranches === undefined ||
+      value.includeBranches === "current-only" ||
+      value.includeBranches === "all-leaves") &&
+    (value.importMode === undefined || isImportMode(value.importMode)) &&
+    (value.toolResults === undefined || isImportToolResults(value.toolResults)) &&
+    (value.importQualityProfile === undefined ||
+      isImportQualityProfile(value.importQualityProfile)) &&
+    (value.updateMode === undefined || isUpdateMode(value.updateMode))
+  );
+}
+
 function isImportCheckpointDocument(value: unknown): value is ImportCheckpointDocument {
   if (!isPlainRecord(value)) return false;
   return (
@@ -77,12 +116,21 @@ function isImportCheckpointDocument(value: unknown): value is ImportCheckpointDo
     typeof value.leafId === "string" &&
     typeof value.contentHash === "string" &&
     typeof value.messageCount === "number" &&
+    (value.importMode === undefined || isImportMode(value.importMode)) &&
+    (value.toolResults === undefined || isImportToolResults(value.toolResults)) &&
+    (value.importQualityProfile === undefined ||
+      isImportQualityProfile(value.importQualityProfile)) &&
+    (value.projectionVersion === undefined || typeof value.projectionVersion === "string") &&
+    (value.importProfile === undefined || typeof value.importProfile === "string") &&
+    (value.chunkIndex === undefined || typeof value.chunkIndex === "number") &&
+    (value.messageRange === undefined || isMessageRange(value.messageRange)) &&
     (value.status === "pending" ||
       value.status === "queued" ||
       value.status === "completed" ||
       value.status === "failed" ||
       value.status === "skipped") &&
-    typeof value.updatedAt === "string"
+    typeof value.updatedAt === "string" &&
+    (value.error === undefined || typeof value.error === "string")
   );
 }
 
@@ -90,6 +138,9 @@ export async function readImportCheckpoint(path: string): Promise<ImportCheckpoi
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
     if (!isPlainRecord(parsed)) throw new Error("import checkpoint must be a JSON object");
+    if (!hasValidCheckpointRunFields(parsed)) {
+      throw new Error("import checkpoint run fields are invalid");
+    }
     const record = parsed as unknown as ImportCheckpoint;
     if (record.documents !== undefined && !isPlainRecord(record.documents)) {
       throw new Error("import checkpoint documents must be a JSON object");
@@ -137,6 +188,8 @@ export function createImportCheckpoint(args: {
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
   importMode?: ImportMode;
+  toolResults?: ImportToolResults;
+  importQualityProfile?: ImportQualityProfile;
   updateMode: UpdateMode;
   now: string;
 }): ImportCheckpoint {
@@ -149,6 +202,8 @@ export function createImportCheckpoint(args: {
     cwd: args.cwd,
     includeBranches: args.includeBranches,
     ...(args.importMode ? { importMode: args.importMode } : {}),
+    ...(args.toolResults ? { toolResults: args.toolResults } : {}),
+    ...(args.importQualityProfile ? { importQualityProfile: args.importQualityProfile } : {}),
     updateMode: args.updateMode,
     startedAt: args.now,
     updatedAt: args.now,

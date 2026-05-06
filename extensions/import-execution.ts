@@ -5,6 +5,8 @@ import {
   readImportCheckpointSafe,
   writeImportCheckpoint,
   type ImportCheckpoint,
+  type ImportCheckpointDocument,
+  type ImportDocumentStatus,
 } from "./import-checkpoint.js";
 import { upsertImportManifestEntries } from "./import-manifest.js";
 import {
@@ -22,6 +24,35 @@ export interface ImportExecutionResult {
   documents: ImportSessionDocumentResult[];
   messageCount: number;
   retained: boolean;
+}
+
+function checkpointDocument(args: {
+  document: ImportDocumentPreview;
+  status: ImportDocumentStatus;
+  toolResults: ImportPlan["importConfig"]["import"]["toolResults"];
+  updatedAt: string;
+  error?: string;
+}): ImportCheckpointDocument {
+  return {
+    documentId: args.document.documentId,
+    leafId: args.document.leafId,
+    contentHash: args.document.contentHash,
+    messageCount: args.document.messageCount,
+    ...(args.document.importMode ? { importMode: args.document.importMode } : {}),
+    toolResults: args.toolResults,
+    ...(args.document.importQualityProfile
+      ? { importQualityProfile: args.document.importQualityProfile }
+      : {}),
+    ...(args.document.projectionVersion
+      ? { projectionVersion: args.document.projectionVersion }
+      : {}),
+    ...(args.document.importProfile ? { importProfile: args.document.importProfile } : {}),
+    ...(args.document.chunkIndex !== undefined ? { chunkIndex: args.document.chunkIndex } : {}),
+    ...(args.document.messageRange ? { messageRange: args.document.messageRange } : {}),
+    status: args.status,
+    updatedAt: args.updatedAt,
+    ...(args.error ? { error: args.error } : {}),
+  };
 }
 
 export async function executeImportPlan(args: {
@@ -59,10 +90,17 @@ export async function executeImportPlan(args: {
           cwd,
           includeBranches,
           importMode: importConfig.import.mode,
+          toolResults: importConfig.import.toolResults,
+          importQualityProfile: importConfig.import.qualityProfile,
           updateMode,
           now,
         });
-  checkpoint = { ...checkpoint, updatedAt: now };
+  checkpoint = {
+    ...checkpoint,
+    updatedAt: now,
+    toolResults: importConfig.import.toolResults,
+    importQualityProfile: importConfig.import.qualityProfile,
+  };
 
   const results = [];
   for (const branch of branches) {
@@ -96,25 +134,12 @@ export async function executeImportPlan(args: {
         continue;
       }
 
-      checkpoint.documents[preview.document.documentId] = {
-        documentId: preview.document.documentId,
-        leafId: preview.document.leafId,
-        contentHash: preview.document.contentHash,
-        messageCount: preview.document.messageCount,
-        ...(preview.document.importMode ? { importMode: preview.document.importMode } : {}),
-        ...(preview.document.projectionVersion
-          ? { projectionVersion: preview.document.projectionVersion }
-          : {}),
-        ...(preview.document.importProfile
-          ? { importProfile: preview.document.importProfile }
-          : {}),
-        ...(preview.document.chunkIndex !== undefined
-          ? { chunkIndex: preview.document.chunkIndex }
-          : {}),
-        ...(preview.document.messageRange ? { messageRange: preview.document.messageRange } : {}),
+      checkpoint.documents[preview.document.documentId] = checkpointDocument({
+        document: preview.document,
         status: "pending",
+        toolResults: importConfig.import.toolResults,
         updatedAt: new Date().toISOString(),
-      };
+      });
       await writeImportCheckpoint(checkpointPath, checkpoint);
 
       try {
@@ -124,27 +149,12 @@ export async function executeImportPlan(args: {
           documentId: preview.document.documentId,
         });
         const completedAt = new Date().toISOString();
-        checkpoint.documents[retained.document.documentId] = {
-          documentId: retained.document.documentId,
-          leafId: retained.document.leafId,
-          contentHash: retained.document.contentHash,
-          messageCount: retained.document.messageCount,
-          ...(retained.document.importMode ? { importMode: retained.document.importMode } : {}),
-          ...(retained.document.projectionVersion
-            ? { projectionVersion: retained.document.projectionVersion }
-            : {}),
-          ...(retained.document.importProfile
-            ? { importProfile: retained.document.importProfile }
-            : {}),
-          ...(retained.document.chunkIndex !== undefined
-            ? { chunkIndex: retained.document.chunkIndex }
-            : {}),
-          ...(retained.document.messageRange
-            ? { messageRange: retained.document.messageRange }
-            : {}),
+        checkpoint.documents[retained.document.documentId] = checkpointDocument({
+          document: retained.document,
           status: "completed",
+          toolResults: importConfig.import.toolResults,
           updatedAt: completedAt,
-        };
+        });
         checkpoint.updatedAt = completedAt;
         await writeImportCheckpoint(checkpointPath, checkpoint);
         results.push({
@@ -155,26 +165,13 @@ export async function executeImportPlan(args: {
         const failedAt = new Date().toISOString();
         const message = redactError(error);
         const status = isImportRetainQueuedError(error) ? "queued" : "failed";
-        checkpoint.documents[preview.document.documentId] = {
-          documentId: preview.document.documentId,
-          leafId: preview.document.leafId,
-          contentHash: preview.document.contentHash,
-          messageCount: preview.document.messageCount,
-          ...(preview.document.importMode ? { importMode: preview.document.importMode } : {}),
-          ...(preview.document.projectionVersion
-            ? { projectionVersion: preview.document.projectionVersion }
-            : {}),
-          ...(preview.document.importProfile
-            ? { importProfile: preview.document.importProfile }
-            : {}),
-          ...(preview.document.chunkIndex !== undefined
-            ? { chunkIndex: preview.document.chunkIndex }
-            : {}),
-          ...(preview.document.messageRange ? { messageRange: preview.document.messageRange } : {}),
+        checkpoint.documents[preview.document.documentId] = checkpointDocument({
+          document: preview.document,
           status,
+          toolResults: importConfig.import.toolResults,
           updatedAt: failedAt,
           error: message,
-        };
+        });
         checkpoint.updatedAt = failedAt;
         await writeImportCheckpoint(checkpointPath, checkpoint);
         results.push({

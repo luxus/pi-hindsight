@@ -108,7 +108,7 @@ Default paths:
 
 The checkpoint records document delivery state so interrupted imports can resume. When `import.resume` is enabled, completed documents are skipped instead of retained again.
 
-If an import is queued but not delivered because Hindsight is unavailable, the checkpoint records the document as `queued` and the retain queue keeps the job for later flushing.
+If an import is queued but not delivered because Hindsight is unavailable, the checkpoint records the document as `queued` and the retain queue keeps the job for later flushing. Checkpoint run and document entries also record import quality context such as `toolResults` and strict curated `importQualityProfile` when available, so recovery can show which projection policy produced pending, completed, queued, or failed documents.
 
 ## Rebuilding a cleared bank
 
