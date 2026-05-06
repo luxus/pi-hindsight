@@ -10,6 +10,7 @@ import {
   setSessionMemoryMode,
   setSessionRetainEnabled,
 } from "../extensions/session-memory-meta.js";
+import { liveDocumentId, stableSessionId } from "../extensions/session.js";
 import type { RetainJob } from "../extensions/types.js";
 
 async function waitForCondition(
@@ -1516,6 +1517,74 @@ describe("extension hooks", () => {
     expect(secondContent).toContain("a2");
     expect(secondContent).not.toContain("u1");
     expect(secondContent).not.toContain("a1");
+  });
+
+  it("keeps automatic retain payload stable when queued during outage", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        hindsight: { baseUrl: "http://unused.test" },
+        notifications: { startup: false },
+      }),
+    );
+    const sessionFile = join(cwd, "session-api_key=super-secret-token.jsonl");
+    const { createMemoryLifecycle } = await import("../extensions/memory-lifecycle.js");
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+    const lifecycle = createMemoryLifecycle(cwd);
+    await lifecycle.initialize(ctx);
+    mocked.client.retain.mockClear();
+    mocked.client.retain.mockRejectedValue(new Error("offline TOKEN=queue-secret"));
+
+    const result = await lifecycle.retain(
+      {
+        messages: [
+          { role: "user", content: "Remember API_KEY=content-secret", timestamp: 1 },
+          { role: "assistant", content: "Stored TOKEN=assistant-secret", timestamp: 2 },
+        ],
+      } as any,
+      ctx,
+    );
+
+    expect(result).toMatchObject({ queued: true, sent: 0, remaining: 1 });
+    const queued = await readRetainQueue(resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl"));
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toMatchObject({
+      bankId: expect.stringMatching(/^pi-project-/),
+      documentId: liveDocumentId(sessionFile, cwd),
+      updateMode: "append",
+      retries: 1,
+      lastError: "offline TOKEN=[REDACTED]",
+      item: {
+        context: expect.stringContaining("session-api_key=[REDACTED]"),
+        async: true,
+        metadata: {
+          cwd,
+          imported: "false",
+          pi_session_file: expect.stringContaining("session-api_key=[REDACTED]"),
+        },
+        observationScopes: [["harness:pi"], [expect.stringMatching(/^repo:/)]],
+      },
+    });
+    expect(queued[0]?.item.tags).toEqual(
+      expect.arrayContaining([
+        "source:pi",
+        `session:${stableSessionId(sessionFile, cwd)}`,
+        expect.stringMatching(/^repo:/),
+      ]),
+    );
+    expect(queued[0]?.item.content).toContain("API_KEY=[REDACTED]");
+    expect(queued[0]?.item.content).toContain("TOKEN=[REDACTED]");
+    expect(JSON.stringify(queued[0])).not.toContain("content-secret");
+    expect(JSON.stringify(queued[0])).not.toContain("assistant-secret");
+    expect(JSON.stringify(queued[0])).not.toContain("super-secret");
+    expect(JSON.stringify(queued[0])).not.toContain("queue-secret");
   });
 
   it("uses configured shutdown flush bounds", async () => {
