@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.2.0](https://github.com/luxus/pi-hindsight/compare/v0.1.0...v0.2.0) (2026-05-06)
+
+
+### Features
+
+* add import status activity labels ([3158aac](https://github.com/luxus/pi-hindsight/commit/3158aac4dd0a7790bdb360394afb9f3667df375a)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* add internal recall reflect option parity ([af769be](https://github.com/luxus/pi-hindsight/commit/af769beaecbf88db1211e0f272cc7fef51519862)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* add internal retain option parity ([d2b62bb](https://github.com/luxus/pi-hindsight/commit/d2b62bb25cb58bef8ea5d2da81f60b16160e6271)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* **bank-settings:** add config reset tools ([1c1c662](https://github.com/luxus/pi-hindsight/commit/1c1c662a052562e2dd7150f4c883ba42b6a4dae1))
+* **bank-settings:** add directive tools ([12a188b](https://github.com/luxus/pi-hindsight/commit/12a188b5a9f0193fd93386394494c0162805baf0))
+* **bank-settings:** add location presenter ([b6d0b00](https://github.com/luxus/pi-hindsight/commit/b6d0b006fcd5129d7ce7d02f0b3f882f7fb2da50))
+* **bank-templates:** add schema fetch tool ([f89ffba](https://github.com/luxus/pi-hindsight/commit/f89ffbaa265a1d9af89b214e10d1a87ba74a9760))
+* **bank-templates:** save exported manifests ([505a2de](https://github.com/luxus/pi-hindsight/commit/505a2de34962f4a8154f6fd28182e2ac6ce134f1))
+* **config:** migrate global memory config to user ([e7b3a8d](https://github.com/luxus/pi-hindsight/commit/e7b3a8dd05a0f6dfd74d164ae99b5ae39b8218e8))
+* **config:** read bank missions from Hindsight config ([ed15207](https://github.com/luxus/pi-hindsight/commit/ed15207cfa56e0a310cf6345b258d1965501f801))
+* configure import tool result policy ([115b4dc](https://github.com/luxus/pi-hindsight/commit/115b4dc1ad0f145f38c78a874fbd27527d837079)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* **core:** expose mental model api seam ([e6009d2](https://github.com/luxus/pi-hindsight/commit/e6009d2864dd01d8d3a957adacbf12f1b52c75c1))
+* **diagnostics:** show latest import quality ([6607a4d](https://github.com/luxus/pi-hindsight/commit/6607a4d02ce1abc157fbe4a35ceb7be0812f028d)), closes [#275](https://github.com/luxus/pi-hindsight/issues/275)
+* filter low-quality recall results ([5cebb3b](https://github.com/luxus/pi-hindsight/commit/5cebb3bf843898ca937458cd515cc483a7eca1d1)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* **import:** add gateway transcript import ([4498efd](https://github.com/luxus/pi-hindsight/commit/4498efdc3274fac6ac970df058cb8762fbdfb8b2))
+* **import:** add historical import modes ([6d45d6d](https://github.com/luxus/pi-hindsight/commit/6d45d6d34ec4d94c6ff199fddc619d1d32c36774))
+* **import:** add strict curated quality profile ([81b70b5](https://github.com/luxus/pi-hindsight/commit/81b70b5624f80f44639c65db53c393f8da08e388)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* **import:** chunk curated sessions by turns ([4cad43d](https://github.com/luxus/pi-hindsight/commit/4cad43df5a776441327799679acac87c683b96dd))
+* **import:** offer post-import mental model refresh ([1bea940](https://github.com/luxus/pi-hindsight/commit/1bea94004fb5a91eb9a7398b3e7a8a3d7cb96131))
+* **import:** record checkpoint quality context ([efc82b7](https://github.com/luxus/pi-hindsight/commit/efc82b747c4f90d5b081e37bf393accae30304b4))
+* **import:** summarize import signal and noise ([5acb3f9](https://github.com/luxus/pi-hindsight/commit/5acb3f9f83c9f2114bc775afb81cdd8bde180727)), closes [#273](https://github.com/luxus/pi-hindsight/issues/273)
+* **import:** summarize project import quality ([ced79b2](https://github.com/luxus/pi-hindsight/commit/ced79b221d1e18bdb186b9a24b517ca8a2ef4ac7)), closes [#269](https://github.com/luxus/pi-hindsight/issues/269)
+* **operations:** promote reflect query to mental model ([780c6e1](https://github.com/luxus/pi-hindsight/commit/780c6e1dd88700728f4c3a2d79d218a5ade73373))
+* **retain:** expose explicit retain options ([bfb768b](https://github.com/luxus/pi-hindsight/commit/bfb768b8bde6805e10e5027096880cd75e9e1320))
+* **routing:** explain route dry runs ([a744e8d](https://github.com/luxus/pi-hindsight/commit/a744e8d72cb0812fc4d1a2ed5cd3685b95200af3))
+* **setup:** add built-in bank templates and import metrics ([c25a6b2](https://github.com/luxus/pi-hindsight/commit/c25a6b25f3e6db35e7c49b1e0036db428920c161))
+* **setup:** offer profile-aware historical import ([7dcefed](https://github.com/luxus/pi-hindsight/commit/7dcefed35321f5579c0f69bec4deb826b89cb700))
+* **setup:** review bank templates before apply ([03388ae](https://github.com/luxus/pi-hindsight/commit/03388ae03588decab2567f18d9d0b213250dfb0c))
+* show import quality reason counts ([1f59cdd](https://github.com/luxus/pi-hindsight/commit/1f59cdd0e4e7396a45f0b77f1c46801e9b8b02df)), closes [#248](https://github.com/luxus/pi-hindsight/issues/248)
+* support Hindsight 0.6 ([2187444](https://github.com/luxus/pi-hindsight/commit/21874443be69836a66ca8ab7d262b8ccf2162e95)), closes [#234](https://github.com/luxus/pi-hindsight/issues/234)
+* **template:** add setup template editor model ([a401f7c](https://github.com/luxus/pi-hindsight/commit/a401f7c34bf17c113eb5a9255d99dfd65a123104))
+* **template:** export bank manifests ([3bf800a](https://github.com/luxus/pi-hindsight/commit/3bf800a25a155ce46b865c61dbab2638c0994b3f))
+* **tui:** add guided memory setup ([15df71f](https://github.com/luxus/pi-hindsight/commit/15df71f6cbbcb5e4d85eca02c29b0bbf8d1eb961))
+* **tui:** add mental model library ([00e8527](https://github.com/luxus/pi-hindsight/commit/00e85276da56a6071a8cb5ef3f1617d41943656e))
+* **tui:** add setup flow state machine ([245fea8](https://github.com/luxus/pi-hindsight/commit/245fea8a52d427718f6bb05ef314d79c713b0e48))
+* **tui:** flush retain queue from setup ([71aff41](https://github.com/luxus/pi-hindsight/commit/71aff416f3d236b049de31286859a5b356be3655))
+* **tui:** import bank templates during setup ([9eaaefb](https://github.com/luxus/pi-hindsight/commit/9eaaefb9cff9346645225a760d81ab686045b018))
+* **tui:** make mental models read-only ([06dd166](https://github.com/luxus/pi-hindsight/commit/06dd166314120327c9f22cd02684835f8cbbab5f))
+
+
+### Bug Fixes
+
+* enable docs pages workflow ([5487783](https://github.com/luxus/pi-hindsight/commit/5487783cc057feecd3f861f74ca2c8951245736f))
+* **import:** harden provenance and resume idempotency ([3eab1ce](https://github.com/luxus/pi-hindsight/commit/3eab1ce0028f741b6ff812da80144a8e1d547244))
+* **release:** align release-please tags ([ebf45b3](https://github.com/luxus/pi-hindsight/commit/ebf45b3a7cd89e2e29b0006d010f89f760e7c76b))
+* resolve release blockers ([3412ae7](https://github.com/luxus/pi-hindsight/commit/3412ae75944cc5b46338dfc8d4ab85e06c585060))
+* **retain:** redact retained context ([06460be](https://github.com/luxus/pi-hindsight/commit/06460be6b3b792946d765cdcb259245ef7515f97)), closes [#279](https://github.com/luxus/pi-hindsight/issues/279)
+
 ## 0.1.0 (2026-04-29)
 
 ### Features
