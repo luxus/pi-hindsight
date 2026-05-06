@@ -11,6 +11,16 @@ const astroConfigPath = process.env.ASTRO_CONFIG_PATH
 const packageManifestPath = process.env.PACKAGE_MANIFEST_PATH
   ? resolve(process.env.PACKAGE_MANIFEST_PATH)
   : join(process.cwd(), "package.json");
+const starlightIconsPath = process.env.STARLIGHT_ICONS_PATH
+  ? resolve(process.env.STARLIGHT_ICONS_PATH)
+  : join(
+      process.cwd(),
+      "node_modules",
+      "@astrojs",
+      "starlight",
+      "components-internals",
+      "Icons.ts",
+    );
 const explicitLinkCheckPaths = process.env.README_LINK_PATHS
   ? process.env.README_LINK_PATHS.split(",")
       .map((path) => path.trim())
@@ -22,6 +32,7 @@ const sidebarSlugPattern = /slug:\s*["']([^"']+)["']/g;
 const markdownLinkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
 const frontmatterPattern = /^---\n([\s\S]*?)\n---\n?/u;
 const frontmatterLinkPattern = /^\s*link:\s*["']?([^"'\s]+)["']?\s*$/gmu;
+const cardIconPattern = /<Card\b[^>]*\bicon=["']([^"']+)["'][^>]*>/g;
 const titlePattern = /^title:\s*(?:"([^"]+)"|'([^']+)'|(.+))\s*$/mu;
 const allowedUnlistedSlugs = new Set([
   "",
@@ -164,11 +175,24 @@ function packageFileSet() {
   return files;
 }
 
+function starlightIconSet() {
+  if (!existsSync(starlightIconsPath)) return undefined;
+  const content = readFileSync(starlightIconsPath, "utf8");
+  const objectBody =
+    content.match(/export const BuiltInIcons = \{([\s\S]*?)\n\};/u)?.[1] ?? content;
+  const icons = new Set();
+  for (const match of objectBody.matchAll(/^\s*(?:["']([^"']+)["']|([A-Za-z][\w-]*))\s*:/gmu)) {
+    icons.add(match[1] ?? match[2]);
+  }
+  return icons;
+}
+
 const astroConfig = readFileSync(astroConfigPath, "utf8");
 const baseMatch = astroConfig.match(/base:\s*["']([^"']+)["']/u);
 const astroBase = baseMatch?.[1]?.replace(/^\//u, "").replace(/[\\/]$/u, "");
 const files = walk(docsRoot);
 const slugs = new Set(files.map(slugForFile));
+const starlightIcons = starlightIconSet();
 const sidebarSlugs = new Set(
   [...astroConfig.matchAll(sidebarSlugPattern)].map((match) => match[1]),
 );
@@ -198,6 +222,17 @@ for (const file of files) {
 
   for (const match of content.matchAll(markdownLinkPattern)) {
     validateDocsHref(file, match[1]);
+  }
+
+  if (starlightIcons) {
+    for (const match of content.matchAll(cardIconPattern)) {
+      const icon = match[1];
+      if (!starlightIcons.has(icon)) {
+        errors.push(
+          `${relative(process.cwd(), file)} uses unsupported Starlight Card icon: ${icon}`,
+        );
+      }
+    }
   }
 }
 

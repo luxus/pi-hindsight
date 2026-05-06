@@ -16,13 +16,18 @@ function fixture() {
   const astroConfigPath = join(root, "astro.config.mjs");
   const packageManifestPath = join(root, "package.json");
   const readmePath = join(root, "README.md");
+  const starlightIconsPath = join(root, "Icons.ts");
   writeFileSync(packageManifestPath, JSON.stringify({ files: ["docs"] }, null, 2));
   writeFileSync(readmePath, "# Fixture\n\n[Start](docs/start/getting-started.md)\n");
+  writeFileSync(
+    starlightIconsPath,
+    "export const BuiltInIcons = { rocket: '', document: '', 'approve-check-circle': '' };\n",
+  );
   writeFileSync(
     astroConfigPath,
     `export default { integrations: [{ name: "starlight", options: { sidebar: [{ label: "Start", items: [{ label: "Getting started", slug: "start/getting-started" }] }] } }] };\n`,
   );
-  return { root, docsRoot, astroConfigPath, packageManifestPath, readmePath };
+  return { root, docsRoot, astroConfigPath, packageManifestPath, readmePath, starlightIconsPath };
 }
 
 function runCheck({ docsRoot, astroConfigPath }, options = {}) {
@@ -31,6 +36,7 @@ function runCheck({ docsRoot, astroConfigPath }, options = {}) {
     DOCS_ROOT: docsRoot,
     ASTRO_CONFIG_PATH: astroConfigPath,
     PACKAGE_MANIFEST_PATH: join(docsRoot, "..", "package.json"),
+    STARLIGHT_ICONS_PATH: join(docsRoot, "..", "Icons.ts"),
   };
   if (options.explicitReadmePaths !== false) {
     env.README_LINK_PATHS = join(docsRoot, "..", "README.md");
@@ -126,6 +132,16 @@ describe("docs quality check", () => {
     );
 
     expect(() => runCheck(paths)).toThrow(/links to missing docs route/u);
+  });
+
+  it("fails when MDX uses an unsupported Starlight Card icon", () => {
+    const paths = fixture();
+    writeFileSync(
+      join(paths.docsRoot, "index.mdx"),
+      '---\ntitle: Home\n---\n\nimport { Card } from "@astrojs/starlight/components";\n\n<Card title="Bad" icon="refresh">Bad icon</Card>\n',
+    );
+
+    expect(() => runCheck(paths)).toThrow(/unsupported Starlight Card icon: refresh/u);
   });
 
   it("fails when README links to a missing local file", () => {
