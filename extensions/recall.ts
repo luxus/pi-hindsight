@@ -9,7 +9,7 @@ import type {
   ResolvedConfig,
   TagsMatch,
 } from "./types.js";
-import { projectMessageText } from "./messages.js";
+import { isInjectedHindsightMemory, projectMessageText } from "./messages.js";
 import { createMemoryIdentity } from "./memory-identity.js";
 import { redactError } from "./sanitize.js";
 import { withTimeout } from "./timeout.js";
@@ -60,10 +60,6 @@ function messageContent(message: AgentMessage): string {
 function formatQueryMessage(message: AgentMessage): string | undefined {
   const content = messageContent(message).trim();
   return content ? `${messageRole(message)}: ${content}` : undefined;
-}
-
-function isInjectedHindsightMemory(message: AgentMessage): boolean {
-  return messageContent(message).trim().startsWith("<hindsight-memory>");
 }
 
 export function truncateRecallQuery(query: string, maxChars: number): string {
