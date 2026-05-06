@@ -154,6 +154,7 @@ export default defineConfig({
                 { label: "Issue tracker", slug: "development/agents/issue-tracker" },
                 { label: "Domain docs", slug: "development/agents/domain" },
                 { label: "Triage labels", slug: "development/agents/triage-labels" },
+                { label: "PR shepherd", slug: "development/agents/pr-shepherd-workflow" },
               ],
             },
           ],

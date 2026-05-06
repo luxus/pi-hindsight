@@ -79,6 +79,8 @@ For each slice:
 11. Comment on and close the issue with delivered behavior, verification, and follow-up issue links.
 12. Return to `main`, sync with `origin/main`, and continue with the next slice.
 
+A maintainer may ask agents to use the PR shepherd workflow for this loop. In that mode, create a dedicated git worktree for the slice, launch the `pr-shepherd` project subagent from that worktree, and let the shepherd own the PR through CI, Codex feedback, review-thread resolution, merge, and cleanup reporting. The parent/orchestrator must keep the main worktree clean and only start parallel implementation work when the next slice is independent or explicitly stacked. See `docs/agents/pr-shepherd-workflow.md`.
+
 Keep one implementation slice active at a time unless a maintainer explicitly asks for parallel work. Do not mix unrelated cleanup, formatting sweeps, or drive-by refactors into the current branch. If review uncovers work outside the slice, create a follow-up issue and continue after the current PR is complete.
 
 ## Commit and PR discipline for agents

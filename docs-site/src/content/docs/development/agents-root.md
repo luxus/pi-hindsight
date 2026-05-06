@@ -60,6 +60,8 @@ Use this loop for each slice:
 11. Comment on and close the issue with delivered behavior, verification, and follow-up issues.
 12. Return to `main`, sync with `origin/main`, and continue with the next slice.
 
+When a maintainer asks for the PR shepherd workflow, create a dedicated git worktree for the slice, launch the `pr-shepherd` project subagent from that worktree, and let the shepherd own the PR through CI, Codex feedback, review-thread resolution, merge, and cleanup reporting. The parent/orchestrator must keep the main worktree clean and only start parallel implementation work when the next slice is independent or explicitly stacked. See `docs/agents/pr-shepherd-workflow.md`.
+
 Keep exactly one implementation slice active at a time unless the user explicitly asks for parallel work. Do not mix unrelated cleanup or drive-by refactors into the current branch. If a review uncovers new work outside the slice, create a follow-up issue and continue after the current PR is complete.
 
 ### Commit and PR discipline for agents
@@ -328,3 +330,7 @@ Triage uses the default five-label vocabulary. See `docs/agents/triage-labels.md
 ### Domain docs
 
 This repo uses a single-context domain documentation layout. See `docs/agents/domain.md`.
+
+### PR shepherd
+
+Use the project `pr-shepherd` subagent for one-worktree, one-PR CI/Codex/merge stewardship when maintainers want parent work to continue during review waits. See `docs/agents/pr-shepherd-workflow.md`.

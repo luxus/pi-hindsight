@@ -14,6 +14,7 @@ Agent docs explain repository workflow and domain guidance for coding agents. Th
 - [Issue tracker](/pi-hindsight/development/agents/issue-tracker/)
 - [Domain docs](/pi-hindsight/development/agents/domain/)
 - [Triage labels](/pi-hindsight/development/agents/triage-labels/)
+- [PR shepherd workflow](/pi-hindsight/development/agents/pr-shepherd-workflow/)
 
 ## Internal and archive docs
 
