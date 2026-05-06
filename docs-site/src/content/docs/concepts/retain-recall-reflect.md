@@ -48,6 +48,29 @@ Use Reflect for:
 
 Do not route all automatic memory behavior through Reflect. Pi Hindsight exposes Reflect as an explicit tool/command path.
 
+## Core quality before admin surfaces
+
+Pi Hindsight's release path is deliberately narrow: make Retain, Recall, Reflect, and Import reliable before adding Hindsight administration or exploration surfaces.
+
+Current priority:
+
+- preserve durable source evidence without summaries
+- keep automatic recall scoped, bounded, and ephemeral
+- keep reflect explicit and memory-grounded
+- make curated imports signal-preserving and low-noise by default
+- expose enough status, receipts, and last-recall visibility to debug the core path safely
+
+Deferred unless a new issue reopens scope:
+
+- audit-log tools
+- webhook tools
+- graph or entity browsers
+- document or memory-unit browsers
+- operation-management tools
+- destructive bank administration UI
+
+These Hindsight features can still inform compatibility work, but they should not displace core memory quality work.
+
 ## Mental models
 
 Mental models are saved Hindsight reflect responses for recurring questions. They are useful for stable project or user context, but they are not replacements for source import material.

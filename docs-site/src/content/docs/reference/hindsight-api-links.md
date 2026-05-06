@@ -22,4 +22,14 @@ Pi Hindsight defines repository-specific policy around Hindsight:
 - deterministic import document IDs
 - local diagnostics and setup commands
 
+Pi Hindsight should use newer Hindsight request fields when they improve the core Retain/Recall/Reflect/Import loop. It should not chase every Hindsight administration or exploration API before the core loop is release-ready.
+
+Deferred Hindsight surfaces need a new design issue before implementation:
+
+- audit logs
+- webhooks
+- graph/entity/document browsers
+- memory-unit or operation-management tools
+- destructive bank administration UI
+
 When this documentation conflicts with official Hindsight behavior, follow official Hindsight docs and fix Pi Hindsight documentation or implementation.
