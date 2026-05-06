@@ -78,7 +78,7 @@ describe("memory operations", () => {
     }
   });
 
-  it("passes query timestamps, explicit entities, and reflect response schemas", async () => {
+  it("passes explicit retain options, query timestamps, explicit entities, and reflect response schemas", async () => {
     const calls: Array<{ method: string; bank?: string; options?: unknown }> = [];
     const operations = createMemoryOperations({
       getClient: () => ({
@@ -118,6 +118,18 @@ describe("memory operations", () => {
       cwd,
       content: "content",
       context: "context",
+      documentId: "explicit-doc",
+      timestamp: "2024-03-01T00:00:00Z",
+      metadata: {
+        cwd: "wrong-cwd",
+        pi_session_file: "wrong-session",
+        source: "wrong-source",
+        retainSource: "wrong-retain-source",
+        source_id: "source-1",
+      },
+      updateMode: "append",
+      observationScopes: [["repo:manual"]],
+      async: true,
       entities: [{ text: "Alice", type: "person" }],
     });
     await operations.reflect(
@@ -151,6 +163,12 @@ describe("memory operations", () => {
       maxSourceFactsTokens: 1024,
     });
     expect(calls.find((call) => call.method === "retain")?.options).toMatchObject({
+      documentId: "explicit-doc",
+      timestamp: "2024-03-01T00:00:00Z",
+      metadata: { cwd, source: "pi-hindsight", retainSource: "tool", source_id: "source-1" },
+      updateMode: "append",
+      observationScopes: [["repo:manual"]],
+      async: true,
       entities: [{ text: "Alice", type: "person" }],
     });
     expect(calls.find((call) => call.method === "reflect")?.options).toMatchObject({

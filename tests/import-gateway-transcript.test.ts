@@ -149,7 +149,12 @@ describe("gateway transcript import", () => {
       documentId: result.documentId,
       updateMode: "replace",
       tags: expect.arrayContaining(["source:gateway", "import:gateway", "channel:sms"]),
-      metadata: expect.objectContaining({ source: "gateway-transcript", channel: "sms" }),
+      metadata: expect.objectContaining({
+        source: "pi-hindsight",
+        retainSource: "import",
+        source_file: sourceFile,
+        channel: "sms",
+      }),
     });
   });
 

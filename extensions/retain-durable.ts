@@ -25,6 +25,7 @@ export interface RetainDurablyArgs {
   timestamp?: string;
   observationScopes?: string[][];
   entities?: RetainJob["item"]["entities"];
+  async?: boolean;
   capabilities?: HindsightCapabilities;
 }
 
@@ -43,9 +44,9 @@ export function buildDurableRetainJob(args: Omit<RetainDurablyArgs, "client">): 
   return buildRetainJob({
     ...args,
     metadata: {
+      ...args.metadata,
       source: "pi-hindsight",
       retainSource: args.source,
-      ...args.metadata,
     },
   });
 }

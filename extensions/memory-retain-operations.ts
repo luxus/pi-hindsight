@@ -7,7 +7,7 @@ import { expandObservationScopes } from "./observation-scopes.js";
 import { retainDurably } from "./retain-durable.js";
 import { appendRetainReceipt, listRetainReceipts } from "./retain-receipts.js";
 import { getEffectiveSessionMemoryMode, readSessionMemoryMeta } from "./session-memory-meta.js";
-import type { ResolvedConfig } from "./types.js";
+import type { ResolvedConfig, UpdateMode } from "./types.js";
 
 export function createRetainOperations(deps: MemoryOperationsDeps) {
   return {
@@ -19,6 +19,12 @@ export function createRetainOperations(deps: MemoryOperationsDeps) {
       bank?: string;
       tags?: string[];
       entities?: ResolvedConfig["retain"]["entities"];
+      documentId?: string;
+      timestamp?: string;
+      metadata?: Record<string, string>;
+      updateMode?: UpdateMode;
+      observationScopes?: string[][];
+      async?: boolean;
     }) {
       const meta = await readSessionMemoryMeta(args.cwd, args.sessionFile);
       if (!getEffectiveSessionMemoryMode(meta).retain)
@@ -35,12 +41,13 @@ export function createRetainOperations(deps: MemoryOperationsDeps) {
       ]);
       const capabilities = deps.getCapabilities?.();
       const identity = createMemoryIdentity(args.cwd, config, args.sessionFile);
-      const observationScopes = config.observations.enabled
+      const defaultObservationScopes = config.observations.enabled
         ? expandObservationScopes(config.observations.scopes, {
             ...identity,
             projectBankId: bankId,
           })
         : [];
+      const observationScopes = args.observationScopes ?? defaultObservationScopes;
       const result = await retainDurably({
         cwd: args.cwd,
         config,
@@ -49,21 +56,26 @@ export function createRetainOperations(deps: MemoryOperationsDeps) {
         content: args.content,
         context: args.context,
         tags,
-        updateMode: "replace",
-        documentId: explicitMemoryDocumentId({
-          cwd: args.cwd,
-          ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
-          bankId,
-          content: args.content,
-          context: args.context,
-        }),
+        updateMode: args.updateMode ?? "replace",
+        documentId:
+          args.documentId ??
+          explicitMemoryDocumentId({
+            cwd: args.cwd,
+            ...(args.sessionFile ? { sessionFile: args.sessionFile } : {}),
+            bankId,
+            content: args.content,
+            context: args.context,
+          }),
         metadata: {
+          ...args.metadata,
           cwd: args.cwd,
           ...(args.sessionFile ? { pi_session_file: args.sessionFile } : {}),
         },
+        ...(args.timestamp ? { timestamp: args.timestamp } : {}),
         source: "tool",
         ...(observationScopes.length ? { observationScopes } : {}),
         ...(args.entities?.length ? { entities: args.entities } : {}),
+        ...(args.async !== undefined ? { async: args.async } : {}),
         ...(capabilities ? { capabilities } : {}),
       });
       const response = { ...result, tags, queued: result.enqueued };
