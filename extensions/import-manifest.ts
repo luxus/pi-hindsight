@@ -15,6 +15,7 @@ export interface ImportManifestEntry {
   cwd: string;
   includeBranches: "current-only" | "all-leaves";
   importMode?: ImportMode;
+  toolResults?: "errors-only" | "summary" | "content";
   projectionVersion?: string;
   importProfile?: string;
   chunkIndex?: number;
@@ -62,6 +63,10 @@ function isImportManifestEntry(value: unknown): value is ImportManifestEntry {
       value.importMode === "curated" ||
       value.importMode === "raw" ||
       value.importMode === "forensic") &&
+    (value.toolResults === undefined ||
+      value.toolResults === "errors-only" ||
+      value.toolResults === "summary" ||
+      value.toolResults === "content") &&
     (value.updateMode === "append" || value.updateMode === "replace")
   );
 }

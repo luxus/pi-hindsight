@@ -316,6 +316,15 @@ export function normalizeConfig(
         ["current-only", "all-leaves"],
         DEFAULT_CONFIG.import.includeBranches,
       ),
+      toolResults: enumValue(
+        config.import?.toolResults,
+        ["errors-only", "summary", "content"],
+        DEFAULT_CONFIG.import.toolResults,
+      ),
+      toolResultSummaryMaxChars: positiveInt(
+        config.import?.toolResultSummaryMaxChars,
+        DEFAULT_CONFIG.import.toolResultSummaryMaxChars,
+      ),
       replaceExistingImportedDocs: bool(
         config.import?.replaceExistingImportedDocs,
         DEFAULT_CONFIG.import.replaceExistingImportedDocs,

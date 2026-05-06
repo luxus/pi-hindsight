@@ -1,5 +1,11 @@
 import type { ResolvedConfig } from "./types.js";
-import { isInjectedHindsightMemory, projectMessages } from "./messages.js";
+import { isInjectedHindsightMemory, projectMessage, projectMessages } from "./messages.js";
+import {
+  importToolAllowed,
+  resolveImportToolNoisePolicy,
+  summarizeToolResultContent,
+  type ImportNoiseDropReason,
+} from "./import-noise-policy.js";
 
 export type CuratedImportKeepReason =
   | "user-text"
@@ -7,10 +13,7 @@ export type CuratedImportKeepReason =
   | "tool-error-kept"
   | "message-kept";
 
-export type CuratedImportDropReason =
-  | "successful-tool-output"
-  | "recalled-memory"
-  | "empty-projection";
+export type CuratedImportDropReason = ImportNoiseDropReason;
 
 export type CuratedImportReason = CuratedImportKeepReason | CuratedImportDropReason;
 
@@ -85,11 +88,46 @@ function keepReason(message: Record<string, unknown>): CuratedImportKeepReason {
 function dropReasons(
   message: Record<string, unknown>,
   projectedMessages: Record<string, unknown>[],
+  config: ResolvedConfig,
 ): CuratedImportDropReason[] {
   if (isInjectedHindsightMemory(message)) return ["recalled-memory"];
-  if (!projectedMessages.length && message.role === "toolResult" && message.isError !== true)
+  if (!projectedMessages.length && message.role === "toolResult" && message.isError !== true) {
+    if (!importToolAllowed(importToolName(message), config.retain.toolFilter.toolResult))
+      return ["tool-filter-excluded"];
     return ["successful-tool-output"];
+  }
   return ["empty-projection"];
+}
+
+function projectCuratedImportMessage(
+  stableMessage: Record<string, unknown>,
+  config: ResolvedConfig,
+): Record<string, unknown>[] {
+  if (stableMessage.role !== "toolResult" || stableMessage.isError === true) {
+    return projectMessages([stableMessage as never], config);
+  }
+  const policy = resolveImportToolNoisePolicy(config);
+  if (policy.dropSuccessful) return [];
+  if (!importToolAllowed(importToolName(stableMessage), config.retain.toolFilter.toolResult))
+    return [];
+  const projected = projectMessage(stableMessage as never, {
+    ...config,
+    retain: {
+      ...config.retain,
+      content: {
+        ...config.retain.content,
+        toolResult: config.import.toolResults === "content" ? ["content"] : ["summary"],
+      },
+    },
+  });
+  return [
+    config.import.toolResults === "summary"
+      ? {
+          ...projected,
+          content: summarizeToolResultContent(stableMessage.content, policy.summaryMaxChars),
+        }
+      : projected,
+  ];
 }
 
 export function classifyCuratedImportMessage(
@@ -99,13 +137,13 @@ export function classifyCuratedImportMessage(
   const stableMessage = stableProjectionMessage(message);
   const projectedMessages = mergeImportProvenance(
     stableMessage,
-    projectMessages([stableMessage as never], config),
+    projectCuratedImportMessage(stableMessage, config),
   );
   const decision = projectedMessages.length ? "keep" : "drop";
   const reasons =
     decision === "keep"
       ? [keepReason(stableMessage)]
-      : dropReasons(stableMessage, projectedMessages);
+      : dropReasons(stableMessage, projectedMessages, config);
   const rawBytes = importByteLength(stableMessage);
   const projectedBytes = importByteLength(projectedMessages);
   return {

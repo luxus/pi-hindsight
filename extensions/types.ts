@@ -114,6 +114,8 @@ export interface ResolvedConfig {
     turnsPerDocument: number;
     maxDocumentBytes: number;
     includeBranches: "current-only" | "all-leaves";
+    toolResults: "errors-only" | "summary" | "content";
+    toolResultSummaryMaxChars: number;
     replaceExistingImportedDocs: boolean;
     manifestPath: string;
     checkpointPath: string;

@@ -97,6 +97,8 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     turnsPerDocument: 12,
     maxDocumentBytes: 80_000,
     includeBranches: "current-only",
+    toolResults: "errors-only",
+    toolResultSummaryMaxChars: 500,
     replaceExistingImportedDocs: true,
     manifestPath: ".pi/hindsight/import-manifest.json",
     checkpointPath: ".pi/hindsight/import-checkpoint.json",
