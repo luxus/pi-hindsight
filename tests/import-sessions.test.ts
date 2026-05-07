@@ -1917,64 +1917,80 @@ describe("Pi session import", () => {
     expect(result.sessionFiles).toEqual([current, related].sort());
   });
 
-  it("revalidates project cwd during project import execution after discovery", async () => {
-    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
-    const other = mkdtempSync(join(tmpdir(), "pi-hindsight-other-"));
-    const sessionsDir = mkdtempSync(join(tmpdir(), "pi-hindsight-sessions-"));
-    const sessionFile = join(sessionsDir, "current.jsonl");
-    const projectSession = [
-      JSON.stringify({ type: "session", id: "current", cwd: project }),
-      JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "c" } }),
-    ].join("\n");
-    const movedSession = [
-      JSON.stringify({ type: "session", id: "moved", cwd: other }),
-      JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "m" } }),
-    ].join("\n");
-    writeFileSync(sessionFile, projectSession);
+  it.each([
+    {
+      name: "different cwd",
+      replacementSession: (other: string) =>
+        JSON.stringify({ type: "session", id: "moved", cwd: other }),
+      expectedError: /Refusing to import session from cwd/,
+    },
+    {
+      name: "missing cwd",
+      replacementSession: () => JSON.stringify({ type: "session", id: "moved" }),
+      expectedError: /Refusing to import session without cwd/,
+    },
+  ])(
+    "revalidates project cwd during project import execution after discovery: $name",
+    async ({ replacementSession, expectedError }) => {
+      const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+      const other = mkdtempSync(join(tmpdir(), "pi-hindsight-other-"));
+      const sessionsDir = mkdtempSync(join(tmpdir(), "pi-hindsight-sessions-"));
+      const sessionFile = join(sessionsDir, "current.jsonl");
+      const projectSession = [
+        JSON.stringify({ type: "session", id: "current", cwd: project }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "c" } }),
+      ].join("\n");
+      const movedSession = [
+        replacementSession(other),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "m" } }),
+      ].join("\n");
+      writeFileSync(sessionFile, projectSession);
 
-    const fsPromises = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
-    let sessionReads = 0;
-    const calls: unknown[][] = [];
+      const fsPromises =
+        await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+      let sessionReads = 0;
+      const calls: unknown[][] = [];
 
-    vi.resetModules();
-    vi.doMock("node:fs/promises", () => ({
-      ...fsPromises,
-      readFile: async (...args: Parameters<typeof fsPromises.readFile>) => {
-        const result = await fsPromises.readFile(...args);
-        if (args[0] === sessionFile && sessionReads++ === 0) {
-          await fsPromises.writeFile(sessionFile, movedSession, "utf8");
-        }
-        return result;
-      },
-    }));
-
-    try {
-      const { importProjectSessions: importProjectSessionsWithSwappedRead } =
-        await import("../extensions/import-sessions.js");
-
-      await expect(
-        importProjectSessionsWithSwappedRead({
-          cwd: project,
-          currentSessionFile: sessionFile,
-          bankId: "bank",
-          config: DEFAULT_CONFIG,
-          client: {
-            retain: async (...args: unknown[]) => {
-              calls.push(args);
-            },
-            recall: async () => [],
-            reflect: async () => ({}),
-          },
-        }),
-      ).rejects.toThrow(/Refusing to import session from cwd/);
-    } finally {
-      vi.doUnmock("node:fs/promises");
       vi.resetModules();
-    }
+      vi.doMock("node:fs/promises", () => ({
+        ...fsPromises,
+        readFile: async (...args: Parameters<typeof fsPromises.readFile>) => {
+          const result = await fsPromises.readFile(...args);
+          if (args[0] === sessionFile && sessionReads++ === 0) {
+            await fsPromises.writeFile(sessionFile, movedSession, "utf8");
+          }
+          return result;
+        },
+      }));
 
-    expect(sessionReads).toBe(2);
-    expect(calls).toHaveLength(0);
-  });
+      try {
+        const { importProjectSessions: importProjectSessionsWithSwappedRead } =
+          await import("../extensions/import-sessions.js");
+
+        await expect(
+          importProjectSessionsWithSwappedRead({
+            cwd: project,
+            currentSessionFile: sessionFile,
+            bankId: "bank",
+            config: DEFAULT_CONFIG,
+            client: {
+              retain: async (...args: unknown[]) => {
+                calls.push(args);
+              },
+              recall: async () => [],
+              reflect: async () => ({}),
+            },
+          }),
+        ).rejects.toThrow(expectedError);
+      } finally {
+        vi.doUnmock("node:fs/promises");
+        vi.resetModules();
+      }
+
+      expect(sessionReads).toBe(2);
+      expect(calls).toHaveLength(0);
+    },
+  );
 
   it("discovers repeated equivalent normalized project cwd paths", async () => {
     const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));

@@ -93,6 +93,7 @@ export async function importPiSession(args: {
   client: HindsightLikeClient;
   config: ResolvedConfig;
   dryRun?: boolean;
+  requireMatchingCwd?: boolean;
   includeBranches?: ResolvedConfig["import"]["includeBranches"];
 }): Promise<ImportSessionResult> {
   const text = await readFile(args.sessionFile, "utf8");
@@ -103,6 +104,9 @@ export async function importPiSession(args: {
     bankId: args.bankId,
     config: args.config,
     ...(args.cwd ? { cwd: args.cwd } : {}),
+    ...(args.requireMatchingCwd !== undefined
+      ? { requireMatchingCwd: args.requireMatchingCwd }
+      : {}),
     ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
   });
   const execution = await executeImportPlan({
@@ -150,6 +154,7 @@ export async function importProjectSessions(args: {
       await importPiSession({
         sessionFile,
         cwd: args.cwd,
+        requireMatchingCwd: true,
         bankId: args.bankId,
         client: args.client,
         config: {

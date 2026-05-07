@@ -32,8 +32,14 @@ export function buildImportPlan(args: {
   bankId: string;
   config: ResolvedConfig;
   cwd?: string;
+  requireMatchingCwd?: boolean;
   includeBranches?: ResolvedConfig["import"]["includeBranches"];
 }): ImportPlan {
+  if (args.cwd && args.requireMatchingCwd && !args.parsed.cwd) {
+    throw new Error(
+      `Refusing to import session without cwd; current cwd is ${args.cwd}. Use explicit file import for unscoped sessions.`,
+    );
+  }
   if (args.cwd && args.parsed.cwd && !sameCwd(args.parsed.cwd, args.cwd)) {
     throw new Error(
       `Refusing to import session from cwd ${args.parsed.cwd}; current cwd is ${args.cwd}. Use project-scoped import from the matching repo.`,
