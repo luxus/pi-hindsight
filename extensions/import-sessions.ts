@@ -149,6 +149,7 @@ export async function importProjectSessions(args: {
     imported.push(
       await importPiSession({
         sessionFile,
+        cwd: args.cwd,
         bankId: args.bankId,
         client: args.client,
         config: {

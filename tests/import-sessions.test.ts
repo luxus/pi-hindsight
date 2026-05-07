@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
@@ -1915,6 +1915,65 @@ describe("Pi session import", () => {
 
     expect(result.scanned).toBe(3);
     expect(result.sessionFiles).toEqual([current, related].sort());
+  });
+
+  it("revalidates project cwd during project import execution after discovery", async () => {
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    const other = mkdtempSync(join(tmpdir(), "pi-hindsight-other-"));
+    const sessionsDir = mkdtempSync(join(tmpdir(), "pi-hindsight-sessions-"));
+    const sessionFile = join(sessionsDir, "current.jsonl");
+    const projectSession = [
+      JSON.stringify({ type: "session", id: "current", cwd: project }),
+      JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "c" } }),
+    ].join("\n");
+    const movedSession = [
+      JSON.stringify({ type: "session", id: "moved", cwd: other }),
+      JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "m" } }),
+    ].join("\n");
+    writeFileSync(sessionFile, projectSession);
+
+    const fsPromises = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    let sessionReads = 0;
+    const calls: unknown[][] = [];
+
+    vi.resetModules();
+    vi.doMock("node:fs/promises", () => ({
+      ...fsPromises,
+      readFile: async (...args: Parameters<typeof fsPromises.readFile>) => {
+        const result = await fsPromises.readFile(...args);
+        if (args[0] === sessionFile && sessionReads++ === 0) {
+          await fsPromises.writeFile(sessionFile, movedSession, "utf8");
+        }
+        return result;
+      },
+    }));
+
+    try {
+      const { importProjectSessions: importProjectSessionsWithSwappedRead } =
+        await import("../extensions/import-sessions.js");
+
+      await expect(
+        importProjectSessionsWithSwappedRead({
+          cwd: project,
+          currentSessionFile: sessionFile,
+          bankId: "bank",
+          config: DEFAULT_CONFIG,
+          client: {
+            retain: async (...args: unknown[]) => {
+              calls.push(args);
+            },
+            recall: async () => [],
+            reflect: async () => ({}),
+          },
+        }),
+      ).rejects.toThrow(/Refusing to import session from cwd/);
+    } finally {
+      vi.doUnmock("node:fs/promises");
+      vi.resetModules();
+    }
+
+    expect(sessionReads).toBe(2);
+    expect(calls).toHaveLength(0);
   });
 
   it("discovers repeated equivalent normalized project cwd paths", async () => {
