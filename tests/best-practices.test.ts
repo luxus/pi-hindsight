@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { buildRetainJob } from "../extensions/retain.js";
 import { selectMemoryScopes } from "../extensions/memory-scope.js";

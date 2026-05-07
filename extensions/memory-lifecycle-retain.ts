@@ -1,5 +1,5 @@
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { projectMessages } from "./messages.js";
 import { routeMemoryCandidate, type MemoryRouteDecision } from "./memory-router.js";
 import { enqueueRetainFromAgentEnd } from "./retain.js";

@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { getSessionFile } from "./session.js";
 import { formatHindsightStatus, type HindsightActivity } from "./status.js";
 import type { ResolvedConfig } from "./types.js";

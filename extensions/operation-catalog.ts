@@ -1,5 +1,9 @@
 import { Type } from "typebox";
-import { defineTool, type ExtensionAPI, type ToolDefinition } from "@mariozechner/pi-coding-agent";
+import {
+  defineTool,
+  type ExtensionAPI,
+  type ToolDefinition,
+} from "@earendil-works/pi-coding-agent";
 import { importCommandOperations } from "./command-imports.js";
 import { maintenanceCommandOperations } from "./command-maintenance.js";
 import { sessionCommandOperations } from "./command-session.js";

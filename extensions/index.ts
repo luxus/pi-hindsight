@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerTools } from "./tools.js";
 import { registerCommands } from "./commands.js";
 import { createMemoryLifecycle } from "./memory-lifecycle.js";

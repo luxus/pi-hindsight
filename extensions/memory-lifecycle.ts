@@ -1,4 +1,4 @@
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import { resolveConfig } from "./config.js";
 import { consumeLastConfigMigrationResults } from "./config-migration.js";
 import { deriveProjectBankId } from "./banking.js";

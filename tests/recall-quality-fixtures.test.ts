@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { filterRecallQuality } from "../extensions/recall-quality-policy.js";
 import { recallForContext, renderRecallBlocks } from "../extensions/recall.js";

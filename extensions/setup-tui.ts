@@ -1,4 +1,4 @@
-import type { ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { redactError } from "./sanitize.js";
 import type { FieldId } from "./config-editing-model.js";
 import { createMemoryOperations, type MemoryOperationsDeps } from "./memory-operation-service.js";

@@ -1,4 +1,4 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { recallForContext } from "./recall.js";
 import { redactError } from "./sanitize.js";
 import { writeLastRecallSnapshot } from "./recall-visibility.js";

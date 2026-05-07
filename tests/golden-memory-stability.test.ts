@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { createMemoryOperations } from "../extensions/memory-operation-service.js";
 import { createRetainTurnPolicy } from "../extensions/memory-lifecycle-retain.js";

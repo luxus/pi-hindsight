@@ -1,4 +1,4 @@
-import { Key, matchesKey } from "@mariozechner/pi-tui";
+import { Key, matchesKey } from "@earendil-works/pi-tui";
 import type { ConfigEditingField, ConfigEditingTab } from "./config-editing-model.js";
 import type {
   SetupActionId,

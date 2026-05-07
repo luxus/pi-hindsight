@@ -1,5 +1,5 @@
-import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import { truncateToWidth, visibleWidth, type Component } from "@mariozechner/pi-tui";
+import { DynamicBorder } from "@earendil-works/pi-coding-agent";
+import { truncateToWidth, visibleWidth, type Component } from "@earendil-works/pi-tui";
 import type { ConfigEditingTab } from "./config-editing-model.js";
 import type { RetainReceipt } from "./retain-receipts.js";
 import {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { composeRecallQuery, recallForContext, renderRecallBlocks } from "../extensions/recall.js";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
 describe("recall formatting", () => {
   it("builds query from recent user messages", () => {

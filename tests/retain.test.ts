@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config.js";
 import { buildRetainJob } from "../extensions/retain.js";
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 
 describe("buildRetainJob", () => {
   it("stores structured JSON with append mode and context", () => {

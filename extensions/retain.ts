@@ -1,4 +1,4 @@
-import type { AgentEndEvent } from "@mariozechner/pi-coding-agent";
+import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import type {
   HindsightCapabilities,
   HindsightLikeClient,
