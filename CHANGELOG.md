@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/luxus/pi-hindsight/compare/v0.2.0...v0.3.0) (2026-05-07)
+
+
+### Features
+
+* **deps:** migrate Pi runtime package namespace ([ff89de7](https://github.com/luxus/pi-hindsight/commit/ff89de7e44f48ecf1a4e418e3fd13903fa3e3161))
+* expose advanced recall controls ([be8c3c6](https://github.com/luxus/pi-hindsight/commit/be8c3c64904744aa68038d574af257272fc0a95a))
+* **setup:** add guided memory profiles ([#321](https://github.com/luxus/pi-hindsight/issues/321)) ([f81d11d](https://github.com/luxus/pi-hindsight/commit/f81d11d0a2ffb42bc31d3b5dbe70838e3691be24))
+* **tools:** add bank exploration tools ([98d0cd1](https://github.com/luxus/pi-hindsight/commit/98d0cd18c6537afd58f42527bfd29747420fa36d))
+* **tools:** add Hindsight admin inspection tools ([1d27678](https://github.com/luxus/pi-hindsight/commit/1d276782fc2347b219946f4b435400ac09877bbe))
+
+
+### Bug Fixes
+
+* harden queue lock race retries on Windows ([b87c24b](https://github.com/luxus/pi-hindsight/commit/b87c24b2a43c7a65302959a013311a4b2f2726f9)), closes [#311](https://github.com/luxus/pi-hindsight/issues/311)
+* **import:** dedupe queued gateway imports ([#301](https://github.com/luxus/pi-hindsight/issues/301)) ([8b11c88](https://github.com/luxus/pi-hindsight/commit/8b11c8897e62741afea607d32db38cbc1a351b74))
+* **import:** skip empty curated session imports ([bcbf0b7](https://github.com/luxus/pi-hindsight/commit/bcbf0b7705b603bbdb35bc4e91e4df7562f20dd9))
+* revalidate project import cwd during execution ([fde2e05](https://github.com/luxus/pi-hindsight/commit/fde2e05bf32db198daa8ca697ab7930fd2553bc0))
+* **security:** redact setup error surfaces ([cd0122d](https://github.com/luxus/pi-hindsight/commit/cd0122db5405b0128e6160d5b480ffbce6f3bdbe)), closes [#298](https://github.com/luxus/pi-hindsight/issues/298)
+
 ## [0.2.0](https://github.com/luxus/pi-hindsight/compare/v0.1.0...v0.2.0) (2026-05-06)
 
 ### Features
