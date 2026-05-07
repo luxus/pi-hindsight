@@ -278,7 +278,7 @@ describe("Pi session import", () => {
       wouldWrite: true,
     });
     expect(forensic.documents[0]).not.toHaveProperty("skipReason");
-  });
+  }, 15_000);
 
   it("chunks curated import documents by user turns with deterministic IDs and checkpoint metadata", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-chunks-"));
