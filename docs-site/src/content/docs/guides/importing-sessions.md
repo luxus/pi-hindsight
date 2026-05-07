@@ -93,6 +93,8 @@ Equivalent path forms are treated as the same project:
 
 Imports use deterministic document IDs based on session and branch leaf identity.
 
+Curated import document IDs also include the derived chunking profile (`turnsPerDocument` and `maxDocumentBytes`), projection namespace, and chunk range. Changing those chunk settings, or changing another input that participates in the document-ID namespace, creates a distinct deterministic set of imported documents. `import.qualityProfile` and successful-tool-result settings change retained content or metadata, but they do not create a separate document-ID namespace.
+
 Historical imports default to deterministic replace semantics so reimporting the same document updates the same Hindsight document instead of appending duplicates.
 
 Live sessions still use stable live-session document IDs with `updateMode: "append"`.
@@ -110,7 +112,7 @@ The checkpoint records document delivery state so interrupted imports can resume
 
 If an import is queued but not delivered because Hindsight is unavailable, the checkpoint records the document as `queued` and the retain queue keeps the job for later flushing. Checkpoint run and document entries also record import quality context such as `toolResults` and strict curated `importQualityProfile` when available, so recovery can show which projection policy produced pending, completed, queued, or failed documents.
 
-## Rebuilding a cleared bank
+## Rebuilds and namespace changes
 
 To rebuild from historical sessions after clearing a Hindsight bank, remove or move:
 
@@ -120,6 +122,8 @@ To rebuild from historical sessions after clearing a Hindsight bank, remove or m
 ```
 
 Then rerun the import. Use `--dry-run` first.
+
+When you intentionally change chunking or another document-ID namespace input, plan the change as a rebuild. Preview first, then decide whether to keep both namespaces or clean up old imported documents in Hindsight. If old retain jobs are still queued, clear or flush the retain queue before reimporting so stale document IDs are not delivered later. Remove or move the import checkpoint and manifest when you want the new namespace to be imported from scratch instead of resumed from prior state.
 
 ## Import modes
 

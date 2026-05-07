@@ -71,6 +71,8 @@ Gateway dry-runs report items such as:
 
 Historical import writes an Import Manifest and Import Checkpoint so work is inspectable, resumable, and idempotent. Curated document IDs include profile/projection/chunk information. Raw and forensic modes preserve legacy IDs.
 
+Changing the derived chunking profile (`turnsPerDocument` and `maxDocumentBytes`) or another document-ID namespace input creates a different deterministic ID set. Reimporting after such a change writes new imported documents rather than replacing the previous namespace. `import.qualityProfile` and successful-tool-result settings change retained content or metadata, but they do not create a separate document-ID namespace. Treat namespace changes as rebuilds: dry-run first, clean up old imported documents if you do not want both namespaces, and reset relevant checkpoint/manifest or queued retain jobs when stale IDs should not resume.
+
 Curated import has a successful-tool-result policy:
 
 - `errors-only` (default): drop successful tool output and keep failed tool evidence.
