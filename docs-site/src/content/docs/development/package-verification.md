@@ -10,10 +10,10 @@ Supported runtime and package ranges are declared in `package.json` and enforced
 
 - Node.js: `>=24 <25`
 - npm: `>=11 <12`
-- Pi peer packages: `@earendil-works/pi-coding-agent`, `@earendil-works/pi-agent-core`, and `@earendil-works/pi-tui` `>=0.74.0 <0.75.0`
+- Pi peer packages: `@earendil-works/pi-coding-agent`, `@earendil-works/pi-agent-core`, and `@earendil-works/pi-tui` use `*` because Pi supplies runtime packages.
 - TypeBox peer package: `typebox >=1.1.24 <2`
 
-Pi Hindsight versions with these peers require Pi packages from the `@earendil-works` scope. Older Pi installs that only provide the retired `@mariozechner` scope are no longer supported by this compatibility line.
+Pi Hindsight versions with these peers require Pi packages from the `@earendil-works` scope and are tested locally against Pi `0.74.0` dev dependencies. Older Pi installs that only provide the retired `@mariozechner` scope are no longer supported by this compatibility line.
 
 Keep this compatibility detail in maintainer docs instead of the README unless the install story changes.
 
