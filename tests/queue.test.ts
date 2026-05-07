@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
+import { isQueueLockRaceError } from "../extensions/queue-lock.js";
 import {
   enqueueRetainJob,
   flushRetainQueue,
@@ -71,6 +72,23 @@ async function createQueueWithJob(id = "1"): Promise<string> {
 }
 
 describe("retain queue", () => {
+  it("classifies Windows lock-directory race errors as retryable contention", () => {
+    expect(isQueueLockRaceError(Object.assign(new Error("exists"), { code: "EEXIST" }))).toBe(true);
+    expect(
+      isQueueLockRaceError(Object.assign(new Error("transient eperm"), { code: "EPERM" })),
+    ).toBe(true);
+    expect(isQueueLockRaceError(Object.assign(new Error("busy"), { code: "EBUSY" }))).toBe(true);
+    expect(isQueueLockRaceError(Object.assign(new Error("not empty"), { code: "ENOTEMPTY" }))).toBe(
+      true,
+    );
+    expect(isQueueLockRaceError(Object.assign(new Error("missing"), { code: "ENOENT" }))).toBe(
+      false,
+    );
+    expect(
+      isQueueLockRaceError(Object.assign(new Error("access denied"), { code: "EACCES" })),
+    ).toBe(false);
+  });
+
   it("checks stale locks from owner acquiredAt instead of waiter age", () => {
     const now = Date.parse("2026-04-27T12:00:00.000Z");
     expect(

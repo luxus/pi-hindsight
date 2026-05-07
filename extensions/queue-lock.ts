@@ -78,7 +78,8 @@ async function isOwnerlessLockDirectoryStale(lockPath: string): Promise<boolean>
   try {
     const info = await stat(lockPath);
     return Date.now() - info.mtimeMs > RETAIN_QUEUE_LOCK.staleMs;
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
     return true;
   }
 }
@@ -96,6 +97,11 @@ async function isQueueLockStale(lockPath: string, owner: QueueLockOwner): Promis
 async function removeLockIfOwned(lockPath: string, token: string): Promise<void> {
   const owner = await readQueueLockOwner(lockPath);
   if (owner?.token === token) await removeDirectory(lockPath);
+}
+
+export function isQueueLockRaceError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  return code === "EEXIST" || code === "EPERM" || code === "ENOTEMPTY" || code === "EBUSY";
 }
 
 function staleClaimPath(lockPath: string): string {
@@ -174,8 +180,9 @@ async function acquireFileLock(path: string): Promise<() => Promise<void>> {
         await removeLockIfOwned(lockPath, token);
       };
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      if (await removeLockIfStillStale(lockPath)) continue;
+      const code = (error as NodeJS.ErrnoException).code;
+      if (!isQueueLockRaceError(error)) throw error;
+      if (code === "EEXIST" && (await removeLockIfStillStale(lockPath))) continue;
       if (Date.now() - started > RETAIN_QUEUE_LOCK.timeoutMs)
         throw new Error(`Timed out waiting for retain queue lock ${lockPath}`);
       await sleep(RETAIN_QUEUE_LOCK.retryMs);
