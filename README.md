@@ -1,28 +1,28 @@
 # Pi Hindsight Extension
 
-Persistent memory for [Pi](https://github.com/mariozechner/pi) backed by [Hindsight](https://hindsight.vectorize.io/).
+Persistent memory for [Pi](https://github.com/earendil-works/pi-coding-agent) backed by [Hindsight](https://hindsight.vectorize.io/).
 
 **Documentation:** <https://luxus.github.io/pi-hindsight/>
 
 Pi Hindsight recalls relevant project memory before model calls, retains structured session deltas after completed agent runs, and exposes explicit memory tools for direct retain/recall/reflect operations.
 
-The extension is inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). This version keeps the same useful idea, then tightens project isolation, queue durability, diagnostics, and release hardening.
-
 ## Install
 
-Install from GitHub:
+Install the published npm package:
+
+```bash
+pi install npm:@luxusai/pi-hindsight
+```
+
+You can still install from GitHub when you want the current repository source instead of the latest npm release:
 
 ```bash
 pi install https://github.com/luxus/pi-hindsight
 ```
 
-For local development, install a checkout path instead:
-
-```bash
-pi install /path/to/pi-hindsight
-```
-
 Package name: `@luxusai/pi-hindsight`.
+
+For local checkout installs, see [Development](#development).
 
 ## Quick start
 
@@ -39,7 +39,7 @@ See the [getting started guide](https://luxus.github.io/pi-hindsight/start/getti
 ## Safety defaults
 
 - Project memory stays in a project bank by default.
-- Global/user memory is opt-in and explicitly configured.
+- User memory is opt-in and explicitly configured.
 - Recall injection is ephemeral; recalled memory is not written back into transcripts.
 - Automatic retain redacts common secrets before writing memory.
 - Exact document deletion requires exact bank ID, exact document ID, and `confirm: true`.
@@ -69,4 +69,14 @@ Run Pi with the local extension:
 pi -e ./extensions/index.ts
 ```
 
+Install a local checkout into Pi when you need to test package loading from your working tree:
+
+```bash
+pi install /path/to/pi-hindsight
+```
+
 For maintainer details, see [Development setup](https://luxus.github.io/pi-hindsight/development/development/) and [Release process](https://luxus.github.io/pi-hindsight/development/release/).
+
+## Prior art
+
+Pi Hindsight is inspired by [`noctuid/pi-hindsight`](https://github.com/noctuid/pi-hindsight). This package keeps the same useful idea, then tightens project isolation, queue durability, diagnostics, and release hardening.

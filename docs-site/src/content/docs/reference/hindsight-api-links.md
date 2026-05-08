@@ -16,7 +16,7 @@ Official Hindsight documentation and API behavior are the source of truth for Hi
 Pi Hindsight defines repository-specific policy around Hindsight:
 
 - default Project Bank derivation
-- optional Global/User Bank config
+- optional User Bank config
 - automatic Recall injection through Pi context hooks
 - queue-first automatic Retain
 - deterministic import document IDs

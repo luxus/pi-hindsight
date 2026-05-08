@@ -2,35 +2,41 @@
 title: "Historical Import"
 ---
 
-**Import** is the historical session ingestion path. It parses Pi JSONL sessions or gateway transcripts, builds deterministic source documents, queues Retain Jobs, and records manifests/checkpoints.
+Import is optional historical backfill. It is not required for live memory after setup.
 
-Import is not generic summarization. Curated import keeps filtered structured source material so Hindsight still receives evidence with provenance.
+Pi Hindsight has two import families:
+
+- **Pi session import** for project/coding sessions stored as Pi JSONL.
+- **Gateway transcript import** for user conversation history stored as gateway/chat transcript JSONL.
+
+The `/hindsight` guided setup flow can offer import after bank/template setup and previews before writing memory. Use the command and tool surfaces when you need repeatable or explicit-file imports.
+
+## What import writes
+
+Import builds deterministic source documents, sends them through Retain, and records local checkpoint/manifest state. The retained content is filtered structured source evidence, not a summary.
+
+Default files:
+
+```text
+.pi/hindsight/import-manifest.json
+.pi/hindsight/import-checkpoint.json
+```
 
 ## Quality vocabulary
 
 - **Durable signal**: raw source evidence worth keeping because it records facts, decisions, tasks, bugs, errors, verification, issues, PRs, commits, blockers, follow-ups, or workflow outcomes.
 - **Import noise**: transcript material that should not become source truth by default, such as streaming UI records, process/status chatter, repeated successful output, large file reads, and replay artifacts.
-- **Tool evidence**: tool output with memory value. Failed tool results are usually useful evidence when kept concise; large successful tool output is usually noise. Curated import defaults to `toolResults: "errors-only"`; use `summary` or `content` only for deliberate low-noise imports.
+- **Tool evidence**: tool output with memory value. Failed tool results are usually useful evidence when concise; large successful output is usually noise.
 - **Workflow signal**: project execution evidence such as issue selection, branch/PR/commit references, review decisions, CI/smoke checks, release gates, blockers, and follow-ups.
-- **Recall contamination**: retaining or importing prior Recall Blocks or Last-Recall artifacts as if they were new source evidence. Curated import and live retain must avoid it.
+- **Recall contamination**: retaining prior Recall Blocks or Last-Recall artifacts as if they were new source evidence.
 
 ## Modes
 
 - `curated`: default high-signal projection for normal historical imports.
-- `raw`: explicit raw branch import for compatibility/debugging.
-- `forensic`: raw-style import that preserves recalled memory blocks and other artifacts for audit use.
+- `raw`: compatibility/debug escape hatch.
+- `forensic`: audit/recovery mode that can preserve normally filtered artifacts.
 
-Raw and forensic modes preserve legacy document IDs and payload shape.
-
-## Profiles
-
-Setup-selected bank templates can inform import defaults:
-
-- coding/project template → repo-scoped Pi agent sessions
-- assistant/personal template → gateway/chat transcripts
-- general/user template → conversation/open-thread import
-
-Source types are explicit. Pi Hindsight does not silently mix repo sessions and gateway transcripts.
+Curated import defaults to failed-tool evidence only for tool output. Use successful-tool summaries/content only for deliberate low-noise imports.
 
 ## Dry-run first
 
@@ -39,3 +45,7 @@ Historical import should be previewed before writing. Dry-run reports include co
 ## Provenance
 
 Import records provenance in tags and metadata. Use tags for filtering and metadata for traceability back to source sessions, branches, conversations, and chunks.
+
+## More detail
+
+For task steps and command/tool examples, see [Importing sessions](/pi-hindsight/guides/importing-sessions/) and [Import controls reference](/pi-hindsight/reference/import-controls/).

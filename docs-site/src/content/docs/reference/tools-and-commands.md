@@ -4,7 +4,7 @@ title: "Tools and commands"
 
 For generated details of registered tools and editable config fields, see [Generated surface reference](/pi-hindsight/reference/surface-reference/).
 
-`/hindsight` is the main control center. Commands are convenience shortcuts and escape hatches for advanced workflows.
+`/hindsight` is the main control center. Commands are convenience shortcuts for advanced, repeat, or scripted workflows.
 
 ## Main command
 
@@ -34,7 +34,7 @@ The `hindsight_configure` tool can write config from agents. Prefer `/hindsight`
 /hindsight:import-project-sessions
 ```
 
-Use dry-run before non-dry-run imports. See [Import controls reference](/pi-hindsight/reference/import-controls/) and [Importing sessions](/pi-hindsight/guides/importing-sessions/).
+For first-time backfill, prefer the guided import prompt in `/hindsight`. Use these commands when you need repeat imports or explicit files. Always dry-run before non-dry-run imports. See [Import controls reference](/pi-hindsight/reference/import-controls/) and [Importing sessions](/pi-hindsight/guides/importing-sessions/).
 
 ## Queue and snapshots
 

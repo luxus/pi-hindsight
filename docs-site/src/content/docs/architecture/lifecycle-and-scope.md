@@ -14,7 +14,7 @@ Pi Hindsight maps documented Pi extension hooks to Hindsight memory operations.
 ## Scope boundaries
 
 - Project memory uses the selected Project Bank.
-- Optional user/global memory uses the configured Global/User Bank.
+- Optional user memory uses the configured User Bank.
 - Tags isolate recall and retain behavior.
 - Metadata records provenance but is not the filtering boundary.
 

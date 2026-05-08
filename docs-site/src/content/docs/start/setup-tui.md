@@ -2,7 +2,7 @@
 title: "Setup TUI"
 ---
 
-Run the setup TUI from Pi:
+`/hindsight` is the main control center. Use it before reaching for command shortcuts.
 
 ```text
 /hindsight
@@ -10,33 +10,34 @@ Run the setup TUI from Pi:
 
 The TUI shows:
 
-- memory status
+- memory profile and enablement
 - selected Project Bank and optional User Bank
 - Hindsight server reachability
-- Retain Queue state
-- import state
+- Retain Queue state and flush action
+- import manifest/checkpoint state
 - recent Retain receipts
 - editable local Pi configuration fields
 - read-only mental model inventory
 
 ## Guided setup
 
-If no project config exists, `/hindsight` starts guided setup before the advanced TUI.
+If no project config exists, `/hindsight` starts guided setup before the advanced TUI. You can rerun guided setup later with `g`.
 
-Guided setup helps you choose:
+Guided setup asks for:
 
-1. memory profile
-2. project and/or user bank target
-3. built-in or custom bank template
-4. optional dry-run-first historical import
-5. optional post-import mental model refresh
+1. Hindsight server URL
+2. memory profile
+3. project and/or user bank target
+4. built-in or custom bank template
+5. optional dry-run-first historical import
+6. optional post-import mental model refresh
 
-The profile controls which config scopes are written:
+Profiles decide which config scopes are written:
 
-- **Project + User** writes repository project-memory settings and writes reusable user-bank settings to global Pi config.
-- **Project Only** writes repository project-memory settings only.
-- **User Only** disables project memory and writes reusable user-bank settings to global Pi config.
-- **Recall Only** keeps automatic recall enabled and disables automatic retain.
+- **Project + User** writes repo project-memory settings plus reusable user-bank settings in global Pi config.
+- **Project Only** writes repo project-memory settings only.
+- **User Only** disables project memory and writes reusable user-bank settings in global Pi config.
+- **Recall Only** keeps automatic recall on and automatic retain off.
 
 Bank templates and mental models are Hindsight bank-owned settings. Pi Hindsight does not store mission text or directive definitions as normal Pi JSON source of truth.
 
@@ -55,16 +56,15 @@ Bank templates and mental models are Hindsight bank-owned settings. Pi Hindsight
 
 After setup, confirm:
 
-- memory is enabled
+- server is reachable
 - expected profile is active
-- expected Project Bank is selected only when project memory is intended
-- expected User Bank is selected only when user memory is intended
-- Hindsight server is reachable
-- Retain Queue path is visible
+- Project Bank appears only when project memory is intended
+- User Bank appears only when user memory is intended
+- Retain Queue path is visible and writable
+- import state is empty, previewed, imported, queued, or failed as expected
 
-Preview imports before writing memory:
+## Import from the TUI first
 
-```text
-/hindsight:import-current --dry-run
-/hindsight:import-project-sessions --dry-run
-```
+Guided setup can offer historical import after config/template setup. That path previews first, then asks before writing memory. Prefer it for first-time backfill.
+
+Use command shortcuts later when you already know which session set you want to import. See [Importing sessions](/pi-hindsight/guides/importing-sessions/).

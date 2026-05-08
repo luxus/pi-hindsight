@@ -4,7 +4,7 @@ title: "Configuration reference"
 
 Pi Hindsight resolves configuration from defaults, global config, project config, and environment variables.
 
-For concepts behind Project Banks, Global/User Banks, tags, metadata, Document IDs, and Update Modes, see:
+For concepts behind Project Banks, User Banks, tags, metadata, Document IDs, and Update Modes, see:
 
 - [Memory Banks](/pi-hindsight/concepts/memory-banks/)
 - [Document IDs and update modes](/pi-hindsight/concepts/document-ids-update-modes/)

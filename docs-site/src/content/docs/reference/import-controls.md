@@ -2,7 +2,9 @@
 title: "Import controls reference"
 ---
 
-Import controls preview and ingest historical Pi sessions or gateway transcripts. For the concept model, see [Historical Import](/pi-hindsight/concepts/imports/).
+Import controls are the advanced surface for previewing and ingesting historical Pi sessions or gateway transcripts. For first-time setup, prefer `/hindsight` guided setup; it can offer a dry-run-first import flow.
+
+For the concept model, see [Historical Import](/pi-hindsight/concepts/imports/). For task guidance, see [Importing sessions](/pi-hindsight/guides/importing-sessions/).
 
 ## Commands
 
@@ -14,7 +16,7 @@ Import controls preview and ingest historical Pi sessions or gateway transcripts
 /hindsight:import-project-sessions
 ```
 
-Use `--dry-run` before writing memory.
+Use `--dry-run` before writing memory. Use `--all-leaves` only when you want every fork leaf in an explicit session file.
 
 ## Tools
 
@@ -23,7 +25,7 @@ hindsight_import({ dryRun: true })
 hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
 ```
 
-`hindsight_import` imports Pi session JSONL. `hindsight_import_gateway` imports gateway/chat transcript JSONL into the configured user memory bank by default.
+`hindsight_import` imports Pi session JSONL. `hindsight_import_gateway` imports gateway/chat transcript JSONL into the configured User Bank by default.
 
 ## Modes
 
@@ -35,43 +37,24 @@ Raw and forensic modes preserve legacy document IDs and payload shape.
 
 ## Curated quality profiles
 
-- `compatible` (default): preserves current curated import behavior.
-- `strict`: explicit opt-in profile for stronger curated noise handling.
+- `compatible` (default): preserves the default curated import behavior.
+- `strict`: opt-in stronger noise handling.
 
-Strict applies only to `curated`. It keeps failed tool results as evidence and may keep useful tiny successful summaries/content, but drops successful tool results that are process/UI/status-like, larger than 2 KiB before summarization, or duplicate/repeated within the curated chunk. Raw and forensic ignore `import.qualityProfile`.
+Strict applies only to `curated`. It keeps failed tool results as evidence and may keep useful tiny successful summaries/content, but drops successful tool results that are process/UI/status-like, larger than 2 KiB before summarization, or duplicate/repeated within the curated chunk.
 
 ## Dry-run metrics
 
-Pi session dry-runs report items such as:
+Pi session dry-runs report document count, import mode/profile, raw/projected message counts, tool-output counts, signal/noise categories when available, estimated chunks, byte counts, target bank, and checkpoint/manifest paths.
 
-- document count
-- import mode/profile
-- raw message count
-- curated projection count
-- dropped non-error tool-result count
-- kept tool-error count
-- kept signal categories (`keptSignals=`), when curated reason counts exist
-- dropped noise categories (`droppedNoise=`), when curated reason counts exist
-- estimated chunk count
-- byte counts
-- target bank
-- checkpoint/manifest paths
-
-Gateway dry-runs report items such as:
-
-- kept event count
-- retained user-turn count
-- dropped event count/type totals
-- malformed-line count
-- target user bank
-- content hash
-- byte count
+Gateway dry-runs report kept event count, retained user-turn count, dropped event totals, malformed-line count, target User Bank, content hash, and byte count.
 
 ## Checkpoints and manifests
 
 Historical import writes an Import Manifest and Import Checkpoint so work is inspectable, resumable, and idempotent. Curated document IDs include profile/projection/chunk information. Raw and forensic modes preserve legacy IDs.
 
-Changing the derived chunking profile (`turnsPerDocument` and `maxDocumentBytes`) or another document-ID namespace input creates a different deterministic ID set. Reimporting after such a change writes new imported documents rather than replacing the previous namespace. `import.qualityProfile` and successful-tool-result settings change retained content or metadata, but they do not create a separate document-ID namespace. Treat namespace changes as rebuilds: dry-run first, clean up old imported documents if you do not want both namespaces, and reset relevant checkpoint/manifest or queued retain jobs when stale IDs should not resume.
+Changing the derived chunking profile (`turnsPerDocument` and `maxDocumentBytes`) or another document-ID namespace input creates a different deterministic ID set. Treat namespace changes as rebuilds: dry-run first, decide whether old and new imported documents should coexist, then reset relevant checkpoint/manifest or queued retain jobs only when stale IDs should not resume.
+
+## Tool-output policy
 
 Curated import has a successful-tool-result policy:
 

@@ -1,89 +1,77 @@
 # Getting started
 
-Pi Hindsight gives Pi durable memory through Hindsight. Start with a setup profile, then inspect the generated config before you rely on it.
+Pi Hindsight gives Pi durable memory through Hindsight. For normal use, install the published package, run `/hindsight`, choose a memory profile, and let the TUI guide setup.
 
 ## 1. Install
+
+Install the npm package:
+
+```bash
+pi install npm:@luxusai/pi-hindsight
+```
+
+If you need unreleased source from GitHub:
 
 ```bash
 pi install https://github.com/luxus/pi-hindsight
 ```
 
-For a local checkout:
-
-```bash
-pi install /path/to/pi-hindsight
-```
+Local checkout installs are for contributors; see the development docs.
 
 ## 2. Choose a Hindsight server
 
-Use one of these paths:
+Use either:
 
 - [Hindsight Cloud signup](https://ui.hindsight.vectorize.io/signup)
 - [Self-hosted Hindsight installation](https://hindsight.vectorize.io/developer/installation)
 
-For self-hosted setup, prefer Hindsight's built-in llama.cpp/local-LLM option when you want a private setup without an external LLM API key. The expected self-hosted default URL is:
+The default self-hosted URL is:
 
 ```text
 http://localhost:8888
 ```
 
-## 3. Run guided setup
+For private local setup, use Hindsight's built-in llama.cpp/local-LLM path.
 
-In Pi, run:
+## 3. Run `/hindsight`
+
+Open Pi in your repository and run:
 
 ```text
 /hindsight
 ```
 
-If the repository has no project config yet, `/hindsight` starts guided setup. You can rerun guided setup later from the setup TUI with `g`.
+If no project config exists, guided setup starts automatically. You can rerun it later from the TUI with `g`.
 
-Guided setup asks for a memory profile, bank IDs, optional bank templates, and optional dry-run-first historical import. It writes explicit config so you can inspect what changed.
+Guided setup handles:
 
-## 4. Pick a memory profile
+1. Hindsight server URL
+2. memory profile
+3. project and/or user bank
+4. optional bank template
+5. optional dry-run-first historical import
+6. optional mental model refresh
 
-Choose the narrowest profile that fits the work.
+## 4. Pick the narrowest profile
 
-### Project + User
+- **Project + User**: best personal-coding default. Project facts stay repo-scoped; user memory carries durable preferences across repos.
+- **Project Only**: best for strict isolation, client work, sensitive repos, and team projects.
+- **User Only**: best for non-repo assistance where project memory would be noise.
+- **Recall Only**: best cautious start. Recall works; automatic retain is off.
 
-Best default for personal coding. Project memory stays scoped to this repository. User memory is configured once in global Pi config and can carry stable preferences, coding style, and cross-repo workflows.
+## 5. Check status
 
-### Project Only
+After setup, `/hindsight` should show:
 
-Best for strict isolation. Project recall and automatic retain use the selected project bank. User memory is not enabled for the repository.
+- reachable Hindsight server
+- expected memory profile
+- expected Project Bank and/or User Bank
+- automatic recall/retain state
+- retain queue path
+- import checkpoint/manifest state when imports have run
 
-### User Only
+## 6. Import old sessions only when useful
 
-Best for non-repo assistance. Project memory is disabled. User memory is configured in global Pi config and can be reused across repositories.
+Live retain starts after setup. Historical import is optional backfill. Use guided setup's import prompt first when it appears; it previews before writing memory.
 
-### Recall Only
-
-Best for cautious adoption. Automatic recall stays enabled, automatic retain is disabled, and explicit tools/import remain available.
-
-## 5. Mental model
-
-Pi Hindsight is the Pi integration. Hindsight is the external memory service.
-
-- **Recall** runs before model requests and injects ephemeral context. Recalled memory is not written back to the transcript by default.
-- **Retain** runs after completed agent turns and writes sanitized session deltas through the durable retain queue.
-- **Project banks** hold repository-specific memory and are selected per repo.
-- **User banks** hold durable cross-repo memory and are configured once in global Pi config when you choose a user-memory profile.
-- **Explicit tools** let you inspect, retain, recall, reflect, import, and administer memory intentionally.
-- **Import** is deterministic backfill from historical sessions. It is not the same path as live retain.
-
-## 6. First checks
-
-After setup, use `/hindsight` to confirm:
-
-- memory is enabled
-- expected profile is active
-- expected project bank is selected when project memory is enabled
-- expected user bank is selected only when user memory is intended
-- Hindsight server is reachable
-- retain queue path is visible
-
-Preview imports before writing memory:
-
-```text
-/hindsight:import-current --dry-run
-/hindsight:import-project-sessions --dry-run
-```
+For later imports, use the importing sessions guide. Commands and tools remain available for advanced or scripted imports.

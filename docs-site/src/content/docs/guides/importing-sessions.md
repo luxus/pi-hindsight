@@ -2,28 +2,50 @@
 title: "Importing Pi sessions"
 ---
 
-Historical import is for seeding or rebuilding Hindsight memory from Pi session JSONL files.
+Historical import is optional backfill. It reads old Pi session JSONL files or gateway transcripts, writes deterministic Hindsight documents, and records checkpoint/manifest state so imports can resume safely.
+
+Live memory does not need import. After setup, normal retain starts from new completed agent turns.
+
+## Start with guided setup
+
+For first-time setup, prefer the `/hindsight` guided import prompt. It appears after config/template setup when import makes sense.
+
+Guided import:
+
+1. chooses the source type from the selected profile/template
+2. previews first
+3. shows counts and target bank
+4. asks before writing memory
+5. can refresh mental models after successful import
+
+Project/coding setup offers repo-scoped Pi session import. User/assistant setup offers gateway transcript import into User memory.
 
 ## What can be imported
 
-The extension supports:
+Pi Hindsight supports:
 
 - current Pi session
-- explicit JSONL session file
-- all repo-scoped JSONL sessions in the current session directory
-- explicit gateway/chat transcript JSONL files for user memory
+- explicit Pi session JSONL file
+- repo-scoped Pi sessions from the current session directory
+- explicit gateway/chat transcript JSONL files for User memory
 
-Pi session imports write deterministic document IDs and update an import manifest summarized in `/hindsight`. Gateway transcript imports use a separate explicit tool path and do not share the repo-session import flow.
+Pi session imports and gateway transcript imports are separate paths. They do not silently mix repo history with user conversation history.
 
-## Preview first
+## Use commands when you need control
 
-Preview imports before writing memory:
+Command shortcuts are useful after setup, for repeat imports, or for explicit files:
 
 ```text
 /hindsight:import-current --dry-run
 /hindsight:import-file /path/to/session.jsonl --dry-run
 /hindsight:import-project-sessions --dry-run
 ```
+
+If the preview looks right, rerun without `--dry-run`. Non-dry-run imports announce the start and require confirmation because they write memory plus local checkpoint/manifest files.
+
+Use `--all-leaves` only when you intentionally want every fork leaf from a session file. Default import follows the current branch.
+
+## Use tools for agent/script workflows
 
 Tool equivalents:
 
@@ -32,111 +54,48 @@ hindsight_import({ dryRun: true })
 hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
 ```
 
-Pi session preview output includes document count, import mode, raw message count, curated projection count, dropped non-error tool-result count, kept tool-error count, estimated chunk count, byte counts, update mode, target bank, checkpoint path, and manifest path. Curated projection metrics show likely import noise before writing the filtered structured source payload.
+`hindsight_import` targets Pi session JSONL. `hindsight_import_gateway` targets gateway/chat transcript JSONL and defaults to the configured User Bank.
 
-Gateway preview output includes kept event count, retained user-turn count, dropped event count/type totals, malformed-line count, target user bank, content hash, and byte count.
+## Preview output
 
-## Guided setup import prompt
+Pi session dry-run shows document count, import mode/profile, raw and projected message counts, dropped successful tool output, kept tool errors, estimated chunks, byte counts, target bank, checkpoint path, and manifest path.
 
-Guided setup offers historical import after config/template setup. It always previews first. Project/coding setup offers repo-scoped Pi session import; user/assistant setup offers gateway transcript import. After a successful setup import, Pi can explicitly refresh the target mental models from the selected bank template and shows returned operation IDs/status. You can skip import or refresh and run the tools later.
+Gateway dry-run shows kept event count, retained user-turn count, dropped event totals, malformed lines, target User Bank, content hash, and byte count.
 
-## Import commands
-
-```text
-# Import current session, current branch only.
-/hindsight:import-current
-
-# Import every fork leaf in an explicit session file.
-/hindsight:import-file /path/to/session.jsonl --all-leaves
-
-# Import sessions in the active session directory whose parsed cwd belongs to this repo.
-/hindsight:import-project-sessions
-```
-
-Use `--all-leaves` only when you explicitly want every fork leaf. The default imports only the current branch.
-
-Non-dry-run import commands announce the start and require confirmation because they write memory and update local checkpoint/manifest files.
-
-## Gateway transcript import
-
-Gateway import is explicit and separate from Pi session import:
-
-```text
-hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
-```
-
-By default it targets the configured user bank. Pass `bank` only when intentionally importing into a different bank.
-
-Accepted event type keys are `type`, `event`, `event_type`, and `kind`. High-signal events retained as source material are:
-
-- `user_message`
-- `assistant_reply`
-- `process_end`
-
-Streaming/UI/process noise such as `message_update` and `extension_ui_request` is dropped by default and counted in dry-run metrics. Gateway provenance is preserved with tags/metadata when present: `channel`, `channel_id`, `session_id`, `sessionId`, `conversation_id`, `conversationId`, and `thread_id`. Raw provenance values stay in metadata; tag values are normalized.
-
-If no high-signal events are found, gateway import skips writing instead of creating an empty memory document.
+Use these numbers to catch noisy imports before writing memory.
 
 ## Project session discovery
 
-Project session discovery intentionally avoids broad history imports. It scans only the current session file's directory and keeps only `.jsonl` files whose parsed `cwd` normalizes to the current repo/cwd.
+Project session discovery avoids broad history imports. It scans only the current session file's directory and keeps `.jsonl` files whose parsed `cwd` resolves to the current repo/cwd.
 
-Equivalent path forms are treated as the same project:
+Equivalent path forms are treated as the same project, including trailing separators, `.` segments, `..` traversal that resolves back to the repo, and resolved absolute paths.
 
-- same absolute path
-- trailing separators
-- `.` segments
-- `..` traversal that resolves back to the repo
-- resolved absolute paths
+## Document IDs and rebuilds
 
-## Document IDs and update modes
+Imports use deterministic document IDs based on session, branch leaf, chunk profile, and projection namespace. Reimporting the same document updates the same Hindsight document instead of appending duplicates.
 
-Imports use deterministic document IDs based on session and branch leaf identity.
+Changing chunking or another document-ID namespace input creates a new deterministic set. Treat that as a rebuild:
 
-Curated import document IDs also include the derived chunking profile (`turnsPerDocument` and `maxDocumentBytes`), projection namespace, and chunk range. Changing those chunk settings, or changing another input that participates in the document-ID namespace, creates a distinct deterministic set of imported documents. `import.qualityProfile` and successful-tool-result settings change retained content or metadata, but they do not create a separate document-ID namespace.
+1. dry-run first
+2. decide whether old and new imported docs should coexist
+3. clear or move checkpoint/manifest only when you want a fresh import namespace
+4. flush or clear stale queued retain jobs before reimporting if old IDs should not deliver later
 
-Historical imports default to deterministic replace semantics so reimporting the same document updates the same Hindsight document instead of appending duplicates.
-
-Live sessions still use stable live-session document IDs with `updateMode: "append"`.
-
-## Manifest and checkpoint files
-
-Default paths:
+Default files:
 
 ```text
 .pi/hindsight/import-manifest.json
 .pi/hindsight/import-checkpoint.json
 ```
-
-The checkpoint records document delivery state so interrupted imports can resume. When `import.resume` is enabled, completed documents are skipped instead of retained again.
-
-If an import is queued but not delivered because Hindsight is unavailable, the checkpoint records the document as `queued` and the retain queue keeps the job for later flushing. Checkpoint run and document entries also record import quality context such as `toolResults` and strict curated `importQualityProfile` when available, so recovery can show which projection policy produced pending, completed, queued, or failed documents.
-
-## Rebuilds and namespace changes
-
-To rebuild from historical sessions after clearing a Hindsight bank, remove or move:
-
-```text
-.pi/hindsight/import-checkpoint.json
-.pi/hindsight/import-manifest.json
-```
-
-Then rerun the import. Use `--dry-run` first.
-
-When you intentionally change chunking or another document-ID namespace input, plan the change as a rebuild. Preview first, then decide whether to keep both namespaces or clean up old imported documents in Hindsight. If old retain jobs are still queued, clear or flush the retain queue before reimporting so stale document IDs are not delivered later. Remove or move the import checkpoint and manifest when you want the new namespace to be imported from scratch instead of resumed from prior state.
 
 ## Import modes
 
-The default import mode is `curated`. It writes deterministic filtered historical documents as retained source evidence and computes projection metrics using the live retain filter so previews show how much successful tool-output noise is likely irrelevant.
+- `curated` is the default. It keeps filtered structured source evidence and drops obvious transcript noise.
+- `raw` is a compatibility/debug escape hatch.
+- `forensic` is for audit/recovery and can preserve normally filtered artifacts such as recalled memory blocks.
 
-Curated import defaults to `import.qualityProfile: "compatible"` and `import.toolResults: "errors-only"`. Compatible preserves the current curated behavior. Successful tool results are dropped unless you deliberately configure `summary` or `content`; even then, existing tool filters still exclude noisy tools such as `read`, `grep`, `find`, and `ls`. `import.toolResultSummaryMaxChars` bounds successful-tool summaries.
-
-Set `import.qualityProfile: "strict"` only when you want stronger curated noise handling. Strict mode still keeps failed tool results as evidence and may keep useful tiny successful summaries/content, but it drops successful tool results that are process/UI/status-like, larger than 2 KiB before summarization, or duplicate/repeated within the curated chunk. Strict only affects `curated`; `raw` and `forensic` remain escape hatches.
-
-Use `raw` when you want the previous branch-document behavior without curated drop metrics. Raw mode still filters Hindsight recall blocks to avoid re-retaining injected memory.
-
-Use `forensic` only for audit/recovery. It preserves recall blocks and other normally filtered records, so preview output includes an explicit warning.
+Curated import defaults to `import.qualityProfile: "compatible"` and `import.toolResults: "errors-only"`. Use `strict` only when you want stronger noise filtering. Use successful tool-result `summary` or `content` only for deliberate low-noise imports.
 
 ## Safety
 
-Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Recalled memory blocks injected by this extension are filtered in `curated` and `raw` modes so they are not retained back into Hindsight. Import previews compute curated projection metrics using the live retain filter.
+Imports retain structured raw conversation content, not summaries. Secret redaction still applies. Curated and raw imports filter Pi Hindsight recall blocks so recalled memory is not retained back into Hindsight as new source truth.
