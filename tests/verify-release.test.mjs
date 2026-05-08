@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const script = resolve("scripts/verify-release.mjs");
 const releasePleaseConfig = resolve(".release-please-config.json");
 const releaseWorkflow = resolve(".github/workflows/release.yml");
+const releasePleaseWorkflow = resolve(".github/workflows/release-please.yml");
 const testEnv = { ...process.env, GITHUB_REF_NAME: "", GITHUB_REF_TYPE: "" };
 
 async function repo(version, changelog) {
@@ -78,13 +79,17 @@ describe("verify-release", () => {
     });
   });
 
-  it("keeps release-please tag namespace aligned with release workflow", async () => {
+  it("keeps release-please publishing aligned with npm trusted publishing", async () => {
     const config = JSON.parse(await readFile(releasePleaseConfig, "utf8"));
-    const workflow = await readFile(releaseWorkflow, "utf8");
+    const release = await readFile(releaseWorkflow, "utf8");
+    const releasePlease = await readFile(releasePleaseWorkflow, "utf8");
 
     expect(config.packages["."]["package-name"]).toBe("@luxusai/pi-hindsight");
     expect(config.packages["."]["include-component-in-tag"]).toBe(false);
-    expect(workflow).toContain('- "v*.*.*"');
-    expect(workflow).not.toContain("pi-hindsight-v");
+    expect(releasePlease).toContain("id-token: write");
+    expect(releasePlease).toContain("steps.release.outputs.release_created == 'true'");
+    expect(releasePlease).toContain("npm publish --provenance --access public");
+    expect(release).not.toContain("npm publish");
+    expect(releasePlease).not.toContain("pi-hindsight-v");
   });
 });
