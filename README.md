@@ -1,6 +1,6 @@
 # Pi Hindsight Extension
 
-Persistent memory for [Pi](https://github.com/earendil-works/pi-coding-agent) backed by [Hindsight](https://hindsight.vectorize.io/).
+Persistent memory for [Pi](https://github.com/earendil-works/pi) backed by [Hindsight](https://hindsight.vectorize.io/).
 
 **Documentation:** <https://luxus.github.io/pi-hindsight/>
 
