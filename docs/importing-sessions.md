@@ -1,6 +1,6 @@
 # Importing Pi sessions
 
-Historical import is optional backfill. It reads old Pi session JSONL files or gateway transcripts, writes deterministic Hindsight documents, and records checkpoint/manifest state so imports can resume safely.
+Historical import is optional backfill. It reads old Pi session JSONL files or gateway transcripts and writes deterministic Hindsight documents. Pi session imports also record checkpoint/manifest state so they can resume safely.
 
 Live memory does not need import. After setup, normal retain starts from new completed agent turns.
 
