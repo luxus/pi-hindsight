@@ -65,7 +65,7 @@
     "code-map:check": "node scripts/generate-code-map.mjs --check"
   },
   "dependencies": {
-    "@vectorize-io/hindsight-client": "^0.6.0",
+    "@vectorize-io/hindsight-client": "^0.6.1",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {

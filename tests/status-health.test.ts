@@ -26,8 +26,10 @@ describe("status health", () => {
         total_nodes: 3,
         total_documents: 2,
         total_observations: 1,
+        fact_count: 5,
         pending_consolidation: 4,
         failed_consolidation: 0,
+        last_document_at: "2026-05-08T00:00:00Z",
       })),
     };
 
@@ -51,7 +53,10 @@ describe("status health", () => {
         ["Project bank config", "Bank overrides: 1 · Resolved config fields: 2"],
         ["User bank config", "Bank overrides: 1 · Resolved config fields: 2"],
         ["Project bank missions", "db · retain Override retain from db · reflect Reflect from db"],
-        ["Project bank stats", "memories 3 · docs 2 · observations 1 · pending 4 · failed 0"],
+        [
+          "Project bank stats",
+          "memories 3 · docs 2 · observations 1 · facts 5 · pending 4 · failed 0 · last document 2026-05-08T00:00:00Z",
+        ],
       ]),
     );
   });

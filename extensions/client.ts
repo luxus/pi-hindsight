@@ -46,8 +46,9 @@ import {
 import { withTimeout } from "./timeout.js";
 
 type ReflectOptions = Parameters<HindsightLikeClient["reflect"]>[2];
+type RetainOptions = Parameters<HindsightLikeClient["retain"]>[2];
 
-function retainBatchItem(content: string, options: Parameters<HindsightLikeClient["retain"]>[2]) {
+function retainBatchItem(content: string, options: RetainOptions) {
   return {
     content,
     ...(options?.timestamp ? { timestamp: options.timestamp } : {}),
@@ -61,6 +62,25 @@ function retainBatchItem(content: string, options: Parameters<HindsightLikeClien
       : {}),
     ...(options?.updateMode ? { update_mode: options.updateMode } : {}),
   };
+}
+
+function retainSingle(
+  raw: HindsightClient,
+  bankId: string,
+  content: string,
+  options: RetainOptions,
+  signal: AbortSignal,
+) {
+  if (options?.documentTags?.length) {
+    return raw.retainBatch(bankId, [retainBatchItem(content, options)], {
+      ...(options.async !== undefined ? { async: options.async } : {}),
+      documentTags: options.documentTags,
+      signal,
+    });
+  }
+
+  const { documentTags: _documentTags, signal: _signal, ...retainOptions } = options ?? {};
+  return raw.retain(bankId, content, { ...retainOptions, signal });
 }
 
 async function reflect(
@@ -100,12 +120,7 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
       withTimeout(
         "hindsight retain",
         timeoutMs,
-        (signal) =>
-          raw.retainBatch(bankId, [retainBatchItem(content, options)], {
-            ...(options?.async !== undefined ? { async: options.async } : {}),
-            ...(options?.documentTags ? { documentTags: options.documentTags } : {}),
-            signal,
-          }),
+        (signal) => retainSingle(raw, bankId, content, options, signal),
         options?.signal,
       ),
     retainBatch: (...args) =>

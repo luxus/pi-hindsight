@@ -96,16 +96,20 @@ function formatStats(stats: unknown): string | undefined {
   const memories = numberField(stats, "total_nodes");
   const documents = numberField(stats, "total_documents");
   const observations = numberField(stats, "total_observations");
+  const facts = numberField(stats, "fact_count");
   const pending = numberField(stats, "pending_consolidation");
   const failed = numberField(stats, "failed_consolidation");
   const last = dateField(stats, "last_consolidated_at");
+  const lastDocument = dateField(stats, "last_document_at");
   const parts = [
     memories !== undefined ? `memories ${memories}` : undefined,
     documents !== undefined ? `docs ${documents}` : undefined,
     observations !== undefined ? `observations ${observations}` : undefined,
+    facts !== undefined ? `facts ${facts}` : undefined,
     pending !== undefined ? `pending ${pending}` : undefined,
     failed !== undefined ? `failed ${failed}` : undefined,
     last ? `last consolidated ${last}` : undefined,
+    lastDocument ? `last document ${lastDocument}` : undefined,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
