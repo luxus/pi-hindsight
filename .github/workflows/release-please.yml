@@ -43,6 +43,26 @@ jobs:
         if: ${{ steps.release.outputs.release_created == 'true' }}
         run: npm ci --engine-strict
 
+      - name: Run checks
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run check
+
+      - name: Run coverage gate
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run check:coverage
+
+      - name: Run TypeScript compiler fallback
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run typecheck:tsc
+
+      - name: Verify registry signatures
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run audit:signatures
+
+      - name: Verify release metadata and package install
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: npm run pack:verify
+
       - name: Publish package to npm
         if: ${{ steps.release.outputs.release_created == 'true' }}
         run: npm publish --provenance --access public
