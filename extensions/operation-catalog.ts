@@ -469,11 +469,13 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_delete_document",
       label: "Hindsight Delete Document",
       description:
-        "Delete a specific Hindsight document and all memories extracted from it. Destructive; requires exact bank and document ID.",
+        "Delete a specific Hindsight document and all memories extracted from it. Destructive and irreversible; requires exact bank/document ID and confirm=true. Export or back up the bank first if the document may be needed later.",
       parameters: Type.Object({
         bank: Type.String({ description: "Bank ID containing the document." }),
         documentId: Type.String({ description: "Exact Hindsight document ID to delete." }),
-        confirm: Type.Boolean({ description: "Must be true to confirm destructive deletion." }),
+        confirm: Type.Literal(true, {
+          description: "Required destructive-action confirmation. Must be true.",
+        }),
       }),
       async execute(_id, params, _signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
@@ -481,6 +483,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         const result = await operations.deleteDocument({
           bank: params.bank,
           documentId: params.documentId,
+          confirm: params.confirm,
         });
         return deleteDocumentToolResponse(result);
       },
@@ -852,7 +855,8 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     defineCatalogTool({
       name: "hindsight_delete_mental_model",
       label: "Hindsight Delete Mental Model",
-      description: "Delete one Hindsight mental model. Destructive; requires confirm=true.",
+      description:
+        "Delete one Hindsight mental model. Destructive and irreversible; requires confirm=true. Export a bank template first if the model may be needed later.",
       parameters: Type.Object({
         mentalModelId: Type.String({ description: "Mental model ID." }),
         bank: Type.Optional(
@@ -951,7 +955,8 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     defineCatalogTool({
       name: "hindsight_clear_observations",
       label: "Hindsight Clear Observations",
-      description: "Clear all observations for one bank. Destructive; requires confirm=true.",
+      description:
+        "Clear all observations for one bank. Destructive and irreversible; requires confirm=true. Export or back up the bank first if observations may be needed later.",
       parameters: Type.Object({
         bank: Type.Optional(
           Type.String({ description: "Optional bank id. Defaults to project bank." }),
@@ -1044,7 +1049,8 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     defineCatalogTool({
       name: "hindsight_retry_operation",
       label: "Hindsight Retry Operation",
-      description: "Retry a failed or cancelled Hindsight async operation.",
+      description:
+        "Retry a failed or cancelled Hindsight async operation. Mutates operation state for one bank.",
       parameters: Type.Object({
         operationId: Type.String({ description: "Hindsight operation ID." }),
         bank: Type.Optional(
@@ -1142,7 +1148,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_delete_memory_observations",
       label: "Hindsight Delete Memory Observations",
       description:
-        "Delete observations for one Hindsight memory. Destructive; requires exact memory ID and confirm=true.",
+        "Delete observations for one Hindsight memory. Destructive and irreversible for that memory's observations; requires exact memory ID and confirm=true. Inspect the memory first and back up the bank if needed.",
       parameters: Type.Object({
         memoryId: Type.String({ description: "Hindsight memory ID." }),
         bank: Type.Optional(
@@ -1496,7 +1502,8 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     defineCatalogTool({
       name: "hindsight_delete_directive",
       label: "Hindsight Delete Directive",
-      description: "Delete a bank-owned Hindsight directive.",
+      description:
+        "Delete a bank-owned Hindsight directive. Destructive and irreversible; requires confirm=true. Export a bank template first if the directive may be needed later.",
       parameters: Type.Object({
         directiveId: Type.String({ description: "Directive ID." }),
         bank: Type.Optional(

@@ -7,7 +7,14 @@ import {
   safeConfig,
 } from "../extensions/diagnostics.js";
 import type { ImportManifestEntry } from "../extensions/import-manifest.js";
-import { PI_HINDSIGHT_USER_AGENT, PI_HINDSIGHT_VERSION } from "../extensions/version.js";
+import {
+  PI_HINDSIGHT_CLIENT_RANGE,
+  PI_HINDSIGHT_SUPPORTED_NODE,
+  PI_HINDSIGHT_SUPPORTED_NPM,
+  PI_HINDSIGHT_SUPPORTED_TYPEBOX,
+  PI_HINDSIGHT_USER_AGENT,
+  PI_HINDSIGHT_VERSION,
+} from "../extensions/version.js";
 
 function latestImport(overrides: Partial<ImportManifestEntry> = {}): ImportManifestEntry {
   return {
@@ -72,6 +79,15 @@ describe("diagnostics", () => {
       packageVersion: PI_HINDSIGHT_VERSION,
       userAgent: PI_HINDSIGHT_USER_AGENT,
       clientPackage: "@vectorize-io/hindsight-client",
+      clientRange: PI_HINDSIGHT_CLIENT_RANGE,
+      compatibility: {
+        node: PI_HINDSIGHT_SUPPORTED_NODE,
+        npm: PI_HINDSIGHT_SUPPORTED_NPM,
+        typebox: PI_HINDSIGHT_SUPPORTED_TYPEBOX,
+        hindsightServer:
+          "Official-client-compatible Hindsight server; advanced tools are capability-gated.",
+        policy: "Pi-first 1.0 integration; global platform admin parity is out of scope.",
+      },
     });
     expect(report.queueLength).toBe(2);
     expect(report.queue).toEqual({

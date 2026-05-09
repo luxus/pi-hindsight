@@ -57,6 +57,8 @@ It also exercises:
 - extension Adapter path (`createHindsightClient`)
 - memory operations service
 - explicit retain/flush/recall/reflect/receipts
+- native file retain when the connected server supports it
+- directives, mental models, documents, operations, and memory inspection when the connected server supports those endpoints
 - tiny Pi JSONL import dry-run/write/recall flow
 - GitHub Actions Markdown summary output
 - temporary-bank cleanup on success
@@ -76,6 +78,13 @@ operations_flush_ok
 operations_recall_ok
 operations_reflect_ok
 operations_receipts_ok
+file_retain_ok or file_retain_skipped
+directives_ok or directives_skipped
+mental_models_ok or mental_models_skipped
+document_inspection_ok or document_inspection_skipped
+operations_list_ok or operations_list_skipped
+memory_inspection_ok or memory_inspection_skipped
+clear_observations_ok or clear_observations_skipped
 import_dry_run_ok
 import_ok
 import_recall_ok
@@ -103,7 +112,7 @@ Optional secret and variables:
 - `HINDSIGHT_SMOKE_CLEANUP_TIMEOUT_MS`, default `5000`
 - `PI_HINDSIGHT_SMOKE_BANK_ID`
 
-An unconfigured workflow skip is not release proof for memory-path changes.
+An unconfigured workflow skip is not release proof for memory-path changes. Capability-gated smoke steps are evidence only for the server capabilities that actually ran; skipped advanced steps must be called out in PR verification notes.
 
 ## Manual publish fallback
 

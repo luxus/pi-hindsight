@@ -404,6 +404,10 @@ describe("operation catalog", () => {
     });
 
     expect(
+      (requireTool(catalog, "hindsight_delete_document").parameters as JsonSchema).properties
+        ?.confirm?.const,
+    ).toBe(true);
+    expect(
       (requireTool(catalog, "hindsight_reset_bank_config").parameters as JsonSchema).properties
         ?.confirm?.const,
     ).toBe(true);

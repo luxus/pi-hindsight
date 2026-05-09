@@ -3,7 +3,8 @@ import { resolveOperationBank } from "./bank-selection.js";
 
 export function createDocumentOperations(deps: MemoryOperationsDeps) {
   return {
-    async deleteDocument(args: { bank: string; documentId: string }) {
+    async deleteDocument(args: { bank: string; documentId: string; confirm: true }) {
+      if (!args.confirm) throw new Error("Set confirm=true to delete this Hindsight document.");
       const bankId = resolveOperationBank({
         requestedBank: args.bank,
         config: deps.getConfig(),

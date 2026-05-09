@@ -6,6 +6,78 @@ title: "Generated surface reference"
 
 This reference is generated from the operation catalog and config editing registry.
 
+## 1.0 support scope
+
+Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi workflow tools are part of the stable 1.0 contract. Capability-gated tools are supported when the connected Hindsight server exposes the required upstream endpoint or field; unsupported servers should return a clear capability error.
+
+| Tool                                              | Scope                |
+| ------------------------------------------------- | -------------------- |
+| `hindsight_recall`                                | core 1.0             |
+| `hindsight_retain`                                | core 1.0             |
+| `hindsight_retain_global`                         | core 1.0             |
+| `hindsight_retain_files`                          | capability-gated 1.0 |
+| `hindsight_retain_receipts`                       | Pi workflow 1.0      |
+| `hindsight_route_memory`                          | Pi workflow 1.0      |
+| `hindsight_delete_document`                       | capability-gated 1.0 |
+| `hindsight_list_documents`                        | capability-gated 1.0 |
+| `hindsight_get_document`                          | capability-gated 1.0 |
+| `hindsight_update_document_tags`                  | capability-gated 1.0 |
+| `hindsight_list_entities`                         | capability-gated 1.0 |
+| `hindsight_get_entity`                            | capability-gated 1.0 |
+| `hindsight_regenerate_entity`                     | capability-gated 1.0 |
+| `hindsight_get_graph`                             | capability-gated 1.0 |
+| `hindsight_get_entity_graph`                      | capability-gated 1.0 |
+| `hindsight_list_tags`                             | capability-gated 1.0 |
+| `hindsight_list_mental_models`                    | capability-gated 1.0 |
+| `hindsight_get_mental_model`                      | capability-gated 1.0 |
+| `hindsight_create_mental_model`                   | capability-gated 1.0 |
+| `hindsight_promote_reflect_query_to_mental_model` | capability-gated 1.0 |
+| `hindsight_update_mental_model`                   | capability-gated 1.0 |
+| `hindsight_delete_mental_model`                   | capability-gated 1.0 |
+| `hindsight_get_mental_model_history`              | capability-gated 1.0 |
+| `hindsight_refresh_mental_model`                  | capability-gated 1.0 |
+| `hindsight_trigger_consolidation`                 | capability-gated 1.0 |
+| `hindsight_recover_consolidation`                 | capability-gated 1.0 |
+| `hindsight_clear_observations`                    | capability-gated 1.0 |
+| `hindsight_inspect_retain_queue`                  | Pi workflow 1.0      |
+| `hindsight_list_operations`                       | capability-gated 1.0 |
+| `hindsight_cancel_operation`                      | capability-gated 1.0 |
+| `hindsight_retry_operation`                       | capability-gated 1.0 |
+| `hindsight_list_memories`                         | capability-gated 1.0 |
+| `hindsight_get_memory`                            | capability-gated 1.0 |
+| `hindsight_get_chunk`                             | capability-gated 1.0 |
+| `hindsight_get_memory_history`                    | capability-gated 1.0 |
+| `hindsight_delete_memory_observations`            | capability-gated 1.0 |
+| `hindsight_configure`                             | Pi workflow 1.0      |
+| `hindsight_get_bank_config`                       | capability-gated 1.0 |
+| `hindsight_update_bank_config`                    | capability-gated 1.0 |
+| `hindsight_get_bank_profile`                      | Pi workflow 1.0      |
+| `hindsight_update_bank_profile`                   | Pi workflow 1.0      |
+| `hindsight_update_bank_disposition`               | Pi workflow 1.0      |
+| `hindsight_add_bank_background`                   | Pi workflow 1.0      |
+| `hindsight_reset_bank_config`                     | capability-gated 1.0 |
+| `hindsight_list_directives`                       | capability-gated 1.0 |
+| `hindsight_get_directive`                         | capability-gated 1.0 |
+| `hindsight_create_directive`                      | capability-gated 1.0 |
+| `hindsight_update_directive`                      | capability-gated 1.0 |
+| `hindsight_delete_directive`                      | capability-gated 1.0 |
+| `hindsight_get_bank_template_schema`              | capability-gated 1.0 |
+| `hindsight_export_bank_template`                  | capability-gated 1.0 |
+| `hindsight_import_bank_template`                  | capability-gated 1.0 |
+| `hindsight_import`                                | Pi workflow 1.0      |
+| `hindsight_import_seed_content`                   | Pi workflow 1.0      |
+| `hindsight_import_chat_transcript`                | Pi workflow 1.0      |
+| `hindsight_reflect`                               | core 1.0             |
+
+## Deferred or non-goal upstream surfaces
+
+| Surface                 | 1.0 status | Rationale                                                                                   |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| Cross-bank list/create  | Deferred   | No public `list_banks` or arbitrary cross-bank `create_bank` tool in 1.0.                   |
+| Full-bank deletion      | Deferred   | No public `delete_bank` tool in 1.0; selected-bank reset/delete-like repair remains scoped. |
+| Platform bank stats     | Deferred   | No global `get_bank_stats` dashboard/tool in 1.0.                                           |
+| Audit logs and webhooks | Non-goal   | Platform administration is outside the Pi-first 1.0 memory lifecycle.                       |
+
 ## Tools
 
 ### `hindsight_recall`
@@ -98,13 +170,13 @@ Dry-run memory routing against current project/user policy. Does not retain anyt
 
 ### `hindsight_delete_document`
 
-Delete a specific Hindsight document and all memories extracted from it. Destructive; requires exact bank and document ID.
+Delete a specific Hindsight document and all memories extracted from it. Destructive and irreversible; requires exact bank/document ID and confirm=true. Export or back up the bank first if the document may be needed later.
 
-| Parameter    | Type    | Required | Description                                   |
-| ------------ | ------- | -------- | --------------------------------------------- |
-| `bank`       | string  | yes      | Bank ID containing the document.              |
-| `documentId` | string  | yes      | Exact Hindsight document ID to delete.        |
-| `confirm`    | boolean | yes      | Must be true to confirm destructive deletion. |
+| Parameter    | Type   | Required | Description                                             |
+| ------------ | ------ | -------- | ------------------------------------------------------- |
+| `bank`       | string | yes      | Bank ID containing the document.                        |
+| `documentId` | string | yes      | Exact Hindsight document ID to delete.                  |
+| `confirm`    | true   | yes      | Required destructive-action confirmation. Must be true. |
 
 ### `hindsight_list_documents`
 
@@ -269,7 +341,7 @@ Update a Hindsight mental model.
 
 ### `hindsight_delete_mental_model`
 
-Delete one Hindsight mental model. Destructive; requires confirm=true.
+Delete one Hindsight mental model. Destructive and irreversible; requires confirm=true. Export a bank template first if the model may be needed later.
 
 | Parameter       | Type   | Required | Description                                 |
 | --------------- | ------ | -------- | ------------------------------------------- |
@@ -313,7 +385,7 @@ Recover failed Hindsight consolidation work for a bank.
 
 ### `hindsight_clear_observations`
 
-Clear all observations for one bank. Destructive; requires confirm=true.
+Clear all observations for one bank. Destructive and irreversible; requires confirm=true. Export or back up the bank first if observations may be needed later.
 
 | Parameter | Type   | Required | Description                                 |
 | --------- | ------ | -------- | ------------------------------------------- |
@@ -352,7 +424,7 @@ Cancel a pending Hindsight async operation. Requires confirm=true.
 
 ### `hindsight_retry_operation`
 
-Retry a failed or cancelled Hindsight async operation.
+Retry a failed or cancelled Hindsight async operation. Mutates operation state for one bank.
 
 | Parameter     | Type   | Required | Description                                 |
 | ------------- | ------ | -------- | ------------------------------------------- |
@@ -399,7 +471,7 @@ Fetch Hindsight memory history by memory ID when server supports it.
 
 ### `hindsight_delete_memory_observations`
 
-Delete observations for one Hindsight memory. Destructive; requires exact memory ID and confirm=true.
+Delete observations for one Hindsight memory. Destructive and irreversible for that memory's observations; requires exact memory ID and confirm=true. Inspect the memory first and back up the bank if needed.
 
 | Parameter  | Type   | Required | Description                                             |
 | ---------- | ------ | -------- | ------------------------------------------------------- |
@@ -544,7 +616,7 @@ Update a bank-owned Hindsight directive.
 
 ### `hindsight_delete_directive`
 
-Delete a bank-owned Hindsight directive.
+Delete a bank-owned Hindsight directive. Destructive and irreversible; requires confirm=true. Export a bank template first if the directive may be needed later.
 
 | Parameter     | Type   | Required | Description                                             |
 | ------------- | ------ | -------- | ------------------------------------------------------- |

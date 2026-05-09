@@ -79,6 +79,7 @@ export default defineConfig({
           label: "Reference",
           items: [
             { label: "Configuration", slug: "reference/configuration" },
+            { label: "Compatibility matrix", slug: "reference/compatibility" },
             { label: "Tools and commands", slug: "reference/tools-and-commands" },
             { label: "Hooks", slug: "reference/hooks" },
             { label: "Memory modes", slug: "reference/memory-modes" },

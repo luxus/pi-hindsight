@@ -30,6 +30,8 @@ Keep these in `pi-hindsight`:
 
 Core code may contain a Hindsight client adapter for Pi's runtime needs. It should not become a generic integration framework for all Hindsight consumers.
 
+For the 1.0 line, core also includes scoped inspection and repair tools for the selected project/User Bank when those tools help Pi users debug memory behavior. Core does not imply full upstream platform-admin parity: cross-bank list/create, full-bank deletion, bank-wide stats dashboards, audit logs, and webhook administration remain deferred or non-goals unless a future issue accepts their safety and UX obligations.
+
 ## Companion and example responsibilities
 
 Companion work is framework-specific glue. It should live outside core unless there is a strong Pi-first reason to include it.

@@ -1,5 +1,13 @@
 import type { HindsightCapabilities, ResolvedConfig } from "./types.js";
-import { PI_HINDSIGHT_USER_AGENT, PI_HINDSIGHT_VERSION } from "./version.js";
+import {
+  PI_HINDSIGHT_CLIENT_PACKAGE,
+  PI_HINDSIGHT_CLIENT_RANGE,
+  PI_HINDSIGHT_SUPPORTED_NODE,
+  PI_HINDSIGHT_SUPPORTED_NPM,
+  PI_HINDSIGHT_SUPPORTED_TYPEBOX,
+  PI_HINDSIGHT_USER_AGENT,
+  PI_HINDSIGHT_VERSION,
+} from "./version.js";
 import { baseTags, findRepoRoot } from "./banking.js";
 import { stableSessionId } from "./session.js";
 import { createMemoryIdentity } from "./memory-identity.js";
@@ -113,7 +121,16 @@ export function formatDebugReport(args: DebugReportArgs): string {
         packageVersion: PI_HINDSIGHT_VERSION,
         userAgent: PI_HINDSIGHT_USER_AGENT,
         hindsightBaseUrl: args.config.hindsight.baseUrl,
-        clientPackage: "@vectorize-io/hindsight-client",
+        clientPackage: PI_HINDSIGHT_CLIENT_PACKAGE,
+        clientRange: PI_HINDSIGHT_CLIENT_RANGE,
+        compatibility: {
+          node: PI_HINDSIGHT_SUPPORTED_NODE,
+          npm: PI_HINDSIGHT_SUPPORTED_NPM,
+          typebox: PI_HINDSIGHT_SUPPORTED_TYPEBOX,
+          hindsightServer:
+            "Official-client-compatible Hindsight server; advanced tools are capability-gated.",
+          policy: "Pi-first 1.0 integration; global platform admin parity is out of scope.",
+        },
       },
       health,
       cwd: args.cwd,

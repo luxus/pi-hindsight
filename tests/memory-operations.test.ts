@@ -382,7 +382,7 @@ describe("memory operations", () => {
       bank: "global",
     });
     await operations.reflect(cwd, "query", undefined, "project");
-    await operations.deleteDocument({ bank: "global", documentId: "doc" });
+    await operations.deleteDocument({ bank: "global", documentId: "doc", confirm: true });
     await operations.getBankConfig({ bank: "global" });
     await operations.updateBankConfig({
       bank: "global",
