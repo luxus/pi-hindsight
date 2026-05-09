@@ -29,12 +29,12 @@ These names are TUI vocabulary, not a replacement for the lower-level config mod
 
 ## Mode matrix
 
-| Mode                | Automatic recall | Automatic retain | Explicit tools and commands                                           | Import  | Flush queued jobs | Intended use                                             |
-| ------------------- | ---------------- | ---------------- | --------------------------------------------------------------------- | ------- | ----------------- | -------------------------------------------------------- |
-| `normal`            | on if configured | on if configured | allowed                                                               | allowed | allowed           | Default coding with project memory continuity.           |
-| `read-only`         | on if configured | off              | read tools allowed; explicit writes require confirmation/command path | allowed | allowed           | Use existing memory without adding new transcript facts. |
-| `ignored`           | off              | off              | explicit operations remain available from commands/tools              | allowed | allowed           | Work without automatic memory participation.             |
-| future `tools-only` | off              | off              | allowed                                                               | allowed | allowed           | No automatic memory; user manually calls tools.          |
+| Mode                | Automatic recall | Automatic retain | Explicit tools and commands                                       | Import  | Flush queued jobs | Intended use                                             |
+| ------------------- | ---------------- | ---------------- | ----------------------------------------------------------------- | ------- | ----------------- | -------------------------------------------------------- |
+| `normal`            | on if configured | on if configured | allowed                                                           | allowed | allowed           | Default coding with project memory continuity.           |
+| `read-only`         | on if configured | off              | read tools allowed; explicit retain is blocked until mode changes | allowed | allowed           | Use existing memory without adding new transcript facts. |
+| `ignored`           | off              | off              | explicit operations remain available from commands/tools          | allowed | allowed           | Work without automatic memory participation.             |
+| future `tools-only` | off              | off              | allowed                                                           | allowed | allowed           | No automatic memory; user manually calls tools.          |
 
 ## Semantics
 
@@ -54,7 +54,7 @@ These names are TUI vocabulary, not a replacement for the lower-level config mod
 
 - automatic recall can still run
 - automatic retain does not enqueue new transcript deltas
-- explicit write operations should stay visible but must remain deliberate actions
+- explicit retain is blocked until the session returns to `normal`; other deliberate write operations such as imports keep their own confirmations
 - imports remain deliberate operations, not automatic session retention
 - queue flush remains allowed because it drains already accepted jobs
 
