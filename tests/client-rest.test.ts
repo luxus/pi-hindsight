@@ -9,6 +9,8 @@ import {
   bankTemplateImportPath,
   bankTemplateSchemaPath,
   chunkItemPath,
+  consolidationPath,
+  consolidationRecoverPath,
   createDirectiveRequestBody,
   createHindsightRestTransport,
   createMentalModelRequestBody,
@@ -34,6 +36,7 @@ import {
   operationItemPath,
   operationRetryPath,
   operationsCollectionPath,
+  observationsPath,
   reflectRequestBody,
   tagsCollectionPath,
   updateBankConfigRequestBody,
@@ -75,6 +78,11 @@ describe("Hindsight REST transport helpers", () => {
   it("encodes bank ids in REST paths", () => {
     expect(encodeBankPath("bank/id", "/reflect")).toBe("/v1/default/banks/bank%2Fid/reflect");
     expect(bankConfigPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/config");
+    expect(consolidationPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/consolidate");
+    expect(consolidationRecoverPath("bank/id")).toBe(
+      "/v1/default/banks/bank%2Fid/consolidation/recover",
+    );
+    expect(observationsPath("bank/id")).toBe("/v1/default/banks/bank%2Fid/observations");
     expect(
       directivesCollectionPath("bank/id", {
         tags: ["source:pi", "profile:coding"],

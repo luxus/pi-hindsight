@@ -82,5 +82,30 @@ export function createAdminOperations(deps: MemoryOperationsDeps) {
       const result = await client.deleteMemoryObservations(bankId, args.memoryId);
       return { bankId, memoryId: args.memoryId, result };
     },
+
+    async triggerConsolidation(args: { bank?: string } = {}) {
+      const bankId = bankFor(deps, args.bank);
+      const client = deps.getClient();
+      if (!client.triggerConsolidation) throw unsupported("triggerConsolidation");
+      const result = await client.triggerConsolidation(bankId);
+      return { bankId, result };
+    },
+
+    async recoverConsolidation(args: { bank?: string } = {}) {
+      const bankId = bankFor(deps, args.bank);
+      const client = deps.getClient();
+      if (!client.recoverConsolidation) throw unsupported("recoverConsolidation");
+      const result = await client.recoverConsolidation(bankId);
+      return { bankId, result };
+    },
+
+    async clearObservations(args: { bank?: string; confirm: true }) {
+      if (!args.confirm) throw new Error("Set confirm=true to clear observations for this bank.");
+      const bankId = bankFor(deps, args.bank);
+      const client = deps.getClient();
+      if (!client.clearObservations) throw unsupported("clearObservations");
+      const result = await client.clearObservations(bankId);
+      return { bankId, result };
+    },
   };
 }

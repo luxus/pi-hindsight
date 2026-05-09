@@ -5,6 +5,12 @@ import {
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { importCommandOperations } from "./command-imports.js";
+import {
+  mentalModelFromUnknown,
+  renderMentalModel,
+  renderMentalModelHistory,
+  renderMentalModelOperationResult,
+} from "./mental-model-presenter.js";
 import { maintenanceCommandOperations } from "./command-maintenance.js";
 import { sessionCommandOperations } from "./command-session.js";
 import type { MemoryOperationsDeps } from "./memory-operation-service.js";
@@ -58,6 +64,18 @@ const recallTypeSchema = Type.Union([
   Type.Literal("world"),
   Type.Literal("experience"),
   Type.Literal("observation"),
+]);
+
+const mentalModelDetailSchema = Type.Union([
+  Type.Literal("metadata"),
+  Type.Literal("content"),
+  Type.Literal("full"),
+]);
+
+const mentalModelTagsMatchSchema = Type.Union([
+  Type.Literal("any"),
+  Type.Literal("all"),
+  Type.Literal("exact"),
 ]);
 
 const tagGroupJsonSchema = {
@@ -369,6 +387,49 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
     }),
     defineCatalogTool({
+      name: "hindsight_retain_files",
+      label: "Hindsight Retain Files",
+      description:
+        "Upload local files to Hindsight native file retain. Returns async operation IDs when supported.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        files: Type.Array(
+          Type.Object({
+            path: Type.String({ description: "Local file path to upload." }),
+            context: Type.Optional(Type.String({ description: "Per-file context." })),
+            documentId: Type.Optional(Type.String({ description: "Per-file document ID." })),
+            tags: Type.Optional(Type.Array(Type.String(), { description: "Per-file tags." })),
+            metadata: Type.Optional(
+              Type.Record(Type.String(), Type.String(), { description: "Per-file metadata." }),
+            ),
+          }),
+          { minItems: 1, maxItems: 10, description: "Files to upload." },
+        ),
+        context: Type.Optional(Type.String({ description: "Shared file-retain context." })),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Shared tags." })),
+        metadata: Type.Optional(
+          Type.Record(Type.String(), Type.String(), { description: "Shared metadata." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.retainFiles({
+          cwd: ctx.cwd,
+          ...(params.bank ? { bank: params.bank } : {}),
+          files: params.files,
+          ...(params.context ? { context: params.context } : {}),
+          ...(params.tags ? { tags: params.tags } : {}),
+          ...(params.metadata ? { metadata: params.metadata } : {}),
+        });
+        return jsonToolResponse(
+          `Retained ${result.fileCount} file(s) in ${result.bankId}.`,
+          result,
+        );
+      },
+    }),
+    defineCatalogTool({
       name: "hindsight_retain_receipts",
       label: "Hindsight Retain Receipts",
       description: "List recent explicit retain receipts so exact document IDs can be deleted.",
@@ -651,6 +712,259 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           },
         });
         return listTagsToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_list_mental_models",
+      label: "Hindsight List Mental Models",
+      description: "List Hindsight mental models for a bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        tags: Type.Optional(Type.Array(Type.String())),
+        tagsMatch: Type.Optional(mentalModelTagsMatchSchema),
+        detail: Type.Optional(mentalModelDetailSchema),
+        limit: Type.Optional(Type.Number({ description: "Maximum mental models to return." })),
+        offset: Type.Optional(Type.Number({ description: "Pagination offset." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.listMentalModels({
+          ...(params.bank ? { bank: params.bank } : {}),
+          options: {
+            ...(params.tags ? { tags: params.tags } : {}),
+            ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
+            ...(params.detail ? { detail: params.detail } : {}),
+            ...(params.limit !== undefined ? { limit: params.limit } : {}),
+            ...(params.offset !== undefined ? { offset: params.offset } : {}),
+          },
+        });
+        return jsonToolResponse(`Mental models in ${result.bankId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_get_mental_model",
+      label: "Hindsight Get Mental Model",
+      description: "Fetch one Hindsight mental model by ID.",
+      parameters: Type.Object({
+        mentalModelId: Type.String({ description: "Mental model ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        detail: Type.Optional(mentalModelDetailSchema),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.getMentalModel({
+          mentalModelId: params.mentalModelId,
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.detail ? { options: { detail: params.detail } } : {}),
+        });
+        const model = mentalModelFromUnknown(result.result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: model ? renderMentalModel(model) : JSON.stringify(result.result, null, 2),
+            },
+          ],
+          details: result,
+        };
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_create_mental_model",
+      label: "Hindsight Create Mental Model",
+      description: "Create a Hindsight mental model from a source query.",
+      parameters: Type.Object({
+        name: Type.String({ description: "Mental model name." }),
+        sourceQuery: Type.String({ description: "Source query used to build the model." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        id: Type.Optional(Type.String({ description: "Optional mental model ID." })),
+        tags: Type.Optional(Type.Array(Type.String())),
+        maxTokens: Type.Optional(Type.Number({ description: "Optional max token budget." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.createMentalModel({
+          ...(params.bank ? { bank: params.bank } : {}),
+          request: {
+            ...(params.id ? { id: params.id } : {}),
+            name: params.name,
+            sourceQuery: params.sourceQuery,
+            ...(params.tags ? { tags: params.tags } : {}),
+            ...(params.maxTokens !== undefined ? { maxTokens: params.maxTokens } : {}),
+          },
+        });
+        return jsonToolResponse(`Created mental model in ${result.bankId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_promote_reflect_query_to_mental_model",
+      label: "Hindsight Promote Reflect Query To Mental Model",
+      description: "Create a mental model from a useful project or User Bank reflect query.",
+      parameters: Type.Object({
+        bank: Type.Union([Type.Literal("project"), Type.Literal("global")]),
+        name: Type.String({ description: "Mental model name." }),
+        sourceQuery: Type.String({ description: "Reflect query to promote." }),
+        id: Type.Optional(Type.String({ description: "Optional mental model ID." })),
+        tags: Type.Optional(Type.Array(Type.String())),
+        maxTokens: Type.Optional(Type.Number({ description: "Optional max token budget." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.promoteReflectQueryToMentalModel(params);
+        return jsonToolResponse(`Promoted reflect query in ${result.bankId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_update_mental_model",
+      label: "Hindsight Update Mental Model",
+      description: "Update a Hindsight mental model.",
+      parameters: Type.Object({
+        mentalModelId: Type.String({ description: "Mental model ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        name: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+        sourceQuery: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+        tags: Type.Optional(Type.Union([Type.Array(Type.String()), Type.Null()])),
+        maxTokens: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.updateMentalModel({
+          mentalModelId: params.mentalModelId,
+          ...(params.bank ? { bank: params.bank } : {}),
+          request: {
+            ...(params.name !== undefined ? { name: params.name } : {}),
+            ...(params.sourceQuery !== undefined ? { sourceQuery: params.sourceQuery } : {}),
+            ...(params.tags !== undefined ? { tags: params.tags } : {}),
+            ...(params.maxTokens !== undefined ? { maxTokens: params.maxTokens } : {}),
+          },
+        });
+        return jsonToolResponse(`Updated mental model ${params.mentalModelId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_delete_mental_model",
+      label: "Hindsight Delete Mental Model",
+      description: "Delete one Hindsight mental model. Destructive; requires confirm=true.",
+      parameters: Type.Object({
+        mentalModelId: Type.String({ description: "Mental model ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        confirm: Type.Literal(true, { description: "Required destructive-action confirmation." }),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.deleteMentalModel({
+          mentalModelId: params.mentalModelId,
+          ...(params.bank ? { bank: params.bank } : {}),
+          confirm: params.confirm,
+        } as never);
+        return jsonToolResponse(`Deleted mental model ${params.mentalModelId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_get_mental_model_history",
+      label: "Hindsight Get Mental Model History",
+      description: "Fetch Hindsight mental model history.",
+      parameters: Type.Object({
+        mentalModelId: Type.String({ description: "Mental model ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.getMentalModelHistory({
+          mentalModelId: params.mentalModelId,
+          ...(params.bank ? { bank: params.bank } : {}),
+        });
+        return {
+          content: [{ type: "text", text: renderMentalModelHistory(result.result) }],
+          details: result,
+        };
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_refresh_mental_model",
+      label: "Hindsight Refresh Mental Model",
+      description: "Refresh a Hindsight mental model and surface operation IDs when returned.",
+      parameters: Type.Object({
+        mentalModelId: Type.String({ description: "Mental model ID." }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.refreshMentalModel({
+          mentalModelId: params.mentalModelId,
+          ...(params.bank ? { bank: params.bank } : {}),
+        });
+        return {
+          content: [{ type: "text", text: renderMentalModelOperationResult(result.result) }],
+          details: result,
+        };
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_trigger_consolidation",
+      label: "Hindsight Trigger Consolidation",
+      description: "Trigger Hindsight consolidation for a bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.triggerConsolidation(
+          params.bank ? { bank: params.bank } : {},
+        );
+        return jsonToolResponse(`Triggered consolidation for ${result.bankId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_recover_consolidation",
+      label: "Hindsight Recover Consolidation",
+      description: "Recover failed Hindsight consolidation work for a bank.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.recoverConsolidation(
+          params.bank ? { bank: params.bank } : {},
+        );
+        return jsonToolResponse(`Recovered consolidation for ${result.bankId}.`, result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_clear_observations",
+      label: "Hindsight Clear Observations",
+      description: "Clear all observations for one bank. Destructive; requires confirm=true.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        confirm: Type.Literal(true, { description: "Required destructive-action confirmation." }),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.clearObservations({
+          ...(params.bank ? { bank: params.bank } : {}),
+          confirm: params.confirm,
+        });
+        return jsonToolResponse(`Cleared observations for ${result.bankId}.`, result);
       },
     }),
     defineCatalogTool({
@@ -1290,6 +1604,47 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
             : {}),
         });
         return importToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_import_seed_content",
+      label: "Hindsight Import Seed Content",
+      description:
+        "Import local markdown/text/JSON seed knowledge with deterministic document IDs. Dry-run by default.",
+      parameters: Type.Object({
+        paths: Type.Array(Type.String(), {
+          minItems: 1,
+          description: "Files or directories to import. Supports .md, .txt, and .json.",
+        }),
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        dryRun: Type.Optional(
+          Type.Boolean({ description: "Preview import without writing. Defaults to true." }),
+        ),
+        tags: Type.Optional(Type.Array(Type.String(), { description: "Additional import tags." })),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.importSeedContent({
+          cwd: ctx.cwd,
+          paths: params.paths,
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+          ...(params.tags ? { tags: params.tags } : {}),
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: [
+                `${result.dryRun ? "Previewed" : "Imported"} ${result.documentCount} seed document(s) in ${result.bankId}.`,
+                JSON.stringify(result, null, 2),
+              ].join("\n"),
+            },
+          ],
+          details: result,
+        };
       },
     }),
     defineCatalogTool({

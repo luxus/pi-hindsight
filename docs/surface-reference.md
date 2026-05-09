@@ -63,6 +63,18 @@ Retain explicit durable user memory in the configured user bank. Use for stable 
 | `documentTags`      | array<string>                                                   | no       | Optional Hindsight document_tags for this retained document when supported.                                                                                                                     |
 | `async`             | boolean                                                         | no       | Optional Hindsight async extraction flag for this retain call. Defaults to configured retain.async.                                                                                             |
 
+### `hindsight_retain_files`
+
+Upload local files to Hindsight native file retain. Returns async operation IDs when supported.
+
+| Parameter  | Type          | Required | Description                                 |
+| ---------- | ------------- | -------- | ------------------------------------------- |
+| `bank`     | string        | no       | Optional bank id. Defaults to project bank. |
+| `files`    | array<object> | yes      | Files to upload.                            |
+| `context`  | string        | no       | Shared file-retain context.                 |
+| `tags`     | array<string> | no       | Shared tags.                                |
+| `metadata` | object/map    | no       | Shared metadata.                            |
+
 ### `hindsight_retain_receipts`
 
 List recent explicit retain receipts so exact document IDs can be deleted.
@@ -188,6 +200,121 @@ List Hindsight tags for compact inspection.
 | `source`  | memories \| mental_models | no       |                                             |
 | `limit`   | number                    | no       | Maximum tags to return.                     |
 | `offset`  | number                    | no       | Pagination offset.                          |
+
+### `hindsight_list_mental_models`
+
+List Hindsight mental models for a bank.
+
+| Parameter   | Type                        | Required | Description                                 |
+| ----------- | --------------------------- | -------- | ------------------------------------------- |
+| `bank`      | string                      | no       | Optional bank id. Defaults to project bank. |
+| `tags`      | array<string>               | no       |                                             |
+| `tagsMatch` | any \| all \| exact         | no       |                                             |
+| `detail`    | metadata \| content \| full | no       |                                             |
+| `limit`     | number                      | no       | Maximum mental models to return.            |
+| `offset`    | number                      | no       | Pagination offset.                          |
+
+### `hindsight_get_mental_model`
+
+Fetch one Hindsight mental model by ID.
+
+| Parameter       | Type                        | Required | Description                                 |
+| --------------- | --------------------------- | -------- | ------------------------------------------- |
+| `mentalModelId` | string                      | yes      | Mental model ID.                            |
+| `bank`          | string                      | no       | Optional bank id. Defaults to project bank. |
+| `detail`        | metadata \| content \| full | no       |                                             |
+
+### `hindsight_create_mental_model`
+
+Create a Hindsight mental model from a source query.
+
+| Parameter     | Type          | Required | Description                                 |
+| ------------- | ------------- | -------- | ------------------------------------------- |
+| `name`        | string        | yes      | Mental model name.                          |
+| `sourceQuery` | string        | yes      | Source query used to build the model.       |
+| `bank`        | string        | no       | Optional bank id. Defaults to project bank. |
+| `id`          | string        | no       | Optional mental model ID.                   |
+| `tags`        | array<string> | no       |                                             |
+| `maxTokens`   | number        | no       | Optional max token budget.                  |
+
+### `hindsight_promote_reflect_query_to_mental_model`
+
+Create a mental model from a useful project or User Bank reflect query.
+
+| Parameter     | Type              | Required | Description                |
+| ------------- | ----------------- | -------- | -------------------------- |
+| `bank`        | project \| global | yes      |                            |
+| `name`        | string            | yes      | Mental model name.         |
+| `sourceQuery` | string            | yes      | Reflect query to promote.  |
+| `id`          | string            | no       | Optional mental model ID.  |
+| `tags`        | array<string>     | no       |                            |
+| `maxTokens`   | number            | no       | Optional max token budget. |
+
+### `hindsight_update_mental_model`
+
+Update a Hindsight mental model.
+
+| Parameter       | Type                  | Required | Description                                 |
+| --------------- | --------------------- | -------- | ------------------------------------------- |
+| `mentalModelId` | string                | yes      | Mental model ID.                            |
+| `bank`          | string                | no       | Optional bank id. Defaults to project bank. |
+| `name`          | string \| null        | no       |                                             |
+| `sourceQuery`   | string \| null        | no       |                                             |
+| `tags`          | array<string> \| null | no       |                                             |
+| `maxTokens`     | number \| null        | no       |                                             |
+
+### `hindsight_delete_mental_model`
+
+Delete one Hindsight mental model. Destructive; requires confirm=true.
+
+| Parameter       | Type   | Required | Description                                 |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `mentalModelId` | string | yes      | Mental model ID.                            |
+| `bank`          | string | no       | Optional bank id. Defaults to project bank. |
+| `confirm`       | true   | yes      | Required destructive-action confirmation.   |
+
+### `hindsight_get_mental_model_history`
+
+Fetch Hindsight mental model history.
+
+| Parameter       | Type   | Required | Description                                 |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `mentalModelId` | string | yes      | Mental model ID.                            |
+| `bank`          | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_refresh_mental_model`
+
+Refresh a Hindsight mental model and surface operation IDs when returned.
+
+| Parameter       | Type   | Required | Description                                 |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `mentalModelId` | string | yes      | Mental model ID.                            |
+| `bank`          | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_trigger_consolidation`
+
+Trigger Hindsight consolidation for a bank.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_recover_consolidation`
+
+Recover failed Hindsight consolidation work for a bank.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+
+### `hindsight_clear_observations`
+
+Clear all observations for one bank. Destructive; requires confirm=true.
+
+| Parameter | Type   | Required | Description                                 |
+| --------- | ------ | -------- | ------------------------------------------- |
+| `bank`    | string | no       | Optional bank id. Defaults to project bank. |
+| `confirm` | true   | yes      | Required destructive-action confirmation.   |
 
 ### `hindsight_list_operations`
 
@@ -451,6 +578,17 @@ Import a historical Pi session JSONL file into Hindsight with deterministic docu
 | `bank`        | string  | no       | Optional bank id. Defaults to project bank.              |
 | `dryRun`      | boolean | no       | Preview import without writing.                          |
 | `allLeaves`   | boolean | no       | Import or preview all branch leaves.                     |
+
+### `hindsight_import_seed_content`
+
+Import local markdown/text/JSON seed knowledge with deterministic document IDs. Dry-run by default.
+
+| Parameter | Type          | Required | Description                                                    |
+| --------- | ------------- | -------- | -------------------------------------------------------------- |
+| `paths`   | array<string> | yes      | Files or directories to import. Supports .md, .txt, and .json. |
+| `bank`    | string        | no       | Optional bank id. Defaults to project bank.                    |
+| `dryRun`  | boolean       | no       | Preview import without writing. Defaults to true.              |
+| `tags`    | array<string> | no       | Additional import tags.                                        |
 
 ### `hindsight_import_chat_transcript`
 

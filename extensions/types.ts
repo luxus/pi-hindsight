@@ -295,6 +295,13 @@ export interface UpdateDocumentRequest {
   tags?: string[] | null;
 }
 
+export interface RetainFileMetadata {
+  context?: string;
+  documentId?: string;
+  tags?: string[];
+  metadata?: Record<string, string>;
+}
+
 export interface ListEntitiesOptions {
   limit?: number;
   offset?: number;
@@ -377,6 +384,15 @@ export interface HindsightLikeClient {
       documentId?: string;
       documentTags?: string[];
       async?: boolean;
+      signal?: AbortSignal;
+    },
+  ): Promise<unknown>;
+  retainFiles?(
+    bankId: string,
+    files: Array<File | Blob>,
+    options?: {
+      context?: string;
+      filesMetadata?: RetainFileMetadata[];
       signal?: AbortSignal;
     },
   ): Promise<unknown>;
@@ -485,6 +501,9 @@ export interface HindsightLikeClient {
   deleteMentalModel?(bankId: string, mentalModelId: string): Promise<unknown>;
   getMentalModelHistory?(bankId: string, mentalModelId: string): Promise<unknown>;
   refreshMentalModel?(bankId: string, mentalModelId: string): Promise<unknown>;
+  triggerConsolidation?(bankId: string): Promise<unknown>;
+  recoverConsolidation?(bankId: string): Promise<unknown>;
+  clearObservations?(bankId: string): Promise<unknown>;
   listOperations?(bankId: string, options?: ListOperationsOptions): Promise<unknown>;
   cancelOperation?(bankId: string, operationId: string): Promise<unknown>;
   retryOperation?(bankId: string, operationId: string): Promise<unknown>;

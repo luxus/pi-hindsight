@@ -145,6 +145,12 @@ async function bankFact(client: HindsightLikeClient, route: BankRoute): Promise<
         );
         const summary = formatStats(stats);
         if (summary) facts.push([`${route.label} stats`, summary]);
+        const failed = numberField(stats, "failed_consolidation");
+        if (failed !== undefined && failed > 0)
+          facts.push([
+            `${route.label} consolidation`,
+            `failed ${failed} · run hindsight_recover_consolidation`,
+          ]);
       } catch (error) {
         facts.push([`${route.label} stats`, `unavailable · ${redactError(error)}`]);
       }

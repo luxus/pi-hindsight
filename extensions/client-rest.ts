@@ -63,7 +63,7 @@ export function createHindsightRestTransport(config: ResolvedConfig): HindsightR
     async request(path, init = {}) {
       const headers = new Headers(init.headers);
       headers.set("User-Agent", "pi-hindsight/0.1.0");
-      if (!headers.has("Content-Type") && init.body)
+      if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData))
         headers.set("Content-Type", "application/json");
       if (config.hindsight.apiKey)
         headers.set("Authorization", `Bearer ${config.hindsight.apiKey}`);
@@ -347,6 +347,18 @@ export function mentalModelHistoryPath(bankId: string, mentalModelId: string): s
 
 export function mentalModelRefreshPath(bankId: string, mentalModelId: string): string {
   return `${mentalModelItemPath(bankId, mentalModelId)}/refresh`;
+}
+
+export function consolidationPath(bankId: string): string {
+  return encodeBankPath(bankId, "/consolidate");
+}
+
+export function consolidationRecoverPath(bankId: string): string {
+  return encodeBankPath(bankId, "/consolidation/recover");
+}
+
+export function observationsPath(bankId: string): string {
+  return encodeBankPath(bankId, "/observations");
 }
 
 export function createDirectiveRequestBody(

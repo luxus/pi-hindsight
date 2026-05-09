@@ -11,6 +11,8 @@ import {
   bankTemplateImportPath,
   bankTemplateSchemaPath,
   chunkItemPath,
+  consolidationPath,
+  consolidationRecoverPath,
   createDirectiveRequestBody,
   createHindsightRestTransport,
   createMentalModelRequestBody,
@@ -35,6 +37,7 @@ import {
   operationCancelPath,
   operationRetryPath,
   operationsCollectionPath,
+  observationsPath,
   reflectRequestBody,
   tagsCollectionPath,
   updateBankConfigRequestBody,
@@ -132,6 +135,27 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
           return raw.retainBatch(bankId, items, { ...options, signal });
         },
         args[2]?.signal,
+      ),
+    retainFiles: (bankId, files, options) =>
+      withTimeout(
+        "hindsight retainFiles",
+        timeoutMs,
+        (signal) =>
+          raw.retainFiles(bankId, files, {
+            ...(options?.context ? { context: options.context } : {}),
+            ...(options?.filesMetadata
+              ? {
+                  filesMetadata: options.filesMetadata.map((metadata) => ({
+                    ...(metadata.context ? { context: metadata.context } : {}),
+                    ...(metadata.documentId ? { document_id: metadata.documentId } : {}),
+                    ...(metadata.tags ? { tags: metadata.tags } : {}),
+                    ...(metadata.metadata ? { metadata: metadata.metadata } : {}),
+                  })),
+                }
+              : {}),
+            signal,
+          }),
+        options?.signal,
       ),
     recall: (...args) => {
       const [bankId, query, options] = args;
@@ -346,6 +370,18 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
     refreshMentalModel: (bankId, mentalModelId) =>
       withTimeout("hindsight refreshMentalModel", timeoutMs, (signal) =>
         rest.request(mentalModelRefreshPath(bankId, mentalModelId), { method: "POST", signal }),
+      ),
+    triggerConsolidation: (bankId) =>
+      withTimeout("hindsight triggerConsolidation", timeoutMs, (signal) =>
+        rest.request(consolidationPath(bankId), { method: "POST", signal }),
+      ),
+    recoverConsolidation: (bankId) =>
+      withTimeout("hindsight recoverConsolidation", timeoutMs, (signal) =>
+        rest.request(consolidationRecoverPath(bankId), { method: "POST", signal }),
+      ),
+    clearObservations: (bankId) =>
+      withTimeout("hindsight clearObservations", timeoutMs, (signal) =>
+        rest.request(observationsPath(bankId), { method: "DELETE", signal }),
       ),
     listOperations: (bankId, options) =>
       withTimeout("hindsight listOperations", timeoutMs, (signal) =>

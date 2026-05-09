@@ -86,7 +86,8 @@ export function createMentalModelOperations(deps: MemoryOperationsDeps) {
       return { bankId, mentalModelId: args.mentalModelId, result };
     },
 
-    async deleteMentalModel(args: { bank?: string; mentalModelId: string }) {
+    async deleteMentalModel(args: { bank?: string; mentalModelId: string; confirm: true }) {
+      if (!args.confirm) throw new Error("Set confirm=true to delete this Hindsight mental model.");
       const bankId = resolveBank(deps, args.bank);
       const client = deps.getClient();
       if (!client.deleteMentalModel) throw unavailable("delete");

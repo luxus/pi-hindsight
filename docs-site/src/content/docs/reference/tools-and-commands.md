@@ -2,9 +2,9 @@
 title: "Tools and commands"
 ---
 
-For generated details of registered tools and editable config fields, see [Generated surface reference](/pi-hindsight/reference/surface-reference/).
+For a generated reference of registered tools, commands, and editable config fields, see [Generated surface reference](/pi-hindsight/reference/surface-reference/).
 
-`/hindsight` is the main control center. Commands are convenience shortcuts for advanced, repeat, or scripted workflows.
+`/hindsight` is the main control center. Commands are convenience shortcuts and escape hatches for advanced workflows.
 
 ## Main command
 
@@ -34,7 +34,7 @@ The `hindsight_configure` tool can write config from agents. Prefer `/hindsight`
 /hindsight:import-project-sessions
 ```
 
-For first-time backfill, prefer the guided import prompt in `/hindsight`. Use these commands when you need repeat imports or explicit files. Always dry-run before non-dry-run imports. See [Import controls reference](/pi-hindsight/reference/import-controls/) and [Importing sessions](/pi-hindsight/guides/importing-sessions/).
+Use dry-run before non-dry-run imports. See [Import controls](/pi-hindsight/reference/import-controls/) and [Importing sessions](/pi-hindsight/guides/importing-sessions/).
 
 ## Queue and snapshots
 
@@ -95,9 +95,11 @@ Additional tools:
 - `hindsight_export_bank_template`
 - `hindsight_import_bank_template`
 - `hindsight_import`
+- `hindsight_import_seed_content`
 - `hindsight_import_chat_transcript`
 - `hindsight_retain_global`
 - `hindsight_route_memory`
+- `hindsight_retain_files`
 - `hindsight_retain_receipts`
 - `hindsight_delete_document`
 - `hindsight_list_documents`
@@ -109,6 +111,17 @@ Additional tools:
 - `hindsight_get_graph`
 - `hindsight_get_entity_graph`
 - `hindsight_list_tags`
+- `hindsight_list_mental_models`
+- `hindsight_get_mental_model`
+- `hindsight_create_mental_model`
+- `hindsight_promote_reflect_query_to_mental_model`
+- `hindsight_update_mental_model`
+- `hindsight_delete_mental_model`
+- `hindsight_get_mental_model_history`
+- `hindsight_refresh_mental_model`
+- `hindsight_trigger_consolidation`
+- `hindsight_recover_consolidation`
+- `hindsight_clear_observations`
 - `hindsight_list_operations`
 - `hindsight_cancel_operation`
 - `hindsight_retry_operation`
@@ -130,12 +143,16 @@ Tool notes:
 - Pass `global` for the configured global bank.
 - `hindsight_retain_global` refuses to write if global memory is disabled or missing a bank ID.
 - `hindsight_delete_document` requires exact bank, exact document ID, and `confirm: true`.
-- `hindsight_update_bank_config` accepts raw Hindsight bank config override fields and requires `confirm: true`. Current OpenAPI high-value fields include retain extraction/chunking, observation/consolidation limits, reflect source-fact budgets, MCP tool allowlists, retain strategies, and recall budget mapping (`recall_budget_function`, fixed/adaptive budget fields, `recall_budget_min`, and `recall_budget_max`). Keep LLM credential/provider and server-admin fields outside Pi local config unless Hindsight documents them as per-bank safe overrides.
+- `hindsight_update_bank_config` accepts raw Hindsight bank config override fields and requires `confirm: true`. High-value fields include retain extraction/chunking, observation/consolidation limits, reflect source-fact budgets, MCP tool allowlists, retain strategies, and recall budget mapping fields. Keep server-admin or credential-like fields out of Pi local config unless Hindsight documents them as per-bank safe overrides.
 - `hindsight_import_bank_template` defaults to dry-run. Applying requires `dryRun: false` plus `confirmApply: true` and exactly one source (`sourceFile` or `manifestJson`).
+- `hindsight_import_seed_content` imports explicit `.md`, `.txt`, and `.json` files or directories into the project bank by default. It defaults to dry-run, uses deterministic `pi-seed-import:<relative-path>` document IDs, and writes with `updateMode: "replace"` for idempotent reimports.
+- `hindsight_retain_files` uses Hindsight native file retain for PDFs, Office files, images, audio, and other server-supported files. It returns async operation details; inspect progress with `hindsight_list_operations`.
 - Document/entity/graph/tag inspection tools present compact IDs, tags, metadata/provenance keys, timestamps, and counts when Hindsight returns them. They do not print giant source payloads by default beyond bounded JSON detail.
 - `hindsight_update_document_tags`, `hindsight_regenerate_entity`, `hindsight_update_bank_config`, `hindsight_update_bank_profile`, `hindsight_update_bank_disposition`, and `hindsight_add_bank_background` are admin mutations and require `confirm: true`.
 - Bank profile/background/disposition tools only call current supported Hindsight endpoints. They do not expose bank-wide destructive operations. Roll back profile/disposition/background changes by reapplying the previous values from the returned `before` profile or the Hindsight web UI.
 - `hindsight_cancel_operation` requires exact operation ID and `confirm: true`; it is intended for pending operations.
+- Mental-model tools expose list/get/create/update/delete/history/refresh. Deletes require `confirm: true`; refresh can return async operation IDs.
+- Consolidation tools can trigger and recover server consolidation work. `hindsight_clear_observations` is bank-wide and destructive, so it requires `confirm: true`; prefer `hindsight_delete_memory_observations` for one-memory repair.
 - `hindsight_delete_memory_observations` requires exact memory ID and `confirm: true`. Bank-wide memory clear/delete-all is intentionally not exposed.
 - Memory inspection tools use current documented REST endpoints: list memory units, fetch a memory, fetch a chunk by ID, fetch memory history when the server supports it, and delete observations for one memory when supported.
 
