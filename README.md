@@ -1,3 +1,12 @@
+<p align="center">
+  <img
+    src="docs/assets/logos/pi-hindsight-logo-dark.webp"
+    srcset="docs/assets/logos/pi-hindsight-logo-dark.webp 1x, docs/assets/logos/pi-hindsight-logo-dark@2x.webp 2x"
+    width="320"
+    alt="Pi Hindsight"
+  />
+</p>
+
 # Pi Hindsight Extension
 
 Persistent memory for [Pi](https://github.com/earendil-works/pi) backed by [Hindsight](https://hindsight.vectorize.io/).

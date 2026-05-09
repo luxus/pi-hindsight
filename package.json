@@ -22,6 +22,7 @@
     "README.md",
     "CHANGELOG.md",
     "docs/adr",
+    "docs/assets",
     "docs/compatibility.md",
     "docs/hindsight-core-functions.md",
     "docs/risky-memory-modes.md",
