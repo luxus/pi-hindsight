@@ -76,7 +76,7 @@ describe("chat transcript import", () => {
       contentHash: expect.any(String),
       contentBytes: expect.any(Number),
     });
-    expect(result.documentId).toMatch(/^pi-chat-import:/);
+    expect(result.documentId).toMatch(/^pi-gateway-import:/);
   });
 
   it("skips noise-only chat transcript without writing", async () => {

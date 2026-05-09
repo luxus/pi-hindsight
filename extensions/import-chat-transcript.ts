@@ -132,7 +132,7 @@ function tagValue(value: string): string {
 
 function documentId(sourceFile: string, kept: ChatTranscriptEvent[]): string {
   const basis = JSON.stringify({ sourceFile, first: kept[0]?.data, last: kept.at(-1)?.data });
-  return `pi-chat-import:${createHash("sha256").update(basis).digest("hex").slice(0, 16)}`;
+  return `pi-gateway-import:${createHash("sha256").update(basis).digest("hex").slice(0, 16)}`;
 }
 
 export async function importChatTranscript(args: {
