@@ -84,23 +84,23 @@ Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi w
 
 Recall raw memories from Hindsight for this project.
 
-| Parameter               | Type                                        | Required | Description                                                                                                                         |
-| ----------------------- | ------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `query`                 | string                                      | yes      | Natural language memory query                                                                                                       |
-| `bank`                  | string                                      | no       | Optional bank id. Defaults to project bank.                                                                                         |
-| `types`                 | array<world \| experience \| observation>   | no       | Optional Hindsight fact types to retrieve.                                                                                          |
-| `budget`                | low \| mid \| high                          | no       | Optional Hindsight recall budget override for this tool call.                                                                       |
-| `maxTokens`             | integer                                     | no       | Optional Hindsight recall token cap override for this tool call. Use 0 for metadata/source-only recall when supported by Hindsight. |
-| `queryTimestamp`        | string                                      | no       | Optional ISO timestamp for time-scoped recall.                                                                                      |
-| `includeChunks`         | boolean                                     | no       | Ask Hindsight to include source chunks when supported.                                                                              |
-| `recallChunksMaxTokens` | integer                                     | no       | Optional token cap for included recall chunks.                                                                                      |
-| `includeSourceFacts`    | boolean                                     | no       | Ask Hindsight to include source facts when supported.                                                                               |
-| `maxSourceFactsTokens`  | integer                                     | no       | Optional token cap for included source facts.                                                                                       |
-| `includeEntities`       | boolean                                     | no       | Ask Hindsight to include entities when supported.                                                                                   |
-| `trace`                 | boolean                                     | no       | Ask Hindsight to include recall trace/debug data.                                                                                   |
-| `tags`                  | array<string>                               | no       | Additional tag filter.                                                                                                              |
-| `tagsMatch`             | any \| all \| any_strict \| all_strict      | no       |                                                                                                                                     |
-| `tagGroups`             | array<object \| object \| object \| object> | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.                                       |
+| Parameter               | Type                                      | Required | Description                                                                                                                         |
+| ----------------------- | ----------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `query`                 | string                                    | yes      | Natural language memory query                                                                                                       |
+| `bank`                  | string                                    | no       | Optional bank id. Defaults to project bank.                                                                                         |
+| `types`                 | array<world \| experience \| observation> | no       | Optional Hindsight fact types to retrieve.                                                                                          |
+| `budget`                | low \| mid \| high                        | no       | Optional Hindsight recall budget override for this tool call.                                                                       |
+| `maxTokens`             | integer                                   | no       | Optional Hindsight recall token cap override for this tool call. Use 0 for metadata/source-only recall when supported by Hindsight. |
+| `queryTimestamp`        | string                                    | no       | Optional ISO timestamp for time-scoped recall.                                                                                      |
+| `includeChunks`         | boolean                                   | no       | Ask Hindsight to include source chunks when supported.                                                                              |
+| `recallChunksMaxTokens` | integer                                   | no       | Optional token cap for included recall chunks.                                                                                      |
+| `includeSourceFacts`    | boolean                                   | no       | Ask Hindsight to include source facts when supported.                                                                               |
+| `maxSourceFactsTokens`  | integer                                   | no       | Optional token cap for included source facts.                                                                                       |
+| `includeEntities`       | boolean                                   | no       | Ask Hindsight to include entities when supported.                                                                                   |
+| `trace`                 | boolean                                   | no       | Ask Hindsight to include recall trace/debug data.                                                                                   |
+| `tags`                  | array<string>                             | no       | Additional tag filter.                                                                                                              |
+| `tagsMatch`             | any \| all \| any_strict \| all_strict    | no       |                                                                                                                                     |
+| `tagGroups`             | array<object>                             | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.                                       |
 
 ### `hindsight_retain`
 
@@ -688,19 +688,19 @@ Import a chat transcript JSONL file into the configured user memory bank. Explic
 
 Ask Hindsight to synthesize an answer from memory. Use explicitly, not for default recall.
 
-| Parameter          | Type                                        | Required | Description                                                                                   |
-| ------------------ | ------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `query`            | string                                      | yes      |                                                                                               |
-| `context`          | string                                      | no       |                                                                                               |
-| `bank`             | string                                      | no       |                                                                                               |
-| `budget`           | low \| mid \| high                          | no       | Optional Hindsight reflect budget override for this tool call.                                |
-| `maxTokens`        | integer                                     | no       | Optional Hindsight reflect token cap override for this tool call.                             |
-| `responseSchema`   | object/map                                  | no       |                                                                                               |
-| `includeFacts`     | boolean                                     | no       | Ask Hindsight reflect to include facts when supported.                                        |
-| `includeToolCalls` | boolean                                     | no       | Ask Hindsight reflect to include tool-call trace data when supported.                         |
-| `tags`             | array<string>                               | no       | Additional tag filter.                                                                        |
-| `tagsMatch`        | any \| all \| any_strict \| all_strict      | no       |                                                                                               |
-| `tagGroups`        | array<object \| object \| object \| object> | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter. |
+| Parameter          | Type                                   | Required | Description                                                                                   |
+| ------------------ | -------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `query`            | string                                 | yes      |                                                                                               |
+| `context`          | string                                 | no       |                                                                                               |
+| `bank`             | string                                 | no       |                                                                                               |
+| `budget`           | low \| mid \| high                     | no       | Optional Hindsight reflect budget override for this tool call.                                |
+| `maxTokens`        | integer                                | no       | Optional Hindsight reflect token cap override for this tool call.                             |
+| `responseSchema`   | object/map                             | no       |                                                                                               |
+| `includeFacts`     | boolean                                | no       | Ask Hindsight reflect to include facts when supported.                                        |
+| `includeToolCalls` | boolean                                | no       | Ask Hindsight reflect to include tool-call trace data when supported.                         |
+| `tags`             | array<string>                          | no       | Additional tag filter.                                                                        |
+| `tagsMatch`        | any \| all \| any_strict \| all_strict | no       |                                                                                               |
+| `tagGroups`        | array<object>                          | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter. |
 
 ## Commands
 

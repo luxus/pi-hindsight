@@ -79,36 +79,13 @@ const mentalModelTagsMatchSchema = Type.Union([
 ]);
 
 const tagGroupJsonSchema = {
-  $id: "HindsightTagGroup",
-  anyOf: [
-    {
-      type: "object",
-      required: ["tags"],
-      properties: {
-        tags: { type: "array", items: { type: "string" } },
-        match: { enum: ["any", "all", "any_strict", "all_strict"] },
-      },
-      additionalProperties: false,
-    },
-    {
-      type: "object",
-      required: ["and"],
-      properties: { and: { type: "array", items: { $ref: "HindsightTagGroup" } } },
-      additionalProperties: false,
-    },
-    {
-      type: "object",
-      required: ["or"],
-      properties: { or: { type: "array", items: { $ref: "HindsightTagGroup" } } },
-      additionalProperties: false,
-    },
-    {
-      type: "object",
-      required: ["not"],
-      properties: { not: { $ref: "HindsightTagGroup" } },
-      additionalProperties: false,
-    },
-  ],
+  type: "object",
+  required: ["tags"],
+  properties: {
+    tags: { type: "array", items: { type: "string" } },
+    match: { enum: ["any", "all", "any_strict", "all_strict"] },
+  },
+  additionalProperties: false,
 };
 
 const tagGroupSchema = Type.Unsafe<import("./types.js").HindsightTagGroup>(tagGroupJsonSchema);
