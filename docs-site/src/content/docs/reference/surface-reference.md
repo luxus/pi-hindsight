@@ -293,6 +293,16 @@ Read resolved Hindsight bank config and override counts for a selected bank.
 | --------- | ------ | -------- | ------------------------------------------- |
 | `bank`    | string | no       | Optional bank id. Defaults to project bank. |
 
+### `hindsight_update_bank_config`
+
+Patch supported Hindsight bank config override fields using current server/OpenAPI field names. Requires confirm=true.
+
+| Parameter | Type       | Required | Description                                                               |
+| --------- | ---------- | -------- | ------------------------------------------------------------------------- |
+| `bank`    | string     | no       | Optional bank id. Defaults to project bank.                               |
+| `updates` | object/map | yes      | Bank config override fields to patch using current Hindsight field names. |
+| `confirm` | true       | yes      | Required admin mutation confirmation. Must be true.                       |
+
 ### `hindsight_get_bank_profile`
 
 Read Hindsight bank profile/background/disposition.
@@ -422,6 +432,18 @@ Export a portable Hindsight bank template manifest for reuse in another project 
 | ------------ | ------ | -------- | ------------------------------------------------------------------------------------- |
 | `bank`       | string | no       | Optional bank id. Defaults to project bank.                                           |
 | `outputFile` | string | no       | Optional path to save the exported manifest JSON. Relative paths resolve against cwd. |
+
+### `hindsight_import_bank_template`
+
+Dry-run or apply a portable Hindsight bank template manifest from a local JSON file or inline JSON.
+
+| Parameter      | Type    | Required | Description                                                                 |
+| -------------- | ------- | -------- | --------------------------------------------------------------------------- |
+| `bank`         | string  | no       | Optional bank id. Defaults to project bank.                                 |
+| `sourceFile`   | string  | no       | Local bank template manifest JSON path. Relative paths resolve against cwd. |
+| `manifestJson` | string  | no       | Inline bank template manifest JSON.                                         |
+| `dryRun`       | boolean | no       | Preview without writing. Defaults to true.                                  |
+| `confirmApply` | true    | no       | Required when dryRun is false. Must be true to apply changes.               |
 
 ### `hindsight_import`
 

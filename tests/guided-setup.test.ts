@@ -11,6 +11,7 @@ import {
   hasProjectHindsightConfig,
   importChoicesForSetup,
   maybeOfferHistoricalImportForSetup,
+  runGuidedSetup,
   setupProfileChoiceToMemoryProfile,
 } from "../extensions/guided-setup.js";
 
@@ -257,6 +258,57 @@ describe("guided setup", () => {
       "Edit bank field",
       "Cancel",
     ]);
+  });
+
+  it("passes apply confirmation to guided setup bank template import", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-template-"));
+    const importBankTemplate = vi
+      .fn()
+      .mockResolvedValueOnce({ bankId: "project-bank", result: { dry_run: true } })
+      .mockResolvedValueOnce({ bankId: "project-bank", result: { config_applied: true } });
+    const ctx = {
+      cwd,
+      sessionManager: { getSessionFile: () => undefined },
+      ui: {
+        notify: vi.fn(),
+        input: vi.fn().mockResolvedValueOnce("project-bank"),
+        select: vi
+          .fn()
+          .mockResolvedValueOnce("Project Only")
+          .mockResolvedValueOnce("Coding / Project")
+          .mockResolvedValueOnce("Use template")
+          .mockResolvedValueOnce("Skip import"),
+        confirm: vi
+          .fn()
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(false),
+      },
+    } as never;
+
+    await runGuidedSetup({
+      ctx,
+      cwd,
+      deps: {
+        getClient: () => ({
+          retain: vi.fn(),
+          recall: vi.fn(),
+          reflect: vi.fn(),
+          importBankTemplate,
+        }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "project-bank",
+      },
+    });
+
+    expect(importBankTemplate).toHaveBeenNthCalledWith(
+      2,
+      "project-bank",
+      expect.objectContaining({ version: "1" }),
+      { dryRun: false },
+    );
   });
 
   it("limits setup import choices to configured setup banks", () => {

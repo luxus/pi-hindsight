@@ -4,6 +4,7 @@ import {
   deleteDirectiveToolResponse,
   exportBankTemplateToolResponse,
   bankProfileToolResponse,
+  importBankTemplateToolResponse,
   documentToolResponse,
   entityToolResponse,
   graphToolResponse,
@@ -16,6 +17,7 @@ import {
   listOperationsToolResponse,
   listTagsToolResponse,
   operationToolResponse,
+  updateBankConfigToolResponse,
   updateDirectiveToolResponse,
 } from "../extensions/tool-presenters.js";
 
@@ -171,6 +173,32 @@ describe("tool presenters", () => {
     expect(response.content[0]?.text).toContain("Exported bank template from bank.");
     expect(response.content[0]?.text).toContain("Saved manifest: /tmp/template.json");
     expect(response.content[0]?.text).toContain("Bank overrides: 1");
+  });
+
+  it("presents bank template import previews and bank config updates", () => {
+    const imported = importBankTemplateToolResponse({
+      bankId: "bank",
+      manifest: { version: "1" },
+      dryRun: true,
+      sourceFile: "template.json",
+      result: { dry_run: true, config_applied: true, mental_models_created: 2 },
+    });
+    expect(imported.content[0]?.text).toContain("Previewed bank template for bank.");
+    expect(imported.content[0]?.text).toContain("mental_models_created: 2");
+
+    const updated = updateBankConfigToolResponse({
+      bankId: "bank",
+      updates: { recall_budget_function: "fixed" },
+      before: { config: {}, overrides: {} },
+      result: { ok: true },
+      after: {
+        config: { recall_budget_function: "fixed" },
+        overrides: { recall_budget_function: "fixed" },
+      },
+    });
+    expect(updated.content[0]?.text).toContain("Updated bank config overrides for bank.");
+    expect(updated.content[0]?.text).toContain("Updated fields: 1");
+    expect(updated.content[0]?.text).toContain("After: Bank overrides: 1");
   });
 
   it("presents bank template schema summary and raw JSON", () => {

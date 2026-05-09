@@ -78,6 +78,7 @@ Additional tools:
 
 - `hindsight_configure`
 - `hindsight_get_bank_config`
+- `hindsight_update_bank_config`
 - `hindsight_get_bank_profile`
 - `hindsight_update_bank_profile`
 - `hindsight_update_bank_disposition`
@@ -90,6 +91,7 @@ Additional tools:
 - `hindsight_delete_directive`
 - `hindsight_get_bank_template_schema`
 - `hindsight_export_bank_template`
+- `hindsight_import_bank_template`
 - `hindsight_import`
 - `hindsight_import_chat_transcript`
 - `hindsight_retain_global`
@@ -126,8 +128,10 @@ Tool notes:
 - Pass `global` for the configured global bank.
 - `hindsight_retain_global` refuses to write if global memory is disabled or missing a bank ID.
 - `hindsight_delete_document` requires exact bank, exact document ID, and `confirm: true`.
+- `hindsight_update_bank_config` accepts raw Hindsight bank config override fields and requires `confirm: true`. High-value fields include retain extraction/chunking, observation/consolidation limits, reflect source-fact budgets, MCP tool allowlists, retain strategies, and recall budget mapping fields. Keep server-admin or credential-like fields out of Pi local config unless Hindsight documents them as per-bank safe overrides.
+- `hindsight_import_bank_template` defaults to dry-run. Applying requires `dryRun: false` plus `confirmApply: true` and exactly one source (`sourceFile` or `manifestJson`).
 - Document/entity/graph/tag inspection tools present compact IDs, tags, metadata/provenance keys, timestamps, and counts when Hindsight returns them. They do not print giant source payloads by default beyond bounded JSON detail.
-- `hindsight_update_document_tags`, `hindsight_regenerate_entity`, `hindsight_update_bank_profile`, `hindsight_update_bank_disposition`, and `hindsight_add_bank_background` are admin mutations and require `confirm: true`.
+- `hindsight_update_document_tags`, `hindsight_regenerate_entity`, `hindsight_update_bank_config`, `hindsight_update_bank_profile`, `hindsight_update_bank_disposition`, and `hindsight_add_bank_background` are admin mutations and require `confirm: true`.
 - Bank profile/background/disposition tools only call current supported Hindsight endpoints. They do not expose bank-wide destructive operations. Roll back profile/disposition/background changes by reapplying the previous values from the returned `before` profile or the Hindsight web UI.
 - `hindsight_cancel_operation` requires exact operation ID and `confirm: true`; it is intended for pending operations.
 - `hindsight_delete_memory_observations` requires exact memory ID and `confirm: true`. Bank-wide memory clear/delete-all is intentionally not exposed.

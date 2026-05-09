@@ -25,6 +25,7 @@ import {
   getBankTemplateSchemaToolResponse,
   getDirectiveToolResponse,
   graphToolResponse,
+  importBankTemplateToolResponse,
   importToolResponse,
   jsonToolResponse,
   listDirectivesToolResponse,
@@ -36,6 +37,7 @@ import {
   operationToolResponse,
   resetBankConfigToolResponse,
   retainReceiptListToolResponse,
+  updateBankConfigToolResponse,
   retainToolResponse,
   routeMemoryToolResponse,
   updateDirectiveToolResponse,
@@ -873,6 +875,32 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
     }),
     defineCatalogTool({
+      name: "hindsight_update_bank_config",
+      label: "Hindsight Update Bank Config",
+      description:
+        "Patch supported Hindsight bank config override fields using current server/OpenAPI field names. Requires confirm=true.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        updates: Type.Record(Type.String(), Type.Unknown(), {
+          description: "Bank config override fields to patch using current Hindsight field names.",
+        }),
+        confirm: Type.Literal(true, {
+          description: "Required admin mutation confirmation. Must be true.",
+        }),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.updateBankConfig({
+          ...(params.bank ? { bank: params.bank } : {}),
+          updates: params.updates,
+          confirm: params.confirm,
+        });
+        return updateBankConfigToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
       name: "hindsight_get_bank_profile",
       label: "Hindsight Get Bank Profile",
       description: "Read Hindsight bank profile/background/disposition.",
@@ -1188,6 +1216,46 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           ...(params.outputFile ? { outputFile: params.outputFile } : {}),
         });
         return exportBankTemplateToolResponse(result);
+      },
+    }),
+    defineCatalogTool({
+      name: "hindsight_import_bank_template",
+      label: "Hindsight Import Bank Template",
+      description:
+        "Dry-run or apply a portable Hindsight bank template manifest from a local JSON file or inline JSON.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        sourceFile: Type.Optional(
+          Type.String({
+            description:
+              "Local bank template manifest JSON path. Relative paths resolve against cwd.",
+          }),
+        ),
+        manifestJson: Type.Optional(
+          Type.String({ description: "Inline bank template manifest JSON." }),
+        ),
+        dryRun: Type.Optional(
+          Type.Boolean({ description: "Preview without writing. Defaults to true." }),
+        ),
+        confirmApply: Type.Optional(
+          Type.Literal(true, {
+            description: "Required when dryRun is false. Must be true to apply changes.",
+          }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.importBankTemplate({
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.sourceFile ? { sourceFile: params.sourceFile } : {}),
+          ...(params.manifestJson ? { manifestJson: params.manifestJson } : {}),
+          cwd: ctx.cwd,
+          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+          ...(params.confirmApply !== undefined ? { confirmApply: params.confirmApply } : {}),
+        });
+        return importBankTemplateToolResponse(result);
       },
     }),
     defineCatalogTool({

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { resolveOperationBank } from "./bank-selection.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
@@ -84,21 +84,39 @@ export function createBankTemplateOperations(deps: MemoryOperationsDeps) {
 
     async importBankTemplate(args: {
       bank?: string;
-      manifest: BankTemplateManifest;
+      manifest?: BankTemplateManifest;
+      manifestJson?: string;
+      sourceFile?: string;
+      cwd?: string;
       dryRun?: boolean;
+      confirmApply?: boolean;
     }) {
       const client = deps.getClient();
       if (!client.importBankTemplate)
         throw new Error("Hindsight client does not support bank template import.");
+      const sourceCount = [args.manifest, args.manifestJson, args.sourceFile].filter(
+        (value) => value !== undefined,
+      ).length;
+      if (sourceCount !== 1)
+        throw new Error(
+          "Provide exactly one bank template source: manifest, manifestJson, or sourceFile.",
+        );
+      const dryRun = args.dryRun ?? true;
+      if (!dryRun && args.confirmApply !== true)
+        throw new Error("confirmApply:true is required to apply a bank template import.");
+      const manifest = args.manifest
+        ? args.manifest
+        : parseBankTemplateManifestJson(
+            args.manifestJson ??
+              (await readFile(resolve(args.cwd ?? process.cwd(), args.sourceFile!), "utf8")),
+          );
       const bankId = resolveOperationBank({
         requestedBank: args.bank,
         config: deps.getConfig(),
         projectBankId: deps.getProjectBankId(),
       });
-      const result = await client.importBankTemplate(bankId, args.manifest, {
-        dryRun: args.dryRun ?? false,
-      });
-      return { bankId, result };
+      const result = await client.importBankTemplate(bankId, manifest, { dryRun });
+      return { bankId, manifest, dryRun, sourceFile: args.sourceFile, result };
     },
   };
 }

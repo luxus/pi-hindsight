@@ -65,17 +65,32 @@ Pi Hindsight distinguishes local Pi behavior from bank-owned Hindsight settings.
 
 Mission text and mental models remain Hindsight bank settings, not normal Pi JSON config.
 
-Use these public tools for bank-owned settings. Explicit bank-template import is guided-setup/internal today, not a public tool:
+Use these public tools for bank-owned settings:
 
 - `hindsight_get_bank_config`
+- `hindsight_update_bank_config`
 - `hindsight_reset_bank_config`
 - `hindsight_get_bank_template_schema`
 - `hindsight_export_bank_template`
+- `hindsight_import_bank_template`
 - `hindsight_list_directives`
 - `hindsight_get_directive`
 - `hindsight_create_directive`
 - `hindsight_update_directive`
 - `hindsight_delete_directive`
+
+## Bank config surface audit
+
+Current Hindsight OpenAPI exposes generic per-bank config updates through `BankConfigUpdate.updates`, so Pi exposes raw field updates via `hindsight_update_bank_config` instead of adding local Pi config keys for every server field. This keeps Hindsight's config resolver as the source of truth.
+
+High-value per-bank fields supported through raw updates or bank-template manifests include:
+
+- retain extraction and chunking: `retain_extraction_mode`, `retain_custom_instructions`, `retain_chunk_size`, `retain_chunk_batch_size`, `retain_default_strategy`, `retain_strategies`
+- observation/consolidation controls: `enable_observations`, `observations_mission`, `consolidation_llm_batch_size`, `consolidation_source_facts_max_tokens`, `consolidation_source_facts_max_tokens_per_observation`, `max_observations_per_scope`
+- reflect and recall budgets: `reflect_source_facts_max_tokens`, `recall_budget_function`, `recall_budget_fixed_low`, `recall_budget_fixed_mid`, `recall_budget_fixed_high`, `recall_budget_adaptive_low`, `recall_budget_adaptive_mid`, `recall_budget_adaptive_high`, `recall_budget_min`, `recall_budget_max`
+- bank behavior and tool policy: `entity_labels`, `entities_allow_free_form`, `mcp_enabled_tools`, disposition fields, directives, and mental models
+
+Keep server-admin or credential-like fields, such as LLM provider credentials and Gemini safety settings, out of Pi local config unless Hindsight documents them as safe per-bank overrides. Use `hindsight_get_bank_config` to inspect resolved config and bank-specific overrides before and after updates.
 
 ## Advanced project config example
 

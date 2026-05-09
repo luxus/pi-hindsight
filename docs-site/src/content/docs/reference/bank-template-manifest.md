@@ -3,20 +3,26 @@ title: "Bank template manifest reference"
 description: Bank template import/export expectations and safety rules.
 ---
 
-Bank template manifests describe Hindsight bank setup that can be exported, reviewed, dry-run, and applied through guided setup or internal operation paths.
+Bank template manifests describe Hindsight bank setup that can be exported, reviewed, dry-run, and applied through guided setup or the public `hindsight_import_bank_template` tool.
 
 ## Where manifests are used
 
 Pi Hindsight can use manifests through:
 
 - guided setup in `/hindsight`, where pasted manifests are dry-run before confirmation
-- the public `hindsight_get_bank_template_schema` and `hindsight_export_bank_template` tools
-- internal setup operation paths that call Hindsight bank-template import
+- `hindsight_get_bank_template_schema` to inspect the Hindsight JSON Schema
+- `hindsight_export_bank_template` to save a portable manifest
+- `hindsight_import_bank_template` to dry-run or apply a local/inline manifest explicitly
 - Hindsight control plane workflows or REST endpoints outside Pi Hindsight
 
 ## Public surface
 
-Pi Hindsight does not currently expose a public explicit bank-template import tool. The public tool surface exposes schema fetch and export only. Guided setup owns user-facing import today; direct Hindsight control-plane or REST import remains outside Pi Hindsight public tools.
+`hindsight_import_bank_template` defaults to `dryRun: true`. To apply changes, pass `dryRun: false` and `confirmApply: true`. Provide exactly one source:
+
+- `sourceFile`: local JSON file path, relative to the Pi working directory
+- `manifestJson`: inline manifest JSON
+
+Project and User Bank aliases resolve the same way as other bank tools. Prefer dry-run output in PRs/issues; apply only after reviewing config, mental-model, directive, and operation summaries.
 
 ## Rules
 
@@ -30,8 +36,8 @@ Pi Hindsight does not currently expose a public explicit bank-template import to
 
 1. Export or obtain a manifest.
 2. Review bank name, mental models, directives, and metadata.
-3. In Pi Hindsight, paste the manifest during guided setup so it can dry-run before confirmation.
-4. Apply only after the result matches the intended bank setup.
+3. In Pi Hindsight, run `hindsight_import_bank_template({ sourceFile, dryRun: true })` or paste the manifest during guided setup.
+4. Apply only after the result matches the intended bank setup, using `dryRun: false` plus `confirmApply: true` for the tool path.
 5. Verify bank status in `/hindsight`.
 
 See [Starter mental model suggestions](../concepts/starter-mental-model-suggestions/) for concept background and [Hindsight API links](./hindsight-api-links/) for official API references.

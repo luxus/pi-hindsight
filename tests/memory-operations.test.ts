@@ -231,6 +231,13 @@ describe("memory operations", () => {
     await expect(operations.getBankConfig({ bank: "project" })).rejects.toThrow(
       "Hindsight client does not support bank config read.",
     );
+    await expect(
+      operations.updateBankConfig({
+        bank: "project",
+        updates: { recall_budget_function: "fixed" },
+        confirm: true,
+      }),
+    ).rejects.toThrow("Hindsight client does not support bank config update.");
     await expect(operations.resetBankConfig({ bank: "project", confirm: true })).rejects.toThrow(
       "Hindsight client does not support bank config reset.",
     );
@@ -267,6 +274,7 @@ describe("memory operations", () => {
         retain: async () => undefined,
         recall: async () => [],
         reflect: async () => ({}),
+        updateBankConfig: async () => ({}),
         resetBankConfig: async () => ({}),
         deleteDirective: async () => ({}),
       }),
@@ -274,6 +282,12 @@ describe("memory operations", () => {
       getProjectBankId: () => "project-bank",
     });
 
+    await expect(
+      operations.updateBankConfig({
+        bank: "project",
+        updates: { recall_budget_function: "fixed" },
+      }),
+    ).rejects.toThrow("confirm:true is required to update bank config");
     await expect(operations.resetBankConfig({ bank: "project" })).rejects.toThrow(
       "confirm:true is required to reset bank config",
     );
@@ -283,7 +297,7 @@ describe("memory operations", () => {
   });
 
   it("resolves project/global bank aliases for explicit operations", async () => {
-    const calls: Array<{ method: string; bank: string; request?: unknown }> = [];
+    const calls: Array<{ method: string; bank: string; request?: unknown; updates?: unknown }> = [];
     const config = {
       ...DEFAULT_CONFIG,
       banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "global-luxus" } },
@@ -309,6 +323,10 @@ describe("memory operations", () => {
         getBankConfig: async (bank) => {
           calls.push({ method: "getBankConfig", bank });
           return { config: {}, overrides: {} };
+        },
+        updateBankConfig: async (bank, updates) => {
+          calls.push({ method: "updateBankConfig", bank, updates });
+          return { config: updates, overrides: updates };
         },
         resetBankConfig: async (bank) => {
           calls.push({ method: "resetBankConfig", bank });
@@ -366,6 +384,11 @@ describe("memory operations", () => {
     await operations.reflect(cwd, "query", undefined, "project");
     await operations.deleteDocument({ bank: "global", documentId: "doc" });
     await operations.getBankConfig({ bank: "global" });
+    await operations.updateBankConfig({
+      bank: "global",
+      updates: { recall_budget_function: "fixed", max_observations_per_scope: 20 },
+      confirm: true,
+    });
     await operations.resetBankConfig({ bank: "global", confirm: true });
     await operations.getBankTemplateSchema();
     await operations.listDirectives({ bank: "global" });
@@ -415,6 +438,11 @@ describe("memory operations", () => {
         { method: "reflect", bank: "project-bank" },
         { method: "delete", bank: "global-luxus" },
         { method: "getBankConfig", bank: "global-luxus" },
+        {
+          method: "updateBankConfig",
+          bank: "global-luxus",
+          updates: { recall_budget_function: "fixed", max_observations_per_scope: 20 },
+        },
         { method: "resetBankConfig", bank: "global-luxus" },
         { method: "getBankConfig", bank: "global-luxus" },
         { method: "getBankTemplateSchema", bank: "none" },

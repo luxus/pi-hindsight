@@ -29,7 +29,11 @@ export type ExportBankTemplateToolResult = Awaited<
   ReturnType<MemoryOperations["exportBankTemplate"]>
 >;
 export type GetBankConfigToolResult = Awaited<ReturnType<MemoryOperations["getBankConfig"]>>;
+export type UpdateBankConfigToolResult = Awaited<ReturnType<MemoryOperations["updateBankConfig"]>>;
 export type ResetBankConfigToolResult = Awaited<ReturnType<MemoryOperations["resetBankConfig"]>>;
+export type ImportBankTemplateToolResult = Awaited<
+  ReturnType<MemoryOperations["importBankTemplate"]>
+>;
 export type RetainReceiptListResult = Awaited<ReturnType<MemoryOperations["listRetainReceipts"]>>;
 export type ListOperationsToolResult = Awaited<ReturnType<MemoryOperations["listOperations"]>>;
 export type OperationToolResult =
@@ -621,28 +625,93 @@ export function getBankConfigToolResponse(
   };
 }
 
+function bankConfigChangeSummary(result: { before?: unknown; after?: unknown }): {
+  before: string;
+  after: string;
+} {
+  return {
+    before: result.before
+      ? bankConfigOverrideSummaryLines(result.before).join("; ")
+      : "unavailable",
+    after: result.after ? bankConfigOverrideSummaryLines(result.after).join("; ") : "unavailable",
+  };
+}
+
+export function updateBankConfigToolResponse(
+  result: UpdateBankConfigToolResult,
+): ToolTextResponse<UpdateBankConfigToolResult> {
+  const summary = bankConfigChangeSummary(result);
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `Updated bank config overrides for ${result.bankId}.`,
+          `Updated fields: ${Object.keys(result.updates).length}`,
+          `Before: ${summary.before}`,
+          `After: ${summary.after}`,
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
 export function resetBankConfigToolResponse(
   result: ResetBankConfigToolResult,
 ): ToolTextResponse<ResetBankConfigToolResult> {
-  const before = result.before
-    ? bankConfigOverrideSummaryLines(result.before).join("; ")
-    : "unavailable";
-  const after = result.after
-    ? bankConfigOverrideSummaryLines(result.after).join("; ")
-    : "unavailable";
+  const summary = bankConfigChangeSummary(result);
   return {
     content: [
       {
         type: "text",
         text: [
           `Reset bank config overrides for ${result.bankId}.`,
-          `Before: ${before}`,
-          `After: ${after}`,
+          `Before: ${summary.before}`,
+          `After: ${summary.after}`,
         ].join("\n"),
       },
     ],
     details: result,
   };
+}
+
+export function importBankTemplateToolResponse(
+  result: ImportBankTemplateToolResult,
+): ToolTextResponse<ImportBankTemplateToolResult> {
+  const mode = result.dryRun ? "Previewed" : "Imported";
+  return {
+    content: [
+      {
+        type: "text",
+        text: [
+          `${mode} bank template for ${result.bankId}.`,
+          summarizeImportResult(result.result),
+          JSON.stringify(result.result, null, 2),
+        ].join("\n"),
+      },
+    ],
+    details: result,
+  };
+}
+
+function summarizeImportResult(result: unknown): string {
+  if (typeof result !== "object" || !result || Array.isArray(result))
+    return "Import result: unavailable";
+  const record = result as Record<string, unknown>;
+  const preferred = [
+    "dry_run",
+    "config_applied",
+    "mental_models_created",
+    "mental_models_updated",
+    "directives_created",
+    "directives_updated",
+    "operation_ids",
+  ];
+  const lines = preferred
+    .filter((key) => key in record)
+    .map((key) => `${key}: ${JSON.stringify(record[key])}`);
+  return lines.length ? lines.join("; ") : "Import result fields: unknown";
 }
 
 export function exportBankTemplateToolResponse(

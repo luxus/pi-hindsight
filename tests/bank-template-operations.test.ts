@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -72,6 +72,9 @@ describe("bank template operations", () => {
 
     expect(result).toEqual({
       bankId: "global-luxus",
+      manifest: { version: "1" },
+      dryRun: true,
+      sourceFile: undefined,
       result: { dry_run: true, config_applied: true },
     });
     expect(fixture.importBankTemplate).toHaveBeenCalledWith(
@@ -79,6 +82,51 @@ describe("bank template operations", () => {
       { version: "1" },
       { dryRun: true },
     );
+  });
+
+  it("loads manifest files and requires confirmation before apply", async () => {
+    const fixture = deps();
+    const operations = createBankTemplateOperations(fixture.deps);
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-template-import-"));
+    await writeFile(join(cwd, "template.json"), '{"version":"1","bank":{"retain_mission":"x"}}');
+
+    await expect(
+      operations.importBankTemplate({ sourceFile: "template.json", cwd, dryRun: false }),
+    ).rejects.toThrow("confirmApply:true is required");
+
+    await expect(
+      operations.importBankTemplate({
+        sourceFile: "template.json",
+        cwd,
+        dryRun: false,
+        confirmApply: true,
+      }),
+    ).resolves.toMatchObject({
+      bankId: "project-bank",
+      manifest: { version: "1", bank: { retain_mission: "x" } },
+      dryRun: false,
+      sourceFile: "template.json",
+    });
+    expect(fixture.importBankTemplate).toHaveBeenLastCalledWith(
+      "project-bank",
+      { version: "1", bank: { retain_mission: "x" } },
+      { dryRun: false },
+    );
+  });
+
+  it("requires exactly one manifest source", async () => {
+    const fixture = deps();
+    const operations = createBankTemplateOperations(fixture.deps);
+
+    await expect(operations.importBankTemplate({ dryRun: true })).rejects.toThrow(
+      "Provide exactly one bank template source",
+    );
+    await expect(
+      operations.importBankTemplate({
+        manifest: { version: "1" },
+        manifestJson: '{"version":"1"}',
+      }),
+    ).rejects.toThrow("Provide exactly one bank template source");
   });
 
   it("exports bank templates through resolved bank aliases", async () => {

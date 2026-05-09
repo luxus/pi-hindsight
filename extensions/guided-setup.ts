@@ -357,6 +357,7 @@ async function maybeImportBankTemplate(args: {
       bank: target.bank,
       manifest: editedManifest,
       dryRun: false,
+      confirmApply: true,
     });
     args.ctx.ui.notify(
       `Imported ${selected.label} template into ${applied.bankId}: ${summarizeBankTemplateImportResult(applied.result)}`,
