@@ -2,13 +2,12 @@
 
 ## [0.4.0](https://github.com/luxus/pi-hindsight/compare/v0.3.0...v0.4.0) (2026-05-09)
 
-
 ### Features
 
-* **client:** adopt Hindsight client 0.6.1 ([caa4a48](https://github.com/luxus/pi-hindsight/commit/caa4a48b92129c394eb72fa8c0044d851464407e))
-* **import:** show progress for transcript imports ([098c469](https://github.com/luxus/pi-hindsight/commit/098c469cc2113e553f070d584d14d02e2a18fa78))
-* **tools:** add bank template import surface ([f30ca02](https://github.com/luxus/pi-hindsight/commit/f30ca0224ea080d4c294f65d8a0883332d0a0adf))
-* **tools:** expose remaining memory surfaces ([3c071ac](https://github.com/luxus/pi-hindsight/commit/3c071ac9ce8c93c21e358f72690a3cc4ba51e006))
+- **client:** adopt Hindsight client 0.6.1 ([caa4a48](https://github.com/luxus/pi-hindsight/commit/caa4a48b92129c394eb72fa8c0044d851464407e))
+- **import:** show progress for transcript imports ([098c469](https://github.com/luxus/pi-hindsight/commit/098c469cc2113e553f070d584d14d02e2a18fa78))
+- **tools:** add bank template import surface ([f30ca02](https://github.com/luxus/pi-hindsight/commit/f30ca0224ea080d4c294f65d8a0883332d0a0adf))
+- **tools:** expose remaining memory surfaces ([3c071ac](https://github.com/luxus/pi-hindsight/commit/3c071ac9ce8c93c21e358f72690a3cc4ba51e006))
 
 ## [0.3.0](https://github.com/luxus/pi-hindsight/compare/v0.2.0...v0.3.0) (2026-05-07)
 
