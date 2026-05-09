@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/luxus/pi-hindsight/compare/v0.4.0...v0.4.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* **release:** harden audit surfaces ([#347](https://github.com/luxus/pi-hindsight/issues/347)) ([3f2d71c](https://github.com/luxus/pi-hindsight/commit/3f2d71cfdb955cafa2d8155b77b8bd7fb82057f2))
+
 ## [0.4.0](https://github.com/luxus/pi-hindsight/compare/v0.3.0...v0.4.0) (2026-05-09)
 
 ### Features
