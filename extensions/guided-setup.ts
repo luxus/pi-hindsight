@@ -34,6 +34,7 @@ import {
   type BankTemplateTarget,
 } from "./bank-template-catalog.js";
 import { importDocumentSummary } from "./import-presentation.js";
+import type { ImportProgressEvent } from "./import-sessions.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "./config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
@@ -380,19 +381,19 @@ export function importChoicesForSetup(args: {
   const choices = ["Skip import"];
   const profileHints = args.appliedProfiles;
   const canProject = profileUsesProject(args.setupProfile) && Boolean(args.projectBankId);
-  const canGateway = profileUsesUser(args.setupProfile) && Boolean(args.globalBankId);
+  const canChat = profileUsesUser(args.setupProfile) && Boolean(args.globalBankId);
   const wantsProject = profileHints.has("coding-project") || (!profileHints.size && canProject);
-  const wantsGateway =
+  const wantsChat =
     profileHints.has("assistant-personal") ||
     profileHints.has("general-user") ||
-    (!profileHints.size && canGateway);
+    (!profileHints.size && canChat);
   if (canProject && wantsProject) choices.push("Preview repo Pi sessions");
-  if (canGateway && wantsGateway) choices.push("Preview gateway transcript");
+  if (canChat && wantsChat) choices.push("Preview chat transcript");
   if (canProject && !choices.includes("Preview repo Pi sessions")) {
     choices.push("Preview repo Pi sessions");
   }
-  if (canGateway && !choices.includes("Preview gateway transcript")) {
-    choices.push("Preview gateway transcript");
+  if (canChat && !choices.includes("Preview chat transcript")) {
+    choices.push("Preview chat transcript");
   }
   return choices;
 }
@@ -411,6 +412,14 @@ function operationSummary(result: unknown): string {
   const status =
     typeof fields.status === "string" && fields.status.trim() ? fields.status.trim() : undefined;
   return [id?.trim(), status].filter(Boolean).join(" / ") || "operation accepted";
+}
+
+function setupImportProgressMessage(event: ImportProgressEvent): string {
+  return `Hindsight import progress: ${event.message}`;
+}
+
+function setupImportProgressReporter(ctx: ExtensionCommandContext) {
+  return (event: ImportProgressEvent) => ctx.ui.notify(setupImportProgressMessage(event), "info");
 }
 
 async function maybeOfferMentalModelRefreshForSetup(args: {
@@ -471,7 +480,7 @@ export async function maybeOfferHistoricalImportForSetup(args: {
 }): Promise<void> {
   const proceed = await args.ctx.ui.confirm(
     "Preview historical import now?",
-    "Imports always dry-run first. Project profiles use repo Pi sessions; user profiles can import gateway/chat transcripts.",
+    "Imports always dry-run first. Project profiles use repo Pi sessions; user profiles can import chat transcripts.",
   );
   if (!proceed) return;
   const appliedProfiles = new Set(
@@ -492,11 +501,14 @@ export async function maybeOfferHistoricalImportForSetup(args: {
 
   if (choice === "Preview repo Pi sessions") {
     const currentSessionFile = args.ctx.sessionManager?.getSessionFile?.();
+    const onProgress = setupImportProgressReporter(args.ctx);
+    args.ctx.ui.notify("Preparing repo Pi session import preview...", "info");
     const dryRun = await args.operations.importProjectSessions({
       cwd: args.cwd,
       ...(currentSessionFile ? { currentSessionFile } : {}),
       ...(args.projectBankId ? { bank: args.projectBankId } : {}),
       dryRun: true,
+      onProgress,
     });
     const summary = importDocumentSummary({
       documents: dryRun.imported.flatMap((result) => result.documents),
@@ -507,11 +519,13 @@ export async function maybeOfferHistoricalImportForSetup(args: {
       `Dry run: sessions=${dryRun.sessionFiles.length}; documents=${dryRun.documentCount}; messages=${dryRun.messageCount}; ${summary}`,
     );
     if (!confirmed) return;
+    args.ctx.ui.notify("Starting repo Pi session import write...", "info");
     const result = await args.operations.importProjectSessions({
       cwd: args.cwd,
       ...(currentSessionFile ? { currentSessionFile } : {}),
       ...(args.projectBankId ? { bank: args.projectBankId } : {}),
       dryRun: false,
+      onProgress,
     });
     args.ctx.ui.notify(
       `Imported repo Pi sessions into ${result.bankId}: sessions=${result.sessionFiles.length}; documents=${result.documentCount}; messages=${result.messageCount}`,
@@ -527,29 +541,34 @@ export async function maybeOfferHistoricalImportForSetup(args: {
     return;
   }
 
-  const sourceFile = await args.ctx.ui.input("Gateway transcript JSONL path", "");
+  const sourceFile = await args.ctx.ui.input("Chat transcript JSONL path", "");
   if (!sourceFile?.trim()) return;
-  const dryRun = await args.operations.importGatewayTranscript({
+  const onProgress = setupImportProgressReporter(args.ctx);
+  args.ctx.ui.notify("Preparing chat transcript import preview...", "info");
+  const dryRun = await args.operations.importChatTranscript({
     sourceFile: sourceFile.trim(),
     cwd: args.cwd,
     ...(args.globalBankId ? { bank: args.globalBankId } : {}),
     dryRun: true,
+    onProgress,
   });
   const confirmed = await args.ctx.ui.confirm(
-    `Import gateway transcript into ${dryRun.bankId}?`,
+    `Import chat transcript into ${dryRun.bankId}?`,
     `Dry run: kept=${dryRun.keptEventCount}; turns=${dryRun.retainedTurnCount}; dropped=${dryRun.droppedEventCount}; malformed=${dryRun.malformedLineCount}; document=${dryRun.documentId}`,
   );
   if (!confirmed) return;
-  const result = await args.operations.importGatewayTranscript({
+  args.ctx.ui.notify("Starting chat transcript import write...", "info");
+  const result = await args.operations.importChatTranscript({
     sourceFile: sourceFile.trim(),
     cwd: args.cwd,
     ...(args.globalBankId ? { bank: args.globalBankId } : {}),
     dryRun: false,
+    onProgress,
   });
   args.ctx.ui.notify(
     result.skipped
-      ? `Gateway import skipped: ${result.skipReason}`
-      : `Imported gateway transcript into ${result.bankId} as ${result.documentId}`,
+      ? `Chat transcript import skipped: ${result.skipReason}`
+      : `Imported chat transcript into ${result.bankId} as ${result.documentId}`,
     "info",
   );
   if (!result.skipped) {

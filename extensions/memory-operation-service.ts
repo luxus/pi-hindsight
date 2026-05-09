@@ -1,6 +1,6 @@
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 import {
-  importMemoryGatewayTranscript,
+  importMemoryChatTranscript,
   importMemoryProjectSessions,
   importMemorySession,
 } from "./import-operations.js";
@@ -18,6 +18,7 @@ import { createRetainOperations } from "./memory-retain-operations.js";
 import { createRoutingOperations } from "./memory-routing-operations.js";
 import { createSessionOperations } from "./memory-session-operations.js";
 import type { ResolvedConfig } from "./types.js";
+import type { ImportProgressReporter } from "./import-sessions.js";
 
 export type { ConfigureMemoryArgs, MemoryOperationsDeps } from "./memory-operation-types.js";
 
@@ -29,17 +30,19 @@ function createImportOperations(deps: MemoryOperationsDeps) {
       bank?: string;
       dryRun?: boolean;
       includeBranches?: ResolvedConfig["import"]["includeBranches"];
+      onProgress?: ImportProgressReporter;
     }) {
       return importMemorySession(args, deps);
     },
 
-    async importGatewayTranscript(args: {
+    async importChatTranscript(args: {
       sourceFile: string;
       cwd: string;
       bank?: string;
       dryRun?: boolean;
+      onProgress?: ImportProgressReporter;
     }) {
-      return importMemoryGatewayTranscript(args, deps);
+      return importMemoryChatTranscript(args, deps);
     },
 
     async importProjectSessions(args: {
@@ -49,6 +52,7 @@ function createImportOperations(deps: MemoryOperationsDeps) {
       bank?: string;
       dryRun?: boolean;
       includeBranches?: ResolvedConfig["import"]["includeBranches"];
+      onProgress?: ImportProgressReporter;
     }) {
       return importMemoryProjectSessions(args, deps);
     },

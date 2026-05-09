@@ -20,6 +20,7 @@ import { redactError } from "./sanitize.js";
 import type { ImportPlan } from "./import-plan.js";
 import { removeQueuedRetains } from "./retain-queue.js";
 import { importRetainJobMatchesIdentity } from "./import-queue-identity.js";
+import type { ImportProgressReporter } from "./import-sessions.js";
 
 export interface ImportSessionDocumentResult extends ImportDocumentPreview {}
 
@@ -64,6 +65,7 @@ export async function executeImportPlan(args: {
   parsed: ParsedSession;
   plan: ImportPlan;
   dryRun?: boolean;
+  onProgress?: ImportProgressReporter;
 }): Promise<ImportExecutionResult> {
   const {
     sessionFile,
@@ -118,8 +120,20 @@ export async function executeImportPlan(args: {
       leaves,
       branch,
     };
+    args.onProgress?.({
+      phase: "previewing",
+      message: `Projecting branch ${branch.leafId}`,
+      sessionFile,
+    });
     const previews = previewImportBranch(common);
-    for (const preview of previews) {
+    for (const [index, preview] of previews.entries()) {
+      args.onProgress?.({
+        phase: args.dryRun ? "previewing" : "retaining",
+        message: `${args.dryRun ? "Previewing" : "Importing"} document ${index + 1}/${previews.length} for branch ${branch.leafId}`,
+        sessionFile,
+        current: index + 1,
+        total: previews.length,
+      });
       const previous = checkpoint.documents[preview.document.documentId];
       const canSkip =
         !args.dryRun &&

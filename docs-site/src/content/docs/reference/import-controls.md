@@ -2,7 +2,7 @@
 title: "Import controls reference"
 ---
 
-Import controls are the advanced surface for previewing and ingesting historical Pi sessions or gateway transcripts. For first-time setup, prefer `/hindsight` guided setup; it can offer a dry-run-first import flow.
+Import controls are the advanced surface for previewing and ingesting historical Pi sessions or chat transcripts. For first-time setup, prefer `/hindsight` guided setup; it can offer a dry-run-first import flow.
 
 For the concept model, see [Historical Import](/pi-hindsight/concepts/imports/). For task guidance, see [Importing sessions](/pi-hindsight/guides/importing-sessions/).
 
@@ -22,10 +22,10 @@ Use `--dry-run` before writing memory. Use `--all-leaves` only when you want eve
 
 ```text
 hindsight_import({ dryRun: true })
-hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
+hindsight_import_chat_transcript({ sourceFile: "/path/to/chat.jsonl", dryRun: true })
 ```
 
-`hindsight_import` imports Pi session JSONL. `hindsight_import_gateway` imports gateway/chat transcript JSONL into the configured User Bank by default.
+`hindsight_import` imports Pi session JSONL. `hindsight_import_chat_transcript` imports chat transcript JSONL into the configured User Bank by default.
 
 ## Modes
 
@@ -46,7 +46,7 @@ Strict applies only to `curated`. It keeps failed tool results as evidence and m
 
 Pi session dry-runs report document count, import mode/profile, raw/projected message counts, tool-output counts, signal/noise categories when available, estimated chunks, byte counts, target bank, and checkpoint/manifest paths.
 
-Gateway dry-runs report kept event count, retained user-turn count, dropped event totals, malformed-line count, target User Bank, content hash, and byte count.
+Chat dry-runs report kept event count, retained user-turn count, dropped event totals, malformed-line count, target User Bank, content hash, and byte count.
 
 ## Checkpoints and manifests
 

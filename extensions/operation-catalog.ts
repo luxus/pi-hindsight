@@ -20,7 +20,7 @@ import {
   documentToolResponse,
   entityToolResponse,
   exportBankTemplateToolResponse,
-  gatewayImportToolResponse,
+  chatTranscriptImportToolResponse,
   getBankConfigToolResponse,
   getBankTemplateSchemaToolResponse,
   getDirectiveToolResponse,
@@ -1225,12 +1225,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
     }),
     defineCatalogTool({
-      name: "hindsight_import_gateway",
-      label: "Hindsight Import Gateway Transcript",
+      name: "hindsight_import_chat_transcript",
+      label: "Hindsight Import Chat Transcript",
       description:
-        "Import a gateway/chat transcript JSONL file into the configured user memory bank. Explicit separate path from Pi session import.",
+        "Import a chat transcript JSONL file into the configured user memory bank. Explicit separate path from Pi session import.",
       parameters: Type.Object({
-        sourceFile: Type.String({ description: "Gateway transcript JSONL path." }),
+        sourceFile: Type.String({ description: "Chat transcript JSONL path." }),
         bank: Type.Optional(
           Type.String({ description: "Optional bank id. Defaults to configured user bank." }),
         ),
@@ -1238,13 +1238,13 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, _signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
-        const result = await operations.importGatewayTranscript({
+        const result = await operations.importChatTranscript({
           sourceFile: params.sourceFile,
           cwd: ctx.cwd,
           ...(params.bank ? { bank: params.bank } : {}),
           ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
         });
-        return gatewayImportToolResponse(result);
+        return chatTranscriptImportToolResponse(result);
       },
     }),
     defineCatalogTool({

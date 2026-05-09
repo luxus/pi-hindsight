@@ -70,7 +70,7 @@ Related hand-authored docs: [Retain Queue and durable delivery](/pi-hindsight/co
 Related hand-authored docs: [Historical import](/pi-hindsight/guides/importing-sessions/)
 
 - `extensions/import-sessions.ts` — Imports Pi session JSONL history.
-- `extensions/import-gateway-transcript.ts` — Imports gateway/chat transcript JSONL.
+- `extensions/import-chat-transcript.ts` — Imports chat transcript JSONL.
 - `extensions/import-parser.ts` — Projects raw session records into importable messages.
 - `extensions/import-plan.ts` — Builds preview and execution plans.
 - `extensions/import-execution.ts` — Runs import plans.

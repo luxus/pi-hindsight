@@ -1,6 +1,6 @@
 # Importing Pi sessions
 
-Historical import is optional backfill. It reads old Pi session JSONL files or gateway transcripts and writes deterministic Hindsight documents. Pi session imports also record checkpoint/manifest state so they can resume safely.
+Historical import is optional backfill. It reads old Pi session JSONL files or chat transcripts and writes deterministic Hindsight documents. Pi session imports also record checkpoint/manifest state so they can resume safely.
 
 Live memory does not need import. After setup, normal retain starts from new completed agent turns.
 
@@ -16,7 +16,7 @@ Guided import:
 4. asks before writing memory
 5. can refresh mental models after successful import
 
-Project/coding setup offers repo-scoped Pi session import. User/assistant setup offers gateway transcript import into User memory.
+Project/coding setup offers repo-scoped Pi session import. User/assistant setup offers chat transcript import into User memory.
 
 ## What can be imported
 
@@ -25,9 +25,9 @@ Pi Hindsight supports:
 - current Pi session
 - explicit Pi session JSONL file
 - repo-scoped Pi sessions from the current session directory
-- explicit gateway/chat transcript JSONL files for User memory
+- explicit chat transcript JSONL files for User memory
 
-Pi session imports and gateway transcript imports are separate paths. They do not silently mix repo history with user conversation history.
+Pi session imports and chat transcript imports are separate paths. They do not silently mix repo history with user conversation history.
 
 ## Use commands when you need control
 
@@ -49,16 +49,16 @@ Tool equivalents:
 
 ```text
 hindsight_import({ dryRun: true })
-hindsight_import_gateway({ sourceFile: "/path/to/gateway.jsonl", dryRun: true })
+hindsight_import_chat_transcript({ sourceFile: "/path/to/chat.jsonl", dryRun: true })
 ```
 
-`hindsight_import` targets Pi session JSONL. `hindsight_import_gateway` targets gateway/chat transcript JSONL and defaults to the configured User Bank.
+`hindsight_import` targets Pi session JSONL. `hindsight_import_chat_transcript` targets chat transcript JSONL and defaults to the configured User Bank.
 
 ## Preview output
 
 Pi session dry-run shows document count, import mode/profile, raw and projected message counts, dropped successful tool output, kept tool errors, estimated chunks, byte counts, target bank, checkpoint path, and manifest path.
 
-Gateway dry-run shows kept event count, retained user-turn count, dropped event totals, malformed lines, target User Bank, content hash, and byte count.
+Chat dry-run shows kept event count, retained user-turn count, dropped event totals, malformed lines, target User Bank, content hash, and byte count.
 
 Use these numbers to catch noisy imports before writing memory.
 

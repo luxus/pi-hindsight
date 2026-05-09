@@ -93,7 +93,7 @@ Additional tools:
 - `hindsight_get_bank_template_schema`
 - `hindsight_export_bank_template`
 - `hindsight_import`
-- `hindsight_import_gateway`
+- `hindsight_import_chat_transcript`
 - `hindsight_retain_global`
 - `hindsight_route_memory`
 - `hindsight_retain_receipts`

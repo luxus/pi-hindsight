@@ -7,7 +7,7 @@ Import is optional historical backfill. It is not required for live memory after
 Pi Hindsight has two import families:
 
 - **Pi session import** for project/coding sessions stored as Pi JSONL.
-- **Gateway transcript import** for user conversation history stored as gateway/chat transcript JSONL.
+- **Chat transcript import** for user conversation history stored as chat transcript JSONL.
 
 The `/hindsight` guided setup flow can offer import after bank/template setup and previews before writing memory. Use the command and tool surfaces when you need repeatable or explicit-file imports.
 

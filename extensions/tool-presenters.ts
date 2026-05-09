@@ -14,8 +14,8 @@ export type RouteMemoryToolResult = ReturnType<MemoryOperations["routeMemory"]>;
 export type DeleteDocumentToolResult = Awaited<ReturnType<MemoryOperations["deleteDocument"]>>;
 export type ConfigureToolResult = Awaited<ReturnType<MemoryOperations["configure"]>>;
 export type ImportToolResult = Awaited<ReturnType<MemoryOperations["importSession"]>>;
-export type GatewayImportToolResult = Awaited<
-  ReturnType<MemoryOperations["importGatewayTranscript"]>
+export type ChatTranscriptImportToolResult = Awaited<
+  ReturnType<MemoryOperations["importChatTranscript"]>
 >;
 export type ListDirectivesToolResult = Awaited<ReturnType<MemoryOperations["listDirectives"]>>;
 export type GetDirectiveToolResult = Awaited<ReturnType<MemoryOperations["getDirective"]>>;
@@ -131,17 +131,17 @@ export function configureToolResponse(
   };
 }
 
-export function gatewayImportToolResponse(
-  result: GatewayImportToolResult,
-): ToolTextResponse<GatewayImportToolResult> {
+export function chatTranscriptImportToolResponse(
+  result: ChatTranscriptImportToolResult,
+): ToolTextResponse<ChatTranscriptImportToolResult> {
   const dropped = result.droppedEventTypes.length
     ? result.droppedEventTypes.map((event) => `${event.type}:${event.count}`).join(", ")
     : "none";
   const text = result.skipped
-    ? `Gateway import skipped: ${result.skipReason}; dropped=${result.droppedEventCount} (${dropped}); malformed=${result.malformedLineCount}.`
+    ? `Chat transcript import skipped: ${result.skipReason}; dropped=${result.droppedEventCount} (${dropped}); malformed=${result.malformedLineCount}.`
     : result.dryRun
-      ? `Gateway import preview: kept=${result.keptEventCount}; turns=${result.retainedTurnCount}; dropped=${result.droppedEventCount} (${dropped}); malformed=${result.malformedLineCount}; bank=${result.bankId}; document=${result.documentId}.`
-      : `Imported gateway transcript into ${result.bankId} as ${result.documentId}; kept=${result.keptEventCount}; dropped=${result.droppedEventCount}.`;
+      ? `Chat transcript import preview: kept=${result.keptEventCount}; turns=${result.retainedTurnCount}; dropped=${result.droppedEventCount} (${dropped}); malformed=${result.malformedLineCount}; bank=${result.bankId}; document=${result.documentId}.`
+      : `Imported chat transcript into ${result.bankId} as ${result.documentId}; kept=${result.keptEventCount}; dropped=${result.droppedEventCount}.`;
   return { content: [{ type: "text", text }], details: result };
 }
 

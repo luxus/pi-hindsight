@@ -1,6 +1,10 @@
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
-import { importGatewayTranscript } from "./import-gateway-transcript.js";
-import { importPiSession, importProjectSessions } from "./import-sessions.js";
+import { importChatTranscript } from "./import-chat-transcript.js";
+import {
+  importPiSession,
+  importProjectSessions,
+  type ImportProgressReporter,
+} from "./import-sessions.js";
 import { resolveOperationBank } from "./bank-selection.js";
 
 export type ImportOperationDeps = {
@@ -16,6 +20,7 @@ export async function importMemorySession(
     bank?: string;
     dryRun?: boolean;
     includeBranches?: ResolvedConfig["import"]["includeBranches"];
+    onProgress?: ImportProgressReporter;
   },
   deps: ImportOperationDeps,
 ) {
@@ -32,16 +37,18 @@ export async function importMemorySession(
     config: deps.getConfig(),
     ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
     ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
+    ...(args.onProgress ? { onProgress: args.onProgress } : {}),
   });
   return { bankId, ...result };
 }
 
-export async function importMemoryGatewayTranscript(
+export async function importMemoryChatTranscript(
   args: {
     sourceFile: string;
     cwd: string;
     bank?: string;
     dryRun?: boolean;
+    onProgress?: ImportProgressReporter;
   },
   deps: ImportOperationDeps,
 ) {
@@ -50,13 +57,14 @@ export async function importMemoryGatewayTranscript(
     config: deps.getConfig(),
     projectBankId: deps.getProjectBankId(),
   });
-  return importGatewayTranscript({
+  return importChatTranscript({
     sourceFile: args.sourceFile,
     cwd: args.cwd,
     bankId,
     client: deps.getClient(),
     config: deps.getConfig(),
     ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+    ...(args.onProgress ? { onProgress: args.onProgress } : {}),
   });
 }
 
@@ -68,6 +76,7 @@ export async function importMemoryProjectSessions(
     bank?: string;
     dryRun?: boolean;
     includeBranches?: ResolvedConfig["import"]["includeBranches"];
+    onProgress?: ImportProgressReporter;
   },
   deps: ImportOperationDeps,
 ) {
@@ -85,6 +94,7 @@ export async function importMemoryProjectSessions(
     config: deps.getConfig(),
     ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
     ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
+    ...(args.onProgress ? { onProgress: args.onProgress } : {}),
   });
   return { bankId, ...result };
 }

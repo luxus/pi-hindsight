@@ -266,7 +266,7 @@ describe("guided setup", () => {
         appliedProfiles: new Set(["coding-project"]),
         globalBankId: "user-bank",
       }),
-    ).toEqual(["Skip import", "Preview gateway transcript"]);
+    ).toEqual(["Skip import", "Preview chat transcript"]);
     expect(
       importChoicesForSetup({
         setupProfile: "project-only",
@@ -281,7 +281,7 @@ describe("guided setup", () => {
         projectBankId: "project-bank",
         globalBankId: "user-bank",
       }),
-    ).toEqual(["Skip import", "Preview gateway transcript", "Preview repo Pi sessions"]);
+    ).toEqual(["Skip import", "Preview chat transcript", "Preview repo Pi sessions"]);
   });
 
   it("previews repo session import after project setup before writing", async () => {
@@ -305,7 +305,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions,
-      importGatewayTranscript: vi.fn(),
+      importChatTranscript: vi.fn(),
     } as never;
 
     await maybeOfferHistoricalImportForSetup({
@@ -321,20 +321,21 @@ describe("guided setup", () => {
       currentSessionFile: "/sessions/current.jsonl",
       bank: "project-bank",
       dryRun: true,
+      onProgress: expect.any(Function),
     });
     expect(importProjectSessions).toHaveBeenCalledTimes(1);
   });
 
-  it("previews gateway import after user setup before writing", async () => {
+  it("previews chat transcript import after user setup before writing", async () => {
     const ctx = {
       ui: {
         confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
-        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
-        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        select: vi.fn().mockResolvedValueOnce("Preview chat transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/chat.jsonl"),
         notify: vi.fn(),
       },
     } as never;
-    const importGatewayTranscript = vi.fn().mockResolvedValueOnce({
+    const importChatTranscript = vi.fn().mockResolvedValueOnce({
       bankId: "user-bank",
       keptEventCount: 3,
       retainedTurnCount: 1,
@@ -344,7 +345,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions: vi.fn(),
-      importGatewayTranscript,
+      importChatTranscript,
     } as never;
 
     await maybeOfferHistoricalImportForSetup({
@@ -364,13 +365,14 @@ describe("guided setup", () => {
       globalBankId: "user-bank",
     });
 
-    expect(importGatewayTranscript).toHaveBeenCalledWith({
-      sourceFile: "/tmp/gateway.jsonl",
+    expect(importChatTranscript).toHaveBeenCalledWith({
+      sourceFile: "/tmp/chat.jsonl",
       cwd: "/repo",
       bank: "user-bank",
       dryRun: true,
+      onProgress: expect.any(Function),
     });
-    expect(importGatewayTranscript).toHaveBeenCalledTimes(1);
+    expect(importChatTranscript).toHaveBeenCalledTimes(1);
   });
 
   it("offers mental model refresh after successful setup import", async () => {
@@ -383,12 +385,12 @@ describe("guided setup", () => {
     const ctx = {
       ui: {
         confirm,
-        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
-        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        select: vi.fn().mockResolvedValueOnce("Preview chat transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/chat.jsonl"),
         notify,
       },
     } as never;
-    const importGatewayTranscript = vi
+    const importChatTranscript = vi
       .fn()
       .mockResolvedValueOnce({
         bankId: "user-bank",
@@ -410,7 +412,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions: vi.fn(),
-      importGatewayTranscript,
+      importChatTranscript,
       refreshMentalModel,
     } as never;
 
@@ -464,12 +466,12 @@ describe("guided setup", () => {
     const ctx = {
       ui: {
         confirm,
-        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
-        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        select: vi.fn().mockResolvedValueOnce("Preview chat transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/chat.jsonl"),
         notify: vi.fn(),
       },
     } as never;
-    const importGatewayTranscript = vi
+    const importChatTranscript = vi
       .fn()
       .mockResolvedValueOnce({
         bankId: "user-bank",
@@ -486,7 +488,7 @@ describe("guided setup", () => {
       ctx,
       operations: {
         importProjectSessions: vi.fn(),
-        importGatewayTranscript,
+        importChatTranscript,
         refreshMentalModel,
       } as never,
       setupProfile: "user-only",
@@ -515,8 +517,8 @@ describe("guided setup", () => {
           .mockResolvedValueOnce(true)
           .mockResolvedValueOnce(true)
           .mockResolvedValueOnce(true),
-        select: vi.fn().mockResolvedValueOnce("Preview gateway transcript"),
-        input: vi.fn().mockResolvedValueOnce("/tmp/gateway.jsonl"),
+        select: vi.fn().mockResolvedValueOnce("Preview chat transcript"),
+        input: vi.fn().mockResolvedValueOnce("/tmp/chat.jsonl"),
         notify,
       },
     } as never;
@@ -529,7 +531,7 @@ describe("guided setup", () => {
       ctx,
       operations: {
         importProjectSessions: vi.fn(),
-        importGatewayTranscript: vi
+        importChatTranscript: vi
           .fn()
           .mockResolvedValueOnce({
             bankId: "user-bank",
@@ -607,7 +609,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions,
-      importGatewayTranscript: vi.fn(),
+      importChatTranscript: vi.fn(),
       refreshMentalModel,
     } as never;
 

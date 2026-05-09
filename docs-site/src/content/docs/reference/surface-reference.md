@@ -434,13 +434,13 @@ Import a historical Pi session JSONL file into Hindsight with deterministic docu
 | `dryRun`      | boolean | no       | Preview import without writing.                          |
 | `allLeaves`   | boolean | no       | Import or preview all branch leaves.                     |
 
-### `hindsight_import_gateway`
+### `hindsight_import_chat_transcript`
 
-Import a gateway/chat transcript JSONL file into the configured user memory bank. Explicit separate path from Pi session import.
+Import a chat transcript JSONL file into the configured user memory bank. Explicit separate path from Pi session import.
 
 | Parameter    | Type    | Required | Description                                         |
 | ------------ | ------- | -------- | --------------------------------------------------- |
-| `sourceFile` | string  | yes      | Gateway transcript JSONL path.                      |
+| `sourceFile` | string  | yes      | Chat transcript JSONL path.                         |
 | `bank`       | string  | no       | Optional bank id. Defaults to configured user bank. |
 | `dryRun`     | boolean | no       | Preview import without writing.                     |
 

@@ -5,10 +5,11 @@ import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
 import { deliverImportRetain } from "./import-delivery.js";
 import { ImportRetainQueuedError } from "./import-retain.js";
 import { redactSecrets } from "./sanitize.js";
+import type { ImportProgressReporter } from "./import-sessions.js";
 
-const KEPT_GATEWAY_EVENTS = new Set(["user_message", "assistant_reply", "process_end"]);
+const KEPT_CHAT_TRANSCRIPT_EVENTS = new Set(["user_message", "assistant_reply", "process_end"]);
 
-export interface GatewayTranscriptEvent {
+export interface ChatTranscriptEvent {
   type: string;
   timestamp?: string;
   content?: unknown;
@@ -18,7 +19,7 @@ export interface GatewayTranscriptEvent {
   data: Record<string, unknown>;
 }
 
-export interface GatewayTranscriptImportResult {
+export interface ChatTranscriptImportResult {
   sourceFile: string;
   documentId: string;
   retained: boolean;
@@ -51,9 +52,9 @@ function eventType(record: Record<string, unknown>): string | undefined {
   return stringField(record, ["type", "event", "event_type", "kind"]);
 }
 
-function normalizeGatewayEvent(
+function normalizeChatTranscriptEvent(
   record: Record<string, unknown>,
-): GatewayTranscriptEvent | undefined {
+): ChatTranscriptEvent | undefined {
   const type = eventType(record);
   if (!type) return undefined;
   const content = record.content ?? record.text ?? record.message ?? record.output;
@@ -72,13 +73,13 @@ function normalizeGatewayEvent(
   };
 }
 
-export function parseGatewayTranscriptJsonl(text: string): {
-  kept: GatewayTranscriptEvent[];
+export function parseChatTranscriptJsonl(text: string): {
+  kept: ChatTranscriptEvent[];
   droppedEventTypes: Array<{ type: string; count: number }>;
   droppedEventCount: number;
   malformedLineCount: number;
 } {
-  const kept: GatewayTranscriptEvent[] = [];
+  const kept: ChatTranscriptEvent[] = [];
   const dropped = new Map<string, number>();
   let malformedLineCount = 0;
   for (const line of text.split("\n")) {
@@ -94,12 +95,12 @@ export function parseGatewayTranscriptJsonl(text: string): {
       malformedLineCount += 1;
       continue;
     }
-    const event = normalizeGatewayEvent(parsed);
+    const event = normalizeChatTranscriptEvent(parsed);
     if (!event) {
       malformedLineCount += 1;
       continue;
     }
-    if (KEPT_GATEWAY_EVENTS.has(event.type)) kept.push(event);
+    if (KEPT_CHAT_TRANSCRIPT_EVENTS.has(event.type)) kept.push(event);
     else dropped.set(event.type, (dropped.get(event.type) ?? 0) + 1);
   }
   return {
@@ -113,7 +114,7 @@ export function parseGatewayTranscriptJsonl(text: string): {
 }
 
 function firstDefined(
-  events: GatewayTranscriptEvent[],
+  events: ChatTranscriptEvent[],
   key: "channel" | "sessionId" | "conversationId",
 ): string | undefined {
   return events.find((event) => event[key])?.[key];
@@ -129,27 +130,38 @@ function tagValue(value: string): string {
   );
 }
 
-function documentId(sourceFile: string, kept: GatewayTranscriptEvent[]): string {
+function documentId(sourceFile: string, kept: ChatTranscriptEvent[]): string {
   const basis = JSON.stringify({ sourceFile, first: kept[0]?.data, last: kept.at(-1)?.data });
-  return `pi-gateway-import:${createHash("sha256").update(basis).digest("hex").slice(0, 16)}`;
+  return `pi-chat-import:${createHash("sha256").update(basis).digest("hex").slice(0, 16)}`;
 }
 
-export async function importGatewayTranscript(args: {
+export async function importChatTranscript(args: {
   sourceFile: string;
   cwd: string;
   bankId: string;
   client: HindsightLikeClient;
   config: ResolvedConfig;
   dryRun?: boolean;
-}): Promise<GatewayTranscriptImportResult> {
-  const parsed = parseGatewayTranscriptJsonl(await readFile(args.sourceFile, "utf8"));
+  onProgress?: ImportProgressReporter;
+}): Promise<ChatTranscriptImportResult> {
+  args.onProgress?.({
+    phase: "reading",
+    message: `Reading chat transcript ${args.sourceFile}`,
+    sessionFile: args.sourceFile,
+  });
+  const parsed = parseChatTranscriptJsonl(await readFile(args.sourceFile, "utf8"));
+  args.onProgress?.({
+    phase: "planning",
+    message: `Planning chat transcript import for ${parsed.kept.length} kept event${parsed.kept.length === 1 ? "" : "s"}`,
+    sessionFile: args.sourceFile,
+  });
   const docId = documentId(args.sourceFile, parsed.kept);
   const channel = firstDefined(parsed.kept, "channel");
   const sessionId = firstDefined(parsed.kept, "sessionId");
   const conversationId = firstDefined(parsed.kept, "conversationId");
   const contentRaw = JSON.stringify(
     {
-      source: "gateway-transcript-import",
+      source: "chat-transcript-import",
       sourceFile: args.sourceFile,
       channel,
       sessionId,
@@ -163,12 +175,14 @@ export async function importGatewayTranscript(args: {
   );
   const content = args.config.retain.redactSecrets ? redactSecrets(contentRaw) : contentRaw;
   const contentHash = createHash("sha256").update(content).digest("hex");
-  const result: GatewayTranscriptImportResult = {
+  const result: ChatTranscriptImportResult = {
     sourceFile: args.sourceFile,
     documentId: docId,
     retained: false,
     skipped: parsed.kept.length === 0,
-    ...(parsed.kept.length === 0 ? { skipReason: "No high-signal gateway events found." } : {}),
+    ...(parsed.kept.length === 0
+      ? { skipReason: "No high-signal chat transcript events found." }
+      : {}),
     dryRun: Boolean(args.dryRun),
     bankId: args.bankId,
     keptEventCount: parsed.kept.length,
@@ -180,18 +194,25 @@ export async function importGatewayTranscript(args: {
     contentBytes: Buffer.byteLength(content, "utf8"),
   };
   if (args.dryRun || parsed.kept.length === 0) return result;
+  args.onProgress?.({
+    phase: "retaining",
+    message: `Importing chat transcript document ${docId}`,
+    sessionFile: args.sourceFile,
+    current: 1,
+    total: 1,
+  });
   const delivery = await deliverImportRetain({
     cwd: args.cwd,
     config: args.config,
     client: args.client,
     bankId: args.bankId,
     content,
-    context: `Gateway transcript import from ${basename(args.sourceFile)}`,
+    context: `Chat transcript import from ${basename(args.sourceFile)}`,
     documentId: docId,
     updateMode: "replace",
     tags: [
-      "source:gateway",
-      "import:gateway",
+      "source:chat",
+      "import:chat",
       "imported:true",
       ...(channel ? [`channel:${tagValue(channel)}`] : []),
       ...(sessionId ? [`session:${tagValue(sessionId)}`] : []),
@@ -201,7 +222,7 @@ export async function importGatewayTranscript(args: {
     metadata: {
       source_file: args.sourceFile,
       imported: "true",
-      source: "gateway-transcript",
+      source: "chat-transcript",
       ...(channel ? { channel } : {}),
       ...(sessionId ? { session_id: sessionId } : {}),
       ...(conversationId ? { conversation_id: conversationId } : {}),
@@ -210,7 +231,7 @@ export async function importGatewayTranscript(args: {
   });
   if (!delivery.delivered) {
     throw new ImportRetainQueuedError(
-      `Gateway transcript import queued as ${delivery.queueJobId}; ${delivery.remaining} retain job${delivery.remaining === 1 ? "" : "s"} pending`,
+      `Chat transcript import queued as ${delivery.queueJobId}; ${delivery.remaining} retain job${delivery.remaining === 1 ? "" : "s"} pending`,
     );
   }
   return { ...result, retained: true };

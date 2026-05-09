@@ -14,6 +14,23 @@ export type { ImportBranch } from "./import-branches.js";
 export type { ParsedMessage, ParsedSession } from "./import-parser.js";
 export type { ImportSessionDocumentResult } from "./import-execution.js";
 
+export type ImportProgressEvent = {
+  phase:
+    | "reading"
+    | "planning"
+    | "previewing"
+    | "retaining"
+    | "discovering"
+    | "discovered"
+    | "session";
+  message: string;
+  sessionFile?: string;
+  current?: number;
+  total?: number;
+};
+
+export type ImportProgressReporter = (event: ImportProgressEvent) => void;
+
 function sameProjectCwd(sessionCwd: string | undefined, cwd: string): boolean {
   if (!sessionCwd) return false;
   return resolve(sessionCwd) === resolve(cwd);
@@ -95,9 +112,20 @@ export async function importPiSession(args: {
   dryRun?: boolean;
   requireMatchingCwd?: boolean;
   includeBranches?: ResolvedConfig["import"]["includeBranches"];
+  onProgress?: ImportProgressReporter;
 }): Promise<ImportSessionResult> {
+  args.onProgress?.({
+    phase: "reading",
+    message: `Reading session file ${args.sessionFile}`,
+    sessionFile: args.sessionFile,
+  });
   const text = await readFile(args.sessionFile, "utf8");
   const parsed = parseImportSessionJsonl(text);
+  args.onProgress?.({
+    phase: "planning",
+    message: `Planning import for ${parsed.messages.length} message${parsed.messages.length === 1 ? "" : "s"}`,
+    sessionFile: args.sessionFile,
+  });
   const plan = buildImportPlan({
     sessionFile: args.sessionFile,
     parsed,
@@ -114,6 +142,7 @@ export async function importPiSession(args: {
     parsed,
     plan,
     ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+    ...(args.onProgress ? { onProgress: args.onProgress } : {}),
   });
 
   const first = execution.documents[0] ?? {
@@ -142,14 +171,29 @@ export async function importProjectSessions(args: {
   config: ResolvedConfig;
   dryRun?: boolean;
   includeBranches?: ResolvedConfig["import"]["includeBranches"];
+  onProgress?: ImportProgressReporter;
 }): Promise<ImportProjectSessionsResult> {
+  args.onProgress?.({ phase: "discovering", message: "Scanning project session files" });
   const discovery = await discoverProjectSessionFiles({
     cwd: args.cwd,
     ...(args.currentSessionFile ? { currentSessionFile: args.currentSessionFile } : {}),
     ...(args.searchDir ? { searchDir: args.searchDir } : {}),
   });
+  args.onProgress?.({
+    phase: "discovered",
+    message: `Found ${discovery.sessionFiles.length} project session${discovery.sessionFiles.length === 1 ? "" : "s"} after scanning ${discovery.scanned} file${discovery.scanned === 1 ? "" : "s"}`,
+    current: discovery.sessionFiles.length,
+    total: discovery.scanned,
+  });
   const imported: ImportSessionResult[] = [];
-  for (const sessionFile of discovery.sessionFiles) {
+  for (const [index, sessionFile] of discovery.sessionFiles.entries()) {
+    args.onProgress?.({
+      phase: "session",
+      message: `Importing project session ${index + 1}/${discovery.sessionFiles.length}: ${sessionFile}`,
+      sessionFile,
+      current: index + 1,
+      total: discovery.sessionFiles.length,
+    });
     imported.push(
       await importPiSession({
         sessionFile,
@@ -169,6 +213,7 @@ export async function importProjectSessions(args: {
         },
         ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
         ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
+        ...(args.onProgress ? { onProgress: args.onProgress } : {}),
       }),
     );
   }

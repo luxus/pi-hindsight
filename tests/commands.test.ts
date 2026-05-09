@@ -466,7 +466,7 @@ describe("hindsight commands", () => {
     );
   });
 
-  it("shows project import start notification before preview result", async () => {
+  it("shows project import progress before preview result", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
     mkdirSync(join(cwd, ".git"));
     const sessionFile = join(cwd, "session.jsonl");
@@ -508,6 +508,14 @@ describe("hindsight commands", () => {
     );
     expect(ctx.ui.notify).toHaveBeenNthCalledWith(
       2,
+      expect.stringContaining("Hindsight import progress: Scanning project session files"),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Hindsight import progress: Previewing document 1/1"),
+      "info",
+    );
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
       expect.stringContaining("Project import preview:"),
       "info",
     );

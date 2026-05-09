@@ -2,6 +2,7 @@ import type { createMemoryOperations } from "./memory-operation-service.js";
 import type { CommandOperation } from "./operation-catalog.js";
 import { completeFlags, firstNonFlagArg, sessionFile, argList } from "./command-utils.js";
 import { renderImportSessionMessage, renderProjectImportMessage } from "./import-presentation.js";
+import type { ImportProgressEvent } from "./import-sessions.js";
 
 type Operations = ReturnType<typeof createMemoryOperations>;
 
@@ -21,6 +22,14 @@ function importStartMessage(scope: string, options: ReturnType<typeof importOpti
   const branches =
     options.includeBranches === "all-leaves" ? "all branch leaves" : "current branch";
   return `Starting Hindsight ${scope} ${mode}; branches=${branches}; write=${options.dryRun ? "no" : "yes"}`;
+}
+
+function importProgressMessage(event: ImportProgressEvent): string {
+  return `Hindsight import progress: ${event.message}`;
+}
+
+function importProgressReporter(ctx: { ui: { notify: (message: string, level: "info") => void } }) {
+  return (event: ImportProgressEvent) => ctx.ui.notify(importProgressMessage(event), "info");
 }
 
 async function confirmImportWrite(
@@ -51,6 +60,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             return;
           }
           const options = importOptions(args);
+          const onProgress = importProgressReporter(ctx);
           ctx.ui.notify(importStartMessage("current session", options), "info");
           if (!options.dryRun) {
             const preview = await operations.importSession({
@@ -58,6 +68,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
               cwd: ctx.cwd,
               ...options,
               dryRun: true,
+              onProgress,
             });
             if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview)))) {
               ctx.ui.notify("Hindsight import cancelled.", "warning");
@@ -68,6 +79,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             sessionFile: current,
             cwd: ctx.cwd,
             ...options,
+            onProgress,
           });
           ctx.ui.notify(renderImportSessionMessage(result), "info");
         },
@@ -85,6 +97,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             return;
           }
           const options = importOptions(args);
+          const onProgress = importProgressReporter(ctx);
           ctx.ui.notify(importStartMessage("current session", options), "info");
           if (!options.dryRun) {
             const preview = await operations.importSession({
@@ -92,6 +105,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
               cwd: ctx.cwd,
               ...options,
               dryRun: true,
+              onProgress,
             });
             if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, "current")))) {
               ctx.ui.notify("Hindsight import cancelled.", "warning");
@@ -102,6 +116,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             sessionFile: current,
             cwd: ctx.cwd,
             ...options,
+            onProgress,
           });
           ctx.ui.notify(renderImportSessionMessage(result, "current"), "info");
         },
@@ -122,6 +137,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             return;
           }
           const options = importOptions(args);
+          const onProgress = importProgressReporter(ctx);
           ctx.ui.notify(importStartMessage("file", options), "info");
           if (!options.dryRun) {
             const preview = await operations.importSession({
@@ -129,6 +145,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
               cwd: ctx.cwd,
               ...options,
               dryRun: true,
+              onProgress,
             });
             if (!(await confirmImportWrite(ctx, renderImportSessionMessage(preview, { file })))) {
               ctx.ui.notify("Hindsight import cancelled.", "warning");
@@ -139,6 +156,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             sessionFile: file,
             cwd: ctx.cwd,
             ...options,
+            onProgress,
           });
           ctx.ui.notify(renderImportSessionMessage(result, { file }), "info");
         },
@@ -152,6 +170,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
         handler: async (args, ctx) => {
           const current = sessionFile(ctx);
           const options = importOptions(args);
+          const onProgress = importProgressReporter(ctx);
           ctx.ui.notify(importStartMessage("project sessions", options), "info");
           if (!options.dryRun) {
             const preview = await operations.importProjectSessions({
@@ -159,6 +178,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
               ...(current ? { currentSessionFile: current } : {}),
               ...options,
               dryRun: true,
+              onProgress,
             });
             if (!(await confirmImportWrite(ctx, renderProjectImportMessage(preview)))) {
               ctx.ui.notify("Hindsight import cancelled.", "warning");
@@ -169,6 +189,7 @@ export function importCommandOperations(operations: Operations): CommandOperatio
             cwd: ctx.cwd,
             ...(current ? { currentSessionFile: current } : {}),
             ...options,
+            onProgress,
           });
           ctx.ui.notify(renderProjectImportMessage(result), "info");
         },
