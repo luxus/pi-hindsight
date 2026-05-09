@@ -91,12 +91,14 @@ describe("chat transcript import", () => {
       ].join("\n"),
     );
     const calls: unknown[][] = [];
+    const progress: unknown[] = [];
 
     const result = await importChatTranscript({
       sourceFile,
       cwd: dir,
       bankId: "user-bank",
       config: DEFAULT_CONFIG,
+      onProgress: (event) => progress.push(event),
       client: {
         retain: async (...args: unknown[]) => {
           calls.push(args);
@@ -128,12 +130,14 @@ describe("chat transcript import", () => {
       ].join("\n"),
     );
     const calls: unknown[][] = [];
+    const progress: unknown[] = [];
 
     const result = await importChatTranscript({
       sourceFile,
       cwd: dir,
       bankId: "user-bank",
       config: DEFAULT_CONFIG,
+      onProgress: (event) => progress.push(event),
       client: {
         retain: async (...args: unknown[]) => {
           calls.push(args);
@@ -144,6 +148,19 @@ describe("chat transcript import", () => {
     });
 
     expect(result.retained).toBe(true);
+    expect(progress).toEqual([
+      expect.objectContaining({ phase: "reading", message: expect.stringContaining(sourceFile) }),
+      expect.objectContaining({
+        phase: "planning",
+        message: expect.stringContaining("2 kept events"),
+      }),
+      expect.objectContaining({
+        phase: "retaining",
+        message: expect.stringContaining(result.documentId),
+        current: 1,
+        total: 1,
+      }),
+    ]);
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe("user-bank");
     expect(calls[0]?.[2]).toMatchObject({

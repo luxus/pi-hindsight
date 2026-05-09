@@ -57,7 +57,7 @@ export default defineConfig({
           functions: 100,
           lines: 95,
         },
-        "extensions/import-gateway-transcript.ts": {
+        "extensions/import-chat-transcript.ts": {
           statements: 90,
           branches: 70,
           functions: 100,
