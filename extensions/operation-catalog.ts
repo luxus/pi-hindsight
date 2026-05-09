@@ -968,6 +968,28 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
     }),
     defineCatalogTool({
+      name: "hindsight_inspect_retain_queue",
+      label: "Hindsight Inspect Retain Queue",
+      description:
+        "Inspect local retain queue and dead-letter metadata without returning retained payloads.",
+      parameters: Type.Object({
+        includeJobs: Type.Optional(
+          Type.Boolean({ description: "Include redacted job metadata. Defaults to false." }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.inspectRetainQueue({
+          cwd: ctx.cwd,
+          includeJobs: params.includeJobs ?? false,
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+    }),
+    defineCatalogTool({
       name: "hindsight_list_operations",
       label: "Hindsight List Operations",
       description: "List Hindsight async operations for a bank with supported server filters.",

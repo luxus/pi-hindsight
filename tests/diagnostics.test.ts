@@ -7,6 +7,7 @@ import {
   safeConfig,
 } from "../extensions/diagnostics.js";
 import type { ImportManifestEntry } from "../extensions/import-manifest.js";
+import { PI_HINDSIGHT_USER_AGENT, PI_HINDSIGHT_VERSION } from "../extensions/version.js";
 
 function latestImport(overrides: Partial<ImportManifestEntry> = {}): ImportManifestEntry {
   return {
@@ -67,6 +68,11 @@ describe("diagnostics", () => {
 
     expect(report.projectBankId).toBe("bank");
     expect(report.health).toBe("reachable");
+    expect(report.integration).toMatchObject({
+      packageVersion: PI_HINDSIGHT_VERSION,
+      userAgent: PI_HINDSIGHT_USER_AGENT,
+      clientPackage: "@vectorize-io/hindsight-client",
+    });
     expect(report.queueLength).toBe(2);
     expect(report.queue).toEqual({
       path: DEFAULT_CONFIG.retain.queuePath,

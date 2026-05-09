@@ -789,6 +789,7 @@ describe("operation catalog", () => {
       "hindsight_trigger_consolidation",
       "hindsight_recover_consolidation",
       "hindsight_clear_observations",
+      "hindsight_inspect_retain_queue",
       "hindsight_list_operations",
       "hindsight_cancel_operation",
       "hindsight_retry_operation",
@@ -833,6 +834,7 @@ describe("operation catalog", () => {
       "hindsight:tag",
       "hindsight:last-recall",
       "hindsight:recall-cleanup",
+      "hindsight:queue",
       "hindsight:flush",
     ]);
   });

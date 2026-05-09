@@ -1,6 +1,7 @@
 import { HindsightClient } from "@vectorize-io/hindsight-client";
 import { redactError } from "./sanitize.js";
 import type { HindsightLikeClient, ResolvedConfig } from "./types.js";
+import { PI_HINDSIGHT_USER_AGENT } from "./version.js";
 import {
   assertHealthResponse,
   assertReflectResponse,
@@ -114,7 +115,7 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
   const raw = new HindsightClient({
     baseUrl: config.hindsight.baseUrl,
     ...(config.hindsight.apiKey ? { apiKey: config.hindsight.apiKey } : {}),
-    userAgent: "pi-hindsight/0.1.0",
+    userAgent: PI_HINDSIGHT_USER_AGENT,
   });
   const rest = createHindsightRestTransport(config);
   const timeoutMs = config.hindsight.timeoutMs;

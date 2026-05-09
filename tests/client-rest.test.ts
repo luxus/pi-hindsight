@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CONFIG } from "../extensions/config.js";
+import { PI_HINDSIGHT_USER_AGENT } from "../extensions/version.js";
 import {
   assertHealthResponse,
   assertReflectResponse,
@@ -73,6 +75,17 @@ describe("Hindsight REST transport helpers", () => {
       tags: ["source:pi"],
       tags_match: "any_strict",
     });
+  });
+
+  it("sets the package-aligned user-agent on REST requests", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await createHindsightRestTransport(DEFAULT_CONFIG).request("/v1/health");
+
+    const headers = (fetch as unknown as { mock: { calls: Array<[string, RequestInit]> } }).mock
+      .calls[0]?.[1].headers as Headers;
+    expect(headers.get("User-Agent")).toBe(PI_HINDSIGHT_USER_AGENT);
   });
 
   it("encodes bank ids in REST paths", () => {

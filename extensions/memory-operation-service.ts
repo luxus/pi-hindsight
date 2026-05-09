@@ -14,6 +14,7 @@ import { createDocumentOperations } from "./memory-document-operations.js";
 import { createExplorationOperations } from "./memory-exploration-operations.js";
 import { createFileRetainOperations } from "./file-retain-operations.js";
 import { createMentalModelOperations } from "./memory-mental-model-operations.js";
+import { createQueueOperations } from "./queue-operations.js";
 import { createRecallOperations } from "./memory-recall-operations.js";
 import { createRetainOperations } from "./memory-retain-operations.js";
 import { createRoutingOperations } from "./memory-routing-operations.js";
@@ -78,6 +79,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
     ...createAdminOperations(deps),
     ...createImportOperations(deps),
     ...createSeedImportOperations(deps),
+    ...createQueueOperations(deps),
     ...createSessionOperations(),
   };
 }

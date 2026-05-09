@@ -1,3 +1,4 @@
+import { PI_HINDSIGHT_USER_AGENT } from "./version.js";
 import type {
   CreateDirectiveRequest,
   CreateMentalModelRequest,
@@ -62,7 +63,7 @@ export function createHindsightRestTransport(config: ResolvedConfig): HindsightR
   return {
     async request(path, init = {}) {
       const headers = new Headers(init.headers);
-      headers.set("User-Agent", "pi-hindsight/0.1.0");
+      headers.set("User-Agent", PI_HINDSIGHT_USER_AGENT);
       if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData))
         headers.set("Content-Type", "application/json");
       if (config.hindsight.apiKey)

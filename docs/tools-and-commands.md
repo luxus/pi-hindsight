@@ -37,6 +37,8 @@ Use dry-run before non-dry-run imports. See [`import-controls.md`](import-contro
 ## Queue and snapshots
 
 ```text
+/hindsight:queue
+/hindsight:queue --jobs --json
 /hindsight:flush
 /hindsight:last-recall
 /hindsight:last-recall --json
@@ -44,7 +46,7 @@ Use dry-run before non-dry-run imports. See [`import-controls.md`](import-contro
 /hindsight:recall-cleanup <session.jsonl> --prune
 ```
 
-`/hindsight:flush` flushes queued retain jobs. `/hindsight:last-recall` reads the opt-in local recall snapshot. Recall cleanup reports or prunes accidentally persisted `<hindsight-memory>` transcript lines.
+`/hindsight:queue` summarizes active and dead-letter retain queues without printing retained payloads. Add `--jobs --json` for redacted job metadata such as job id, bank id, document id, tags, byte counts, retry count, and last error. `/hindsight:flush` flushes queued retain jobs. `/hindsight:last-recall` reads the opt-in local recall snapshot. Recall cleanup reports or prunes accidentally persisted `<hindsight-memory>` transcript lines.
 
 ## Session controls
 

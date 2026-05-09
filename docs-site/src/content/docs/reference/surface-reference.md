@@ -320,6 +320,14 @@ Clear all observations for one bank. Destructive; requires confirm=true.
 | `bank`    | string | no       | Optional bank id. Defaults to project bank. |
 | `confirm` | true   | yes      | Required destructive-action confirmation.   |
 
+### `hindsight_inspect_retain_queue`
+
+Inspect local retain queue and dead-letter metadata without returning retained payloads.
+
+| Parameter     | Type    | Required | Description                                       |
+| ------------- | ------- | -------- | ------------------------------------------------- |
+| `includeJobs` | boolean | no       | Include redacted job metadata. Defaults to false. |
+
 ### `hindsight_list_operations`
 
 List Hindsight async operations for a bank with supported server filters.
@@ -639,6 +647,7 @@ Ask Hindsight to synthesize an answer from memory. Use explicitly, not for defau
 | `/hindsight:tag`                     | Add or remove a Hindsight tag for this session.                                                   |
 | `/hindsight:last-recall`             | Show the last opt-in persisted recall snapshot.                                                   |
 | `/hindsight:recall-cleanup`          | Scan or prune accidentally persisted Hindsight recall blocks from the current session transcript. |
+| `/hindsight:queue`                   | Inspect local retain queue and dead-letter metadata without printing payloads.                    |
 | `/hindsight:flush`                   | Flush queued retain jobs.                                                                         |
 
 ## Config fields

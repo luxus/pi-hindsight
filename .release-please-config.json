@@ -5,7 +5,8 @@
       "release-type": "node",
       "package-name": "@luxusai/pi-hindsight",
       "changelog-path": "CHANGELOG.md",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "extra-files": ["extensions/version.ts"]
     }
   }
 }

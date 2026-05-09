@@ -53,6 +53,14 @@ export async function readDeadLetterQueue(path: string): Promise<RetainJob[]> {
   return readRetainQueue(resolveDeadLetterQueuePath(path));
 }
 
+export async function readRetainQueueTolerant(path: string) {
+  return retainQueueStore(path).readTolerant();
+}
+
+export async function readDeadLetterQueueTolerant(path: string) {
+  return readRetainQueueTolerant(resolveDeadLetterQueuePath(path));
+}
+
 export type RetainQueueFileSummary = JsonlQueueFileSummary;
 
 export interface RetainQueueSummary {
@@ -138,10 +146,6 @@ function isRetainJob(value: unknown): value is RetainJob {
 
 function retainQueueStore(path: string): JsonlQueueStore<RetainJob> {
   return new JsonlQueueStore(path, isRetainJob);
-}
-
-async function readRetainQueueTolerant(path: string) {
-  return retainQueueStore(path).readTolerant();
 }
 
 async function appendMalformedQueueLines(path: string, lines: string[]): Promise<void> {

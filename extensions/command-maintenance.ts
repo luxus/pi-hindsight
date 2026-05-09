@@ -103,6 +103,32 @@ export function maintenanceCommandOperations(operations: Operations): CommandOpe
       },
     },
     {
+      name: "hindsight:queue",
+      spec: {
+        description:
+          "Inspect local retain queue and dead-letter metadata without printing payloads.",
+        getArgumentCompletions: (prefix) => completeFlags(prefix, ["--jobs", "--json"]),
+        handler: async (args, ctx) => {
+          const argsList = argList(args);
+          const result = await operations.inspectRetainQueue({
+            cwd: ctx.cwd,
+            includeJobs: argsList.includes("--jobs"),
+          });
+          if (argsList.includes("--json")) {
+            ctx.ui.notify(JSON.stringify(result, null, 2), "info");
+            return;
+          }
+          const active = result.active.valid;
+          const dead = result.deadLetter.valid;
+          const malformed = result.active.malformed + result.deadLetter.malformed;
+          ctx.ui.notify(
+            `Hindsight retain queue active=${active}; dead-letter=${dead}; malformed=${malformed}; path=${result.queuePath}`,
+            dead || malformed ? "warning" : "info",
+          );
+        },
+      },
+    },
+    {
       name: "hindsight:flush",
       spec: {
         description: "Flush queued retain jobs.",

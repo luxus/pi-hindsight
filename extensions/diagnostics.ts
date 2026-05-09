@@ -1,4 +1,5 @@
 import type { HindsightCapabilities, ResolvedConfig } from "./types.js";
+import { PI_HINDSIGHT_USER_AGENT, PI_HINDSIGHT_VERSION } from "./version.js";
 import { baseTags, findRepoRoot } from "./banking.js";
 import { stableSessionId } from "./session.js";
 import { createMemoryIdentity } from "./memory-identity.js";
@@ -108,6 +109,12 @@ export function formatDebugReport(args: DebugReportArgs): string {
   return JSON.stringify(
     {
       enabled: args.config.enabled,
+      integration: {
+        packageVersion: PI_HINDSIGHT_VERSION,
+        userAgent: PI_HINDSIGHT_USER_AGENT,
+        hindsightBaseUrl: args.config.hindsight.baseUrl,
+        clientPackage: "@vectorize-io/hindsight-client",
+      },
       health,
       cwd: args.cwd,
       repoRoot: findRepoRoot(args.cwd),
