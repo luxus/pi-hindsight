@@ -2,17 +2,19 @@
 
 ## Status
 
-Proposed.
+Accepted and implemented for `normal`, `read-only`, and `ignored`. Reviewed 2026-05-09; still relevant.
+
+`tools-only` remains reserved vocabulary and must not appear as an enabled mode until behavior is implemented.
 
 ## Context
 
-Pi Hindsight already has separate controls for recall, automatic retain, explicit tools, imports, flush, and one-turn opt-out. Those controls are correct but too implementation-shaped for the `/hindsight` TUI. Users need a small vocabulary that explains what memory will do without changing the underlying safe defaults.
+Pi Hindsight has separate controls for recall, automatic retain, explicit tools, imports, flush, and one-turn opt-out. Those controls are correct but too implementation-shaped for the `/hindsight` TUI. Users need a small vocabulary that explains what memory will do without changing the underlying safe defaults.
 
 The design should not add provider recall caching, prompt hashtag controls, automatic reflect prefetch, or new routing behavior.
 
 ## Decision
 
-The TUI will describe memory behavior with four user-facing modes:
+The TUI and `/hindsight:mode` command describe session memory behavior with three implemented user-facing modes and one reserved future mode:
 
 1. `normal`
 2. `read-only`
@@ -40,7 +42,7 @@ These names are TUI vocabulary, not a replacement for the lower-level config mod
 
 - recall injects ephemeral memory before answer generation when enabled
 - retain queues sanitized transcript deltas at agent end when enabled
-- global automatic retain stays governed by `globalRetain.mode`
+- User Bank automatic retain stays governed by `userRetain.mode` and profile choices; `globalRetain.mode` remains only a legacy alias
 - explicit tools and TUI actions are available
 - imports and queue flushes are available
 
@@ -77,7 +79,7 @@ The `/hindsight` TUI should prefer these labels when explaining session memory s
 - `ignored`: "Automatic recall and retain are off."
 - future `tools-only`: "Automatic memory is off; explicit tools stay available."
 
-The TUI should still expose underlying facts where useful, such as recall enabled/disabled, retain enabled/disabled, global retain mode, queue state, and bank status.
+The TUI should still expose underlying facts where useful, such as recall enabled/disabled, retain enabled/disabled, User Bank retain mode, queue state, and bank status.
 
 ## Non-goals
 
@@ -86,14 +88,19 @@ The TUI should still expose underlying facts where useful, such as recall enable
 - Do not add provider recall caching.
 - Do not prefetch reflect results automatically.
 - Do not collapse import or explicit retain semantics into automatic retain.
-- Do not make global automatic retain default.
+- Do not make User Bank automatic retain default.
 
-## Follow-up implementation slices
+## Follow-up implementation status
+
+Completed:
 
 1. Add a presenter that derives the TUI mode label from resolved config plus session metadata.
 2. Add status facts for the mode matrix row currently in effect.
 3. Add TUI copy for `normal`, `read-only`, and `ignored`.
-4. Keep `tools-only` documented as reserved until behavior is implemented.
+
+Still future:
+
+1. Keep `tools-only` documented as reserved until behavior is implemented.
 
 ## Consequences
 
