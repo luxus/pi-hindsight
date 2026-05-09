@@ -18,6 +18,17 @@ import {
 } from "./setup-tui-types.js";
 
 const MIN_BODY_LINES = 30;
+const DOCS_BASE_URL = "https://luxus.github.io/pi-hindsight";
+
+const TAB_DOCS: Record<string, string> = {
+  Status: `${DOCS_BASE_URL}/guides/use-hindsight-status/`,
+  Connection: `${DOCS_BASE_URL}/start/installation/`,
+  Banks: `${DOCS_BASE_URL}/concepts/memory-banks/`,
+  Recall: `${DOCS_BASE_URL}/concepts/retain-recall-reflect/`,
+  Retain: `${DOCS_BASE_URL}/concepts/queue-durability/`,
+  Import: `${DOCS_BASE_URL}/guides/importing-sessions/`,
+  UI: `${DOCS_BASE_URL}/start/setup-tui/`,
+};
 
 function fitColumns(left: string, right: string, width: number): string {
   if (width <= 0) return "";
@@ -175,6 +186,7 @@ export function createSetupComponent(
         lines.push(boxed("", width, theme));
         lines.push(boxed(theme.fg("accent", theme.bold("Details")), width, theme));
         const details = [
+          `Docs: ${TAB_DOCS[detailField.tab] ?? `${DOCS_BASE_URL}/reference/configuration/`}`,
           detailField.description,
           `Default: ${detailField.defaultValue}`,
           ...(detailField.projectValue ? [`Project: ${detailField.projectValue}`] : []),
@@ -185,6 +197,12 @@ export function createSetupComponent(
           for (const line of wrapWords(detail, innerWidth - 3)) {
             lines.push(boxed(`   ${theme.fg("dim", line)}`, width, theme));
           }
+        }
+      } else if (tab.id === "Status") {
+        lines.push(boxed("", width, theme));
+        lines.push(boxed(theme.fg("accent", theme.bold("Docs")), width, theme));
+        for (const line of wrapWords(`Status guide: ${TAB_DOCS.Status}`, innerWidth - 3)) {
+          lines.push(boxed(`   ${theme.fg("dim", line)}`, width, theme));
         }
       }
 

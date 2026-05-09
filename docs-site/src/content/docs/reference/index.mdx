@@ -5,16 +5,20 @@ description: Exact config fields, tools, commands, hooks, import controls, gener
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Reference pages are for exact names and contracts. Use Guides when you want a workflow.
+Reference pages are for exact names and contracts. They should stay concise and link back to guides instead of re-explaining workflows.
 
 <CardGrid>
   <Card title="Configuration" icon="setting">
-    Config file locations, precedence, environment variables, and bank derivation fields.
+    Config locations, precedence, environment variables, profile fields, and bank derivation.
     [Open](./configuration/)
   </Card>
   <Card title="Tools and commands" icon="puzzle">
     Explicit memory tools, command shortcuts, and command intent groups.
     [Open](./tools-and-commands/)
+  </Card>
+  <Card title="Import controls" icon="download">
+    Exact command/tool controls for dry-runs, explicit files, and branch-leaf selection.
+    [Open](./import-controls/)
   </Card>
   <Card title="Hooks" icon="laptop">
     Pi extension hook mapping for session start, context, agent end, and shutdown. [Open](./hooks/)

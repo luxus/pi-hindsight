@@ -111,7 +111,7 @@ Every PR must complete the repository PR template. The PR body gate is intention
 ### Bank rules
 
 - Default to one project bank per repo.
-- Optional second global bank is allowed only through explicit config.
+- Optional second User Bank (legacy internal/config name: global bank) is allowed only through explicit config.
 - Do not default to one giant shared bank across unrelated repos.
 - If bank creation/configuration is needed, do it intentionally during initialization or setup, not accidentally on first write.
 
@@ -145,7 +145,7 @@ Use:
   - ensure bank settings if appropriate
   - update status
 - `context` delegates to `memory-lifecycle.recall`:
-  - select project/global memory scopes
+  - select project/user memory scopes
   - compose fresh recall query
   - fetch memory
   - inject ephemeral memory block
@@ -285,7 +285,7 @@ GitHub Actions has a `Hindsight Integration` workflow that runs for memory-path 
 - storing recalled context back into the transcript
 - using metadata instead of tags for scope
 - calling retain and then relying on that data in the same response path
-- mixing project and global memory without explicit labeling
+- mixing project and User Bank memory without explicit labeling
 - letting debug logs expose secrets
 - using provider-specific payload rewrites before the default `context` strategy is proven
 

@@ -295,6 +295,7 @@ async function maybeImportBankTemplate(args: {
     args.ctx.ui.notify("No enabled bank target for template import.", "warning");
     return [];
   }
+  args.ctx.ui.notify(setupDocsHint("Bank template", "/reference/bank-template-manifest/"), "info");
   const configure = await args.ctx.ui.confirm(
     "Configure Hindsight bank templates?",
     targets
@@ -414,6 +415,12 @@ function operationSummary(result: unknown): string {
   return [id?.trim(), status].filter(Boolean).join(" / ") || "operation accepted";
 }
 
+const DOCS_BASE_URL = "https://luxus.github.io/pi-hindsight";
+
+function setupDocsHint(topic: string, path: string): string {
+  return `${topic} docs: ${DOCS_BASE_URL}${path}`;
+}
+
 function setupImportProgressMessage(event: ImportProgressEvent): string {
   return `Hindsight import progress: ${event.message}`;
 }
@@ -488,6 +495,7 @@ export async function maybeOfferHistoricalImportForSetup(args: {
       .map((template) => template.profileId)
       .filter((profileId): profileId is BankTemplateProfileId => Boolean(profileId)),
   );
+  args.ctx.ui.notify(setupDocsHint("Import", "/guides/importing-sessions/"), "info");
   const choice = await args.ctx.ui.select(
     "Choose import source",
     importChoicesForSetup({
@@ -587,6 +595,8 @@ export async function runGuidedSetup(args: {
   deps: MemoryOperationsDeps;
   cwd: string;
 }): Promise<boolean> {
+  args.ctx.ui.notify(setupDocsHint("Guided setup", "/start/setup-tui/"), "info");
+  args.ctx.ui.notify(setupDocsHint("Memory profiles", "/start/memory-profiles/"), "info");
   const profile = await args.ctx.ui.select("Choose memory profile", [
     "Project + User",
     "Project Only",

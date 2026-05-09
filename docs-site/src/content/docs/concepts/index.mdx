@@ -5,7 +5,7 @@ description: Memory model, bank boundaries, Retain, Recall, Reflect, imports, qu
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Concept pages explain how Pi Hindsight uses Hindsight without repeating command or schema reference.
+Concept pages explain how Pi Hindsight uses Hindsight. They should describe stable mental models, not step-by-step procedures or generated schemas.
 
 <CardGrid>
   <Card title="Memory Banks" icon="laptop">
@@ -24,8 +24,8 @@ Concept pages explain how Pi Hindsight uses Hindsight without repeating command 
     Queue-first retain, retry, malformed-line quarantine, and dead-letter behavior.
     [Read](./queue-durability/)
   </Card>
-  <Card title="Session memory modes" icon="setting">
-    Risk boundaries for read-only, opt-out, and deferred memory controls.
+  <Card title="Session modes" icon="setting">
+    Normal, read-only, ignored, next-turn opt-out, and setup profiles.
     [Read](./session-memory-modes/)
   </Card>
   <Card title="Historical Import" icon="puzzle">
@@ -33,8 +33,8 @@ Concept pages explain how Pi Hindsight uses Hindsight without repeating command 
   </Card>
 </CardGrid>
 
-Additional background:
+## Supporting background
 
-- [Memory behavior](./memory-behavior/)
-- [Hindsight core functions](./hindsight-core-functions/)
-- [Starter mental model suggestions](./starter-mental-model-suggestions/)
+- [Memory behavior](./memory-behavior/) explains the automatic one-turn lifecycle.
+- [Hindsight core functions](./hindsight-core-functions/) links Pi behavior back to Hindsight primitives.
+- [Starter mental model suggestions](./starter-mental-model-suggestions/) explains seed material for bank templates and mental models.

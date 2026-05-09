@@ -43,7 +43,7 @@ Explain changelog/release notes impact, or say none.
 
 - [ ] Retain still stores raw rich content, not summaries.
 - [ ] Recall Blocks remain ephemeral and are not retained back into Hindsight.
-- [ ] Project Bank and Global Bank isolation is preserved.
+- [ ] Project Bank and User Bank isolation is preserved.
 - [ ] Retain Queue behavior remains queue-first and retry-safe.
 - [ ] Debug output and sidecars remain opt-in and redacted.
 - [ ] Import behavior remains deterministic and idempotent when touched.

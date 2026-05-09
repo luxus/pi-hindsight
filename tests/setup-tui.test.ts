@@ -47,6 +47,7 @@ describe("setup TUI receipt facts", () => {
     );
 
     const rendered = component.render(100).join("\n");
+    expect(rendered).toContain("Docs: https://luxus.github.io/pi-hindsight/concepts/memory-banks/");
     expect(rendered).toContain("Allows cross-project recall");
     expect(rendered).toContain("f flush");
     expect(rendered).toContain("m models read-only");

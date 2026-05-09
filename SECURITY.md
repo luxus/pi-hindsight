@@ -25,7 +25,7 @@ A useful report includes:
 Security-sensitive areas include:
 
 - secret redaction before Retain, diagnostics, logs, or Last-Recall Snapshot writes
-- Project Bank and Global Bank isolation
+- Project Bank and User Bank isolation
 - Retain Queue durability and malformed queue handling
 - exact document deletion behavior
 - import of historical Pi JSONL sessions

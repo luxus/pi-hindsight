@@ -9,31 +9,37 @@ hero:
       link: /pi-hindsight/start/getting-started/
       icon: right-arrow
       variant: primary
-    - text: Configuration reference
-      link: /pi-hindsight/reference/configuration/
-      icon: document
+    - text: Open setup guide
+      link: /pi-hindsight/start/setup-tui/
+      icon: setting
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Pi Hindsight recalls relevant project memory before model calls, retains structured session deltas after agent runs, and exposes explicit memory tools when you want direct control.
+Pi Hindsight gives Pi long-term memory through Hindsight. The normal workflow is:
+
+1. install the package,
+2. run `/hindsight`,
+3. choose a memory profile,
+4. let automatic Recall/Retain handle future sessions,
+5. optionally import old sessions.
 
 <CardGrid>
-  <Card title="Start" icon="rocket">
-    Install the extension, connect Hindsight, choose a memory profile, and verify the first run.
-    [Begin setup →](/pi-hindsight/start/getting-started/)
+  <Card title="Start here" icon="rocket">
+    Install the extension, connect Hindsight, choose a profile, and verify status. [Begin setup
+    →](/pi-hindsight/start/getting-started/)
   </Card>
-  <Card title="Concepts" icon="open-book">
-    Understand Memory Banks, Retain, Recall, Reflect, queue durability, imports, and safety rules.
-    [Learn the model →](/pi-hindsight/concepts/)
+  <Card title="Use the TUI" icon="setting">
+    `/hindsight` is the main surface for setup, status, profile changes, queue flushes, imports, and
+    links back to these docs. [Open TUI guide →](/pi-hindsight/start/setup-tui/)
   </Card>
-  <Card title="Guides" icon="setting">
-    Follow task workflows for profiles, setup/status checks, imports, recall inspection, queue
-    recovery, and smoke tests. [Pick a workflow →](/pi-hindsight/guides/)
+  <Card title="Understand the model" icon="open-book">
+    Concepts explain bank boundaries, Retain, Recall, Reflect, imports, queue durability, and
+    safety. [Read concepts →](/pi-hindsight/concepts/)
   </Card>
-  <Card title="Reference" icon="document">
-    Look up exact config fields, tools, commands, hooks, import controls, and generated surface
-    details. [Open reference →](/pi-hindsight/reference/)
+  <Card title="Look up exact names" icon="document">
+    Reference pages list config fields, tools, commands, hooks, import controls, and generated
+    surface details. [Open reference →](/pi-hindsight/reference/)
   </Card>
 </CardGrid>
 
@@ -51,29 +57,29 @@ flowchart LR
 
 ## Safety defaults
 
-- Project memory stays in a project bank by default.
-- Global/user memory is opt-in and explicitly configured.
+- Project memory stays in a Project Bank by default.
+- User memory is opt-in and configured intentionally.
 - Recall injection is ephemeral; recalled memory is not written back into transcripts.
 - Retain uses stable document IDs and queue durability.
 - Automatic retain redacts common secrets before writing memory.
 
-## Where to go next
+## Task shortcuts
 
 <CardGrid>
-  <Card title="Five-minute setup" icon="right-arrow">
-    Use the shortest successful path from install to verified memory. [Getting
-    started](/pi-hindsight/start/getting-started/)
-  </Card>
   <Card title="Choose memory scope" icon="laptop">
     Compare Project + User, Project Only, User Only, and Recall Only profiles. [Memory
     profiles](/pi-hindsight/start/memory-profiles/)
   </Card>
   <Card title="Import old sessions" icon="download">
-    Preview and import Pi session JSONL history with deterministic document IDs. [Importing
-    sessions](/pi-hindsight/guides/importing-sessions/)
+    Preview first, then import Pi sessions or chat transcripts only when backfill is useful. [Import
+    guide](/pi-hindsight/guides/importing-sessions/)
   </Card>
-  <Card title="Troubleshoot memory" icon="information">
-    Inspect status, recalls, receipts, queue state, and smoke-test output. [Status and setup
-    guide](/pi-hindsight/guides/use-hindsight-status/)
+  <Card title="Inspect memory" icon="magnifier">
+    Check last recall, retain receipts, queue state, and status diagnostics. [Inspection
+    guide](/pi-hindsight/guides/inspect-recalls-and-receipts/)
+  </Card>
+  <Card title="Contribute" icon="puzzle">
+    Verify docs, understand generated references, and follow issue/PR workflow. [Development
+    docs](/pi-hindsight/development/)
   </Card>
 </CardGrid>

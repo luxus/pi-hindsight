@@ -11,7 +11,7 @@ Before making a change, read:
 3. Any relevant ADR under `docs/adr/`.
 4. The official Hindsight and Pi documentation when changing API behavior, hook behavior, package shape, or extension lifecycle behavior.
 
-Use the terms from `CONTEXT.md` in issue titles, test names, PR descriptions, and docs. Prefer **Project Bank**, **Global Bank**, **Retain**, **Recall**, **Reflect**, **Retain Queue**, **Retain Job**, **Recall Block**, **Last-Recall Snapshot**, **Import Manifest**, **Import Checkpoint**, **Memory Operation Service**, and **Operation Catalog** over local synonyms.
+Use the terms from `CONTEXT.md` in issue titles, test names, PR descriptions, and docs. Prefer **Project Bank**, **User Bank** (legacy internal/config name: global bank), **Retain**, **Recall**, **Reflect**, **Retain Queue**, **Retain Job**, **Recall Block**, **Last-Recall Snapshot**, **Import Manifest**, **Import Checkpoint**, **Memory Operation Service**, and **Operation Catalog** over local synonyms.
 
 Human and agent guidance must stay aligned. If you change source-of-truth order, contributor workflow, verification expectations, memory policy, or definition-of-done criteria, update both this file and `AGENTS.md` in the same PR.
 
@@ -100,7 +100,7 @@ Every code change must preserve these rules:
 - Historical imports use deterministic document IDs and preserve reimport idempotency.
 - **Recall** happens before answer generation and remains ephemeral.
 - **Recall Blocks** must not be persisted into transcript history or retained back into Hindsight.
-- **Global Bank** writes are explicit by default; automatic global retain requires explicit Router Mode.
+- **User Bank** writes are explicit by default; automatic User Bank retain requires an explicit profile or Router Mode.
 - Tags define scope and visibility; metadata records provenance.
 - Retain paths are queue-first.
 - Debug visibility is opt-in and must redact secrets before persistence.

@@ -14,19 +14,19 @@ The external memory service that stores banks, extracts observations, recalls re
 
 ### Memory Bank
 
-An isolated Hindsight namespace. Banks are the primary boundary between unrelated memory. `pi-hindsight` normally uses one Project Bank per repository and optionally one explicitly configured Global Bank.
+An isolated Hindsight namespace. Banks are the primary boundary between unrelated memory. `pi-hindsight` normally uses one Project Bank per repository and optionally one explicitly configured User Bank.
 
 ### Project Bank
 
 The bank selected for the current repository. It stores repo-specific architecture, decisions, bugs, tasks, import history, and operational context. Project recall is scoped with repository tags so memory from other repositories does not leak in.
 
-### Global Bank
+### User Bank
 
-An optional shared bank for durable user-level preferences, recurring workflows, and cross-project habits. It is disabled unless explicitly configured. Automatic global retain only happens in Router Mode; otherwise global writes are explicit.
+An optional shared bank for durable user-level preferences, recurring workflows, and cross-project habits. It is disabled unless explicitly configured. Automatic User Bank retain only happens when an explicit profile or Router Mode enables it; otherwise User Bank writes are explicit. Legacy config/tool aliases may still call this bank `global`.
 
 ### Bank Alias
 
-A stable user-facing name that resolves to a real bank ID. `project` means the selected Project Bank. `global` means the configured Global Bank. Prefer aliases in tools and docs when the exact bank ID is not important.
+A stable name that resolves to a real bank ID. `project` means the selected Project Bank. `global` is the legacy/internal alias for the configured User Bank. Prefer **User Bank** in user-facing docs when the exact bank ID is not important.
 
 ### Retain
 
@@ -38,7 +38,7 @@ The `agent_end` hook path that retains new transcript content after a turn. It i
 
 ### Explicit Retain
 
-A user-triggered retain operation through a tool or command. Explicit retains are queue-first like automatic retains, but they use user-provided content and context. Explicit retains can target the Project Bank or Global Bank by alias.
+A user-triggered retain operation through a tool or command. Explicit retains are queue-first like automatic retains, but they use user-provided content and context. Explicit retains can target the Project Bank or User Bank by alias.
 
 ### Retain Job
 
@@ -146,7 +146,7 @@ The single catalog that registers public tools and commands. It maps Pi-facing s
 
 ### Memory Router
 
-The opt-in policy that decides whether automatic retain should write to project, global, both, or skip. The default Global Retain mode is `explicit-only`; Router Mode must remain explicit because global-memory pollution is costly.
+The opt-in policy that decides whether automatic retain should write to project memory, user memory, both, or skip. The default User Bank retain mode is `explicit-only`; Router Mode must remain explicit because user-memory pollution is costly.
 
 ### Redaction
 
@@ -154,7 +154,7 @@ The safety layer that removes or masks secrets before retain, diagnostics, or de
 
 ## Naming rules
 
-- Use **Project Bank** and **Global Bank** when talking about bank policy.
+- Use **Project Bank** and **User Bank** when talking about bank policy. Use `global` only for exact legacy config/tool aliases.
 - Use **Retain**, **Recall**, and **Reflect** for the three Hindsight operations; do not collapse them into a generic “memory call.”
 - Use **Retain Queue**, **Retain Job**, **Queue Lock**, and **Dead Letter Queue** for durability behavior.
 - Use **Import Manifest** and **Import Checkpoint** for historical import state.
@@ -179,7 +179,7 @@ The safety layer that removes or masks secrets before retain, diagnostics, or de
 - Retain writes raw rich content, not summaries.
 - Live session retains use stable document IDs and `append` mode.
 - Historical imports use deterministic document IDs and `replace` mode where reimport idempotency requires it.
-- Project memory is the default; global memory requires explicit configuration and explicit writes unless Router Mode is enabled.
+- Project memory is the default; User Bank memory requires explicit configuration and explicit writes unless an explicit profile or Router Mode enables automatic User Bank retain.
 - Tags define scope and visibility; metadata records provenance and links back to source records.
 - Queue-first durability applies to automatic retain, explicit retain, and imports.
 - Debug visibility must be opt-in and must redact secrets before persistence.

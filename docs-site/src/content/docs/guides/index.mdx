@@ -1,25 +1,26 @@
 ---
 title: Guides
-description: Task-focused workflows for setup, imports, diagnostics, recovery, and verification.
+description: Task-first workflows for setup, imports, diagnostics, recovery, and verification.
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
-Guides answer “how do I do this now?” Use Concepts for mental models and Reference for exact fields.
+Guides answer “what do I do now?” They avoid repeating the concept model and exact schema details. Use [Concepts](/pi-hindsight/concepts/) for mental models and [Reference](/pi-hindsight/reference/) for exact names.
 
 <CardGrid>
   <Card title="Configure memory profiles" icon="setting">
-    Choose Project + User, Project Only, User Only, or Recall Only behavior and map that choice to
-    config. [Configure profiles](./configure-memory-profiles/)
+    Choose Project + User, Project Only, User Only, or Recall Only through `/hindsight`. [Configure
+    profiles](./configure-memory-profiles/)
   </Card>
   <Card title="Use `/hindsight` status" icon="information">
     Inspect server reachability, active banks, retain queue state, imports, and receipts. [Check
     status](./use-hindsight-status/)
   </Card>
-  <Card title="Import sessions" icon="download">
-    Preview and import historical Pi session JSONL files. [Import sessions](./importing-sessions/)
+  <Card title="Import history" icon="download">
+    Preview and import historical Pi sessions or chat transcripts only when backfill is useful.
+    [Import guide](./importing-sessions/)
   </Card>
-  <Card title="Inspect recalls and receipts" icon="magnifier">
+  <Card title="Inspect memory" icon="magnifier">
     Debug what memory was recalled and what retain jobs were accepted. [Inspect
     memory](./inspect-recalls-and-receipts/)
   </Card>
