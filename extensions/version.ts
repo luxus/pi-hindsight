@@ -1,4 +1,4 @@
-export const PI_HINDSIGHT_VERSION = "0.4.1"; // x-release-please-version
+export const PI_HINDSIGHT_VERSION = "0.5.0"; // x-release-please-version
 export const PI_HINDSIGHT_USER_AGENT = `pi-hindsight/${PI_HINDSIGHT_VERSION}`;
 
 export const PI_HINDSIGHT_SUPPORTED_NODE = ">=24 <26";

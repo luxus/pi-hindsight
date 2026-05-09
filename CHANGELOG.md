@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/luxus/pi-hindsight/compare/v0.4.1...v0.5.0) (2026-05-09)
+
+
+### Features
+
+* harden 1.0 readiness contract ([#360](https://github.com/luxus/pi-hindsight/issues/360)) ([e7a36c9](https://github.com/luxus/pi-hindsight/commit/e7a36c9c846e6d58676e2bf0626b3ac7c473a4a4))
+
+
+### Bug Fixes
+
+* **operation-catalog:** flatten recursive HindsightTagGroup tool schema ([#366](https://github.com/luxus/pi-hindsight/issues/366)) ([2b6518d](https://github.com/luxus/pi-hindsight/commit/2b6518d9bd2a44fbca2d31a67237bbb96c7414e4)), closes [#365](https://github.com/luxus/pi-hindsight/issues/365)
+* **release:** publish through trusted workflow ([#350](https://github.com/luxus/pi-hindsight/issues/350)) ([fdd4eb0](https://github.com/luxus/pi-hindsight/commit/fdd4eb0844be9937c6847ac3cfb7ca7374431f1d))
+
 ## [0.4.1](https://github.com/luxus/pi-hindsight/compare/v0.4.0...v0.4.1) (2026-05-09)
 
 ### Bug Fixes
