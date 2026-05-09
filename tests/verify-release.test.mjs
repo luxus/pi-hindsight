@@ -86,14 +86,20 @@ describe("verify-release", () => {
 
     expect(config.packages["."]["package-name"]).toBe("@luxusai/pi-hindsight");
     expect(config.packages["."]["include-component-in-tag"]).toBe(false);
-    expect(releasePlease).toContain("id-token: write");
+    expect(releasePlease).toContain("actions: write");
     expect(releasePlease).toContain("steps.release.outputs.release_created == 'true'");
-    expect(releasePlease).toContain("npm run check");
-    expect(releasePlease).toContain("npm run check:coverage");
-    expect(releasePlease).toContain("npm run typecheck:tsc");
-    expect(releasePlease).toContain("npm run audit:signatures");
-    expect(releasePlease).toContain("npm run pack:verify");
-    expect(releasePlease).toContain("npm publish --provenance --access public");
+    expect(releasePlease).toContain("RELEASE_TAG: ${{ steps.release.outputs.tag_name }}");
+    expect(releasePlease).toContain(
+      'gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=true',
+    );
+    expect(releasePlease).not.toContain("npm publish --provenance --access public");
+    expect(release).toContain("id-token: write");
+    expect(release).toContain("npm run check");
+    expect(release).toContain("npm run check:coverage");
+    expect(release).toContain("npm run typecheck:tsc");
+    expect(release).toContain("npm run audit:signatures");
+    expect(release).toContain("npm run pack:verify");
+    expect(release).toContain("npm publish --provenance --access public");
     expect(release).toContain(
       "github.event_name == 'workflow_dispatch' && inputs.publish == 'true'",
     );

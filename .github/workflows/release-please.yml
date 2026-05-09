@@ -9,7 +9,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  id-token: write
+  actions: write
 
 concurrency:
   group: release-please-${{ github.ref }}
@@ -27,50 +27,12 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      - name: Check out release commit
+      - name: Dispatch trusted release workflow
         if: ${{ steps.release.outputs.release_created == 'true' }}
-        uses: actions/checkout@v6
-
-      - name: Set up Node.js for trusted publishing
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: npm
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Install dependencies
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm ci --engine-strict
-
-      - name: Run checks
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run check
-
-      - name: Run coverage gate
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run check:coverage
-
-      - name: Run TypeScript compiler fallback
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run typecheck:tsc
-
-      - name: Verify registry signatures
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run audit:signatures
-
-      - name: Verify release metadata and package install
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: npm run pack:verify
-
-      - name: Publish package to npm
-        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
         run: |
           set -euo pipefail
-          name=$(node -p "require('./package.json').name")
-          version=$(node -p "require('./package.json').version")
-          if npm view "$name@$version" version >/dev/null 2>&1; then
-            echo "$name@$version already exists on npm; skipping publish."
-            exit 0
-          fi
-          npm publish --provenance --access public
+          test -n "${RELEASE_TAG}"
+          gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=true
