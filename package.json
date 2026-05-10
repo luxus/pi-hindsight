@@ -91,7 +91,7 @@
     "tsx": "4.21.0",
     "typebox": "1.1.37",
     "typescript": "^6.0.3",
-    "vitest": "^3.1.2"
+    "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "@earendil-works/pi-agent-core": "*",
