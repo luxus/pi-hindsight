@@ -71,7 +71,7 @@
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
-    "@astrojs/starlight": "^0.38.5",
+    "@astrojs/starlight": "^0.39.2",
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.3",
     "@earendil-works/pi-agent-core": "0.74.0",
