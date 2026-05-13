@@ -6,6 +6,10 @@ import { createHindsightClient } from "../client/client.js";
 import { ensureGlobalBank, ensureProjectBank } from "../banks/bank-operations.js";
 import { detectAppendCapability } from "../client/capabilities.js";
 import { flushRetainQueue, resolveQueuePath } from "../queue/queue.js";
+import {
+  formatFlushRetainQueueResult,
+  flushRetainQueueNotifyLevel,
+} from "../queue/flush-presenter.js";
 import { bankSelectionMessage } from "../utils/diagnostics.js";
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { redactError } from "../utils/sanitize.js";
@@ -73,7 +77,18 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         maxJobs: config.retain.periodicFlushMaxJobs,
         maxElapsedMs: config.retain.periodicFlushTimeoutMs,
       })
-        .catch(() => undefined)
+        .then((result) => {
+          if (result.deadLettered || result.remaining) {
+            notify(
+              runtime,
+              formatFlushRetainQueueResult(result),
+              flushRetainQueueNotifyLevel(result),
+            );
+          }
+        })
+        .catch((error) => {
+          notify(runtime, `Periodic retain queue flush failed: ${redactError(error)}`, "warning");
+        })
         .finally(() => {
           periodicFlushActive = false;
         });
@@ -219,7 +234,8 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           maxElapsedMs: config.retain.shutdownFlushTimeoutMs,
           stopOnFirstFailure: true,
         });
-      } catch {
+      } catch (error) {
+        notify(runtime, `Shutdown retain queue flush failed: ${redactError(error)}`, "warning");
         // Keep queue on disk for next run.
       }
     },
