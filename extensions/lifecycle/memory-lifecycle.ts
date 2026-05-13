@@ -6,10 +6,7 @@ import { createHindsightClient } from "../client/client.js";
 import { ensureGlobalBank, ensureProjectBank } from "../banks/bank-operations.js";
 import { detectAppendCapability } from "../client/capabilities.js";
 import { flushRetainQueue, resolveQueuePath } from "../queue/queue.js";
-import {
-  formatFlushRetainQueueResult,
-  flushRetainQueueNotifyLevel,
-} from "../queue/flush-presenter.js";
+import { formatFlushRetainQueueResult } from "../queue/flush-presenter.js";
 import { bankSelectionMessage } from "../utils/diagnostics.js";
 import type { HindsightCapabilities, HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { redactError } from "../utils/sanitize.js";
@@ -79,11 +76,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       })
         .then((result) => {
           if (result.deadLettered || result.remaining) {
-            notify(
-              runtime,
-              formatFlushRetainQueueResult(result),
-              flushRetainQueueNotifyLevel(result),
-            );
+            notify(runtime, formatFlushRetainQueueResult(result), "warning");
           }
         })
         .catch((error) => {
@@ -229,11 +222,18 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return;
       try {
-        await flushRetainQueue(resolveQueuePath(runtime.cwd, config.retain.queuePath), client, {
-          maxJobs: config.retain.shutdownFlushMaxJobs,
-          maxElapsedMs: config.retain.shutdownFlushTimeoutMs,
-          stopOnFirstFailure: true,
-        });
+        const result = await flushRetainQueue(
+          resolveQueuePath(runtime.cwd, config.retain.queuePath),
+          client,
+          {
+            maxJobs: config.retain.shutdownFlushMaxJobs,
+            maxElapsedMs: config.retain.shutdownFlushTimeoutMs,
+            stopOnFirstFailure: true,
+          },
+        );
+        if (result.deadLettered || result.remaining) {
+          notify(runtime, formatFlushRetainQueueResult(result), "warning");
+        }
       } catch (error) {
         notify(runtime, `Shutdown retain queue flush failed: ${redactError(error)}`, "warning");
         // Keep queue on disk for next run.
