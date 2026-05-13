@@ -119,7 +119,8 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
     "periodicFlushTimeoutMs": 2000,
     "updateMode": "append",
     "shutdownFlushMaxJobs": 10,
-    "shutdownFlushTimeoutMs": 2000
+    "shutdownFlushTimeoutMs": 2000,
+    "postRetainReflect": false
   },
   "import": {
     "manifestPath": ".pi/hindsight/import-manifest.json",
