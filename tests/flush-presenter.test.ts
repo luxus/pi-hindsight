@@ -22,10 +22,10 @@ describe("flush presenter", () => {
     expect(flushRetainQueueNotifyLevel(result({ deadLettered: 1 }))).toBe("warning");
   });
 
-  it("info level for empty or malformed-only results", () => {
+  it("warns on malformed-only results", () => {
     expect(flushRetainQueueNotifyLevel(result({ sent: 0 }))).toBe("info");
-    expect(flushRetainQueueNotifyLevel(result({ sent: 0, malformed: 5 }))).toBe("info");
-    expect(flushRetainQueueNotifyLevel(result({ sent: 1, malformed: 3 }))).toBe("info");
+    expect(flushRetainQueueNotifyLevel(result({ sent: 0, malformed: 5 }))).toBe("warning");
+    expect(flushRetainQueueNotifyLevel(result({ sent: 1, malformed: 3 }))).toBe("warning");
   });
 
   it("formats edge case results correctly", () => {

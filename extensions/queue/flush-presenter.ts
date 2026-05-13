@@ -5,5 +5,5 @@ export function formatFlushRetainQueueResult(result: FlushRetainQueueResult): st
 }
 
 export function flushRetainQueueNotifyLevel(result: FlushRetainQueueResult): "info" | "warning" {
-  return result.remaining || result.deadLettered ? "warning" : "info";
+  return result.remaining || result.deadLettered || result.malformed ? "warning" : "info";
 }
