@@ -1718,4 +1718,41 @@ describe("extension hooks", () => {
       "info",
     );
   });
+
+  it("calls client.reflect after retain when postRetainReflect is enabled", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ retain: { postRetainReflect: true } }),
+    );
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    await handlers.agent_end?.[0]?.(
+      { messages: [{ role: "assistant", content: "new decision", timestamp: 2 }] },
+      ctx,
+    );
+
+    expect(mocked.client.reflect).toHaveBeenCalledWith(
+      expect.stringMatching(/^pi-project-/),
+      "Reflect on the recently retained session to extract insights",
+      { context: "Post-retain reflection" },
+    );
+  });
 });

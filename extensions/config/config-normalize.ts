@@ -296,6 +296,10 @@ export function normalizeConfig(
         config.retain?.shutdownFlushTimeoutMs,
         DEFAULT_CONFIG.retain.shutdownFlushTimeoutMs,
       ),
+      postRetainReflect: bool(
+        config.retain?.postRetainReflect,
+        DEFAULT_CONFIG.retain.postRetainReflect,
+      ),
     },
     import: {
       mode: enumValue(

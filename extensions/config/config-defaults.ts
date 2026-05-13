@@ -91,6 +91,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     periodicFlushTimeoutMs: 2_000,
     shutdownFlushMaxJobs: 10,
     shutdownFlushTimeoutMs: 2_000,
+    postRetainReflect: false,
   },
   import: {
     mode: "curated",

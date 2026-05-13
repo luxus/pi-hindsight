@@ -75,5 +75,16 @@ export async function enqueueRetainFromAgentEnd(args: {
   if (!job) return { queued: false, sent: 0, remaining: 0 };
   await enqueueRetain(args.cwd, args.config, job);
   const result = await flushRetain(args.cwd, args.config, args.client);
+  if (args.config.retain.postRetainReflect) {
+    try {
+      await args.client.reflect(
+        args.bankId,
+        "Reflect on the recently retained session to extract insights",
+        { context: "Post-retain reflection" },
+      );
+    } catch {
+      /* best-effort reflect after retain */
+    }
+  }
   return { queued: true, sent: result.sent, remaining: result.remaining };
 }

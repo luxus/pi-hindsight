@@ -114,6 +114,7 @@ export interface ResolvedConfig {
     periodicFlushTimeoutMs: number;
     shutdownFlushMaxJobs: number;
     shutdownFlushTimeoutMs: number;
+    postRetainReflect: boolean;
   };
   import: {
     mode: ImportMode;
