@@ -21,4 +21,19 @@ describe("flush presenter", () => {
     expect(flushRetainQueueNotifyLevel(result({ remaining: 1 }))).toBe("warning");
     expect(flushRetainQueueNotifyLevel(result({ deadLettered: 1 }))).toBe("warning");
   });
+
+  it("info level for empty or malformed-only results", () => {
+    expect(flushRetainQueueNotifyLevel(result({ sent: 0 }))).toBe("info");
+    expect(flushRetainQueueNotifyLevel(result({ sent: 0, malformed: 5 }))).toBe("info");
+    expect(flushRetainQueueNotifyLevel(result({ sent: 1, malformed: 3 }))).toBe("info");
+  });
+
+  it("formats edge case results correctly", () => {
+    expect(formatFlushRetainQueueResult(result({ sent: 0, remaining: 0, deadLettered: 0 }))).toBe(
+      "Hindsight flushed 0; dead-lettered 0; remaining 0",
+    );
+    expect(
+      formatFlushRetainQueueResult(result({ sent: 100, remaining: 50, deadLettered: 25 })),
+    ).toBe("Hindsight flushed 100; dead-lettered 25; remaining 50");
+  });
 });
