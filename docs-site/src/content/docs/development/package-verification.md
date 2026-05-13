@@ -8,8 +8,8 @@ Pi Hindsight is distributed as an npm package. Packaging checks protect installe
 
 Supported runtime and package ranges are declared in `package.json` and enforced in CI with `npm ci --engine-strict`.
 
-- Node.js: `>=24 <26`
-- npm: `>=11 <12`
+- Node.js: `>=20`
+- npm: `>=10`
 - Pi peer packages: `@earendil-works/pi-coding-agent`, `@earendil-works/pi-agent-core`, and `@earendil-works/pi-tui` use `*` because Pi supplies runtime packages.
 - TypeBox peer package: `typebox >=1.1.24 <2`
 
