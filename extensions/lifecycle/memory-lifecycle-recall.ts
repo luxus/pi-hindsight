@@ -8,7 +8,7 @@ import {
   readSessionMemoryMeta,
 } from "../utils/session-memory-meta.js";
 import type { HindsightActivity } from "../utils/status.js";
-import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
+import type { HindsightLikeClient, RecallBlock, RecallFailure, ResolvedConfig } from "../types.js";
 import type { ContextEvent, ContextPatch, RuntimeSnapshot } from "./memory-lifecycle-runtime.js";
 
 export type RecallStatusActivity = Extract<
@@ -29,6 +29,31 @@ export interface RecallTurnPolicyDeps {
     memoryCount?: number,
   ): void;
   notify(runtime: RuntimeSnapshot, message: string, level: "info" | "warning"): void;
+}
+
+interface RecallCacheEntry {
+  rendered: string;
+  blocks: RecallBlock[];
+  failed: number;
+  failures: RecallFailure[];
+}
+
+export function createRecallCache(ttlMs: number = 60000) {
+  const cache = new Map<string, { entry: RecallCacheEntry; timestamp: number }>();
+  return {
+    get(key: string): RecallCacheEntry | undefined {
+      const cached = cache.get(key);
+      if (!cached) return undefined;
+      if (Date.now() - cached.timestamp > ttlMs) {
+        cache.delete(key);
+        return undefined;
+      }
+      return cached.entry;
+    },
+    set(key: string, entry: RecallCacheEntry) {
+      cache.set(key, { entry, timestamp: Date.now() });
+    },
+  };
 }
 
 function canAppendRecallMessage(event: ContextEvent): boolean {
@@ -58,6 +83,7 @@ function patchWithRecallMessage(
 }
 
 export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPolicy {
+  const cache = createRecallCache(60000);
   return {
     async recall(event: ContextEvent, runtime: RuntimeSnapshot): Promise<ContextPatch | undefined> {
       const config = deps.getConfig();
@@ -74,15 +100,22 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
         return undefined;
       }
 
+      const cacheKey = scopes.map((s) => s.bankId).join(",") + "|" + event.messages.length;
+      let recallResult = cache.get(cacheKey);
+
       try {
-        deps.setMemoryStatus(runtime, "recalling");
-        const { rendered, blocks, failed, failures } = await recallForContext({
-          client: deps.getClient(),
-          config,
-          scopes,
-          messages: event.messages,
-          cwd: runtime.cwd,
-        });
+        if (!recallResult) {
+          deps.setMemoryStatus(runtime, "recalling");
+          recallResult = await recallForContext({
+            client: deps.getClient(),
+            config,
+            scopes,
+            messages: event.messages,
+            cwd: runtime.cwd,
+          });
+          cache.set(cacheKey, recallResult);
+        }
+        const { rendered, blocks, failed, failures } = recallResult;
         const memoryCount = blocks.reduce((count, block) => count + block.memoryCount, 0);
         deps.setMemoryStatus(
           runtime,
