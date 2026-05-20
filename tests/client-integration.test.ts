@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createHindsightClient } from "../extensions/client/client.js";
 import { ensureProjectBank } from "../extensions/banks/bank-operations.js";
@@ -261,6 +261,35 @@ describe("Hindsight client adapter integration", () => {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     );
+  });
+
+  it("supports Pi fetch wrappers that reject Request objects", async () => {
+    const originalFetch = globalThis.fetch;
+    const strictFetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (input instanceof Request)
+        throw new TypeError("Failed to parse URL from [object Request]");
+      return originalFetch(input, init);
+    });
+    globalThis.fetch = strictFetch as typeof fetch;
+
+    try {
+      const client = createHindsightClient({
+        ...DEFAULT_CONFIG,
+        hindsight: { ...DEFAULT_CONFIG.hindsight, baseUrl },
+      });
+
+      await ensureProjectBank(client, "test-bank");
+      await client.recall("test-bank", "query");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET /v1/default/banks/test-bank/profile",
+      "PUT /v1/default/banks/test-bank",
+      "POST /v1/default/banks/test-bank/memories/recall",
+    ]);
+    expect(strictFetch).toHaveBeenCalledWith(expect.any(String), expect.any(Object));
   });
 
   it("uses official client endpoints and Hindsight request fields", async () => {

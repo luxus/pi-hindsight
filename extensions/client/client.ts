@@ -48,6 +48,7 @@ import {
   updateDocumentRequestBody,
   updateMentalModelRequestBody,
 } from "./client-rest.js";
+import { installFetchRequestCompat } from "./fetch-compat.js";
 import { withTimeout } from "./timeout.js";
 
 type ReflectOptions = Parameters<HindsightLikeClient["reflect"]>[2];
@@ -113,6 +114,8 @@ async function reflect(
 }
 
 export function createHindsightClient(config: ResolvedConfig): HindsightLikeClient {
+  installFetchRequestCompat();
+
   const raw = new HindsightClient({
     baseUrl: config.hindsight.baseUrl,
     ...(config.hindsight.apiKey ? { apiKey: config.hindsight.apiKey } : {}),
