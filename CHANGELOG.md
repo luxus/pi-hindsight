@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0](https://github.com/luxus/pi-hindsight/compare/v0.5.0...v0.6.0) (2026-05-20)
+
+
+### Features
+
+* **client:** add exponential-backoff retry to REST calls ([a9329cd](https://github.com/luxus/pi-hindsight/commit/a9329cd95073b7a0581e3d46bcea3a9e82f6ff35))
+* **lifecycle:** add 60s TTL recall cache per session ([#387](https://github.com/luxus/pi-hindsight/issues/387)) ([b8dbdcb](https://github.com/luxus/pi-hindsight/commit/b8dbdcb19cfbcb821ee37383caf4806e83c2c6ef))
+* **lifecycle:** add error reporting to periodic and shutdown queue flush ([#388](https://github.com/luxus/pi-hindsight/issues/388)) ([bd93c9e](https://github.com/luxus/pi-hindsight/commit/bd93c9e858076dc82ec3a68ebfddd37f6d9591ce))
+* **retain:** add optional post-retain reflect ([#390](https://github.com/luxus/pi-hindsight/issues/390)) ([d0f4aed](https://github.com/luxus/pi-hindsight/commit/d0f4aed9beb911dde7bc565dc3c72f93597f29ae))
+
+
+### Bug Fixes
+
+* **client:** restrict retry to idempotent methods per review ([d501723](https://github.com/luxus/pi-hindsight/commit/d501723db33554b5e5948c90130e55dde88048c9))
+* **deps:** align @vitest/coverage-v8 with vitest 4.1.5 and fix test breakages ([101ecdf](https://github.com/luxus/pi-hindsight/commit/101ecdf69f7faf5848ea3feee4ecb83b4faf6359))
+* **flush-presenter:** warn on malformed queue entries ([#394](https://github.com/luxus/pi-hindsight/issues/394)) ([5797273](https://github.com/luxus/pi-hindsight/commit/5797273dae3ecbbe786cf6f83e74d58e0648d136))
+* **lifecycle:** address review comments on flush notification behavior ([#389](https://github.com/luxus/pi-hindsight/issues/389)) ([5cf9833](https://github.com/luxus/pi-hindsight/commit/5cf9833d1a68e3923f4d4820382cacdd740a5ebb))
+* **smoke:** always clean up temporary smoke-test banks, add opt-out env var ([fd49bd8](https://github.com/luxus/pi-hindsight/commit/fd49bd8e2b7f9203738871c8df414d08c178e20e)), closes [#382](https://github.com/luxus/pi-hindsight/issues/382)
+* support Request-incompatible fetch wrappers ([#400](https://github.com/luxus/pi-hindsight/issues/400)) ([55e7f40](https://github.com/luxus/pi-hindsight/commit/55e7f40512aaad75964bc3ccdfc8a7ce1770d5d8))
+
 ## [0.5.0](https://github.com/luxus/pi-hindsight/compare/v0.4.1...v0.5.0) (2026-05-09)
 
 ### Features
