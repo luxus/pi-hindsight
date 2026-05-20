@@ -1,4 +1,4 @@
-const PATCH_MARKER = Symbol.for("@luxusai/pi-hindsight.fetch-request-compat");
+const PATCH_MARKER: unique symbol = Symbol("@luxusai/pi-hindsight.fetch-request-compat");
 
 type FetchWithMarker = typeof fetch & { [PATCH_MARKER]?: true };
 type RequestInitWithDuplex = RequestInit & { duplex?: "half" };
