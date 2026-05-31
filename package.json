@@ -74,7 +74,7 @@
     "@astrojs/starlight": "^0.39.2",
     "@commitlint/cli": "^21.0.0",
     "@commitlint/config-conventional": "^21.0.1",
-    "@earendil-works/pi-agent-core": "0.74.0",
+    "@earendil-works/pi-agent-core": "0.78.0",
     "@earendil-works/pi-coding-agent": "0.74.0",
     "@earendil-works/pi-tui": "0.74.0",
     "@mermaid-js/layout-elk": "^0.2.1",
