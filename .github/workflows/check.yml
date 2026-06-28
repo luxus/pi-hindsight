@@ -34,7 +34,7 @@ jobs:
       full_matrix: ${{ steps.classify.outputs.full_matrix }}
       package_check: ${{ steps.classify.outputs.package_check }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -109,7 +109,7 @@ jobs:
       github.event_name == 'pull_request' &&
       !(github.event.pull_request.user.login == 'github-actions[bot]' && startsWith(github.event.pull_request.title, 'chore') && contains(github.event.pull_request.title, ': release'))
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check PR body checklist
         run: node scripts/check-pr-body.mjs
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: impact
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -139,7 +139,7 @@ jobs:
     needs: [impact, pr-fast]
     if: needs.impact.outputs.coverage == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -163,7 +163,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -193,7 +193,7 @@ jobs:
     needs: [impact, pr-fast]
     if: needs.impact.outputs.package_check == 'true' && needs.impact.outputs.full_matrix != 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -213,7 +213,7 @@ jobs:
     needs: [impact, pr-fast]
     if: needs.impact.outputs.coverage == 'true' && needs.impact.outputs.full_matrix != 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
