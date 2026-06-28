@@ -41,6 +41,23 @@ function requireTool(catalog: ReturnType<typeof createOperationCatalog>, name: s
 }
 
 describe("operation catalog", () => {
+  it("registers expandable renderers for explicit memory tool results", () => {
+    const catalog = createOperationCatalog({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    for (const name of [
+      "hindsight_recall",
+      "hindsight_retain",
+      "hindsight_retain_global",
+      "hindsight_reflect",
+    ]) {
+      expect(requireTool(catalog, name).renderResult).toBeTypeOf("function");
+    }
+  });
+
   it("exposes and maps advanced explicit retain options on the project retain tool", async () => {
     const retain = retainMock();
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-catalog-"));

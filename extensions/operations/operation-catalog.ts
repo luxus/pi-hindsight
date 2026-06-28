@@ -11,7 +11,7 @@ import type { MemoryOperationsDeps } from "./memory-operation-service.js";
 import { createMemoryOperations } from "./memory-operation-service.js";
 import { formatReflectResult } from "./reflect-presenter.js";
 import { runHindsightSetupTui } from "../tui/setup-tui.js";
-import { retainToolResponse } from "../tui/tool-presenters.js";
+import { renderMemoryToolTextResult, retainToolResponse } from "../tui/tool-presenters.js";
 
 export type ToolOperation = Parameters<ExtensionAPI["registerTool"]>[0];
 
@@ -246,6 +246,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           details: { bankId },
         };
       },
+      renderResult: renderMemoryToolTextResult,
     }),
     defineCatalogTool({
       name: "hindsight_retain",
@@ -282,6 +283,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         });
         return retainToolResponse(result);
       },
+      renderResult: renderMemoryToolTextResult,
     }),
     defineCatalogTool({
       name: "hindsight_retain_global",
@@ -314,6 +316,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         });
         return retainToolResponse(result);
       },
+      renderResult: renderMemoryToolTextResult,
     }),
     defineCatalogTool({
       name: "hindsight_reflect",
@@ -408,6 +411,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           details: { bankId },
         };
       },
+      renderResult: renderMemoryToolTextResult,
     }),
   ];
 
