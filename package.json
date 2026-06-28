@@ -87,7 +87,7 @@
     "mermaid": "^11.14.0",
     "oxfmt": "^0.48.0",
     "oxlint": "^1.61.0",
-    "oxlint-tsgolint": "^0.22.0",
+    "oxlint-tsgolint": "^0.23.0",
     "starlight-llm-button": "^0.0.8",
     "tsx": "4.21.0",
     "typebox": "1.1.37",
