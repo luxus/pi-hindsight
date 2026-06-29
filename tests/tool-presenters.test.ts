@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  collapseToolResultText,
+  normalizeToolResultText,
   renderMemoryToolTextResult,
   retainToolResponse,
 } from "../extensions/tui/tool-presenters.js";
@@ -10,14 +10,44 @@ const fakeTheme = {
 } as never;
 
 describe("tool presenters", () => {
-  it("collapses long tool result text to a preview", () => {
+  it("normalizes short tool result text through the shared fold model", () => {
+    expect(normalizeToolResultText("short output", false)).toEqual({
+      text: "short output",
+      hiddenLineCount: 0,
+      totalLineCount: 1,
+      canFold: false,
+    });
+  });
+
+  it("normalizes long tool result text to a foldable preview", () => {
     const text = Array.from({ length: 15 }, (_, index) => `line ${index + 1}`).join("\n");
 
-    expect(collapseToolResultText(text, false)).toEqual({
+    expect(normalizeToolResultText(text, false)).toEqual({
       text: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join("\n"),
       hiddenLineCount: 3,
+      totalLineCount: 15,
+      canFold: true,
     });
-    expect(collapseToolResultText(text, true)).toEqual({ text, hiddenLineCount: 0 });
+    expect(normalizeToolResultText(text, true)).toEqual({
+      text,
+      hiddenLineCount: 0,
+      totalLineCount: 15,
+      canFold: true,
+    });
+  });
+
+  it("renders short tool results through the normalized text renderer", () => {
+    const component = renderMemoryToolTextResult(
+      { content: [{ type: "text", text: "short output" }] },
+      { expanded: false },
+      fakeTheme,
+    );
+
+    const rendered = component.render(120).join("\n");
+
+    expect(rendered.trimEnd()).toBe("short output");
+    expect(rendered).not.toContain("to expand");
+    expect(rendered).not.toContain("to collapse");
   });
 
   it("renders collapsed tool results with an expansion hint", () => {

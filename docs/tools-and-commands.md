@@ -79,7 +79,7 @@ Everything else — bank config/profile administration, document/entity/graph/ta
 
 Tool notes:
 
-- In Pi's interactive TUI, memory tool outputs support the normal tool-output expansion toggle (`Ctrl+O` by default). Long recall and reflect outputs render as compact previews until expanded.
+- In Pi's interactive TUI, memory tool outputs share one normalized text renderer and support the normal tool-output expansion toggle (`Ctrl+O` by default). Short outputs render in the same model without needing to fold; long outputs render as compact previews until expanded.
 - `hindsight_recall` accepts `queryTimestamp` plus advanced one-off controls: `types`, `budget`, `maxTokens` (including `0`), `includeChunks`, `recallChunksMaxTokens`, `includeSourceFacts`, `maxSourceFactsTokens`, `includeEntities`, and `trace`.
 - `hindsight_retain` and `hindsight_retain_global` accept explicit Hindsight retain options: `entities`, `documentId`, `timestamp` (including literal `unset`), `metadata`, `updateMode`, `observationScopes`, `documentTags`, and `async`. `observationScopes` accepts `per_tag`, `combined`, `all_combinations`, or explicit string groups. Hindsight supports `documentTags` for compatibility, but upstream marks it deprecated; prefer normal `tags` unless document-level interop requires it.
 - For `updateMode: "append"`, use a stable `documentId` when continuing a known document. If omitted, pi-hindsight still uses its deterministic explicit-retain document ID; repeated calls only append together when content/context/session produce the same ID.

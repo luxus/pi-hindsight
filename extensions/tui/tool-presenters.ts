@@ -11,24 +11,44 @@ type ToolTextContent = { type: string; text?: string };
 
 export const DEFAULT_COLLAPSED_TOOL_RESULT_LINES = 12;
 
-export type CollapsedToolText = {
+export type NormalizedToolText = {
   text: string;
   hiddenLineCount: number;
+  totalLineCount: number;
+  canFold: boolean;
 };
 
 export type RetainToolResult = Awaited<ReturnType<MemoryOperations["retainExplicit"]>>;
 
-export function collapseToolResultText(
+export function normalizeToolResultText(
   text: string,
   expanded: boolean,
   maxLines = DEFAULT_COLLAPSED_TOOL_RESULT_LINES,
-): CollapsedToolText {
+): NormalizedToolText {
   const lines = text.split("\n");
-  if (expanded || lines.length <= maxLines) return { text, hiddenLineCount: 0 };
+  const canFold = lines.length > maxLines;
+  const hiddenLineCount = canFold && !expanded ? lines.length - maxLines : 0;
   return {
-    text: lines.slice(0, maxLines).join("\n"),
-    hiddenLineCount: lines.length - maxLines,
+    text: hiddenLineCount > 0 ? lines.slice(0, maxLines).join("\n") : text,
+    hiddenLineCount,
+    totalLineCount: lines.length,
+    canFold,
   };
+}
+
+function renderFoldHint(normalized: NormalizedToolText, theme: Theme) {
+  if (!normalized.canFold) return "";
+  if (normalized.hiddenLineCount > 0) {
+    const plural = normalized.hiddenLineCount === 1 ? "" : "s";
+    return `\n${theme.fg("muted", `... ${normalized.hiddenLineCount} more line${plural} (`)}${theme.fg(
+      "dim",
+      keyText("app.tools.expand"),
+    )}${theme.fg("muted", " to expand)")}`;
+  }
+  return `\n${theme.fg("muted", "(")}${theme.fg("dim", keyText("app.tools.expand"))}${theme.fg(
+    "muted",
+    " to collapse)",
+  )}`;
 }
 
 export function renderMemoryToolTextResult(
@@ -37,32 +57,9 @@ export function renderMemoryToolTextResult(
   theme: Theme,
 ) {
   const rawText = result.content.find((part) => part.type === "text")?.text ?? "";
-  const collapsed = collapseToolResultText(rawText, options.expanded);
-  const text = collapsed.text || theme.fg("dim", "(no text output)");
-
-  if (collapsed.hiddenLineCount > 0) {
-    return new Text(
-      `${text}\n${theme.fg(
-        "muted",
-        `... ${collapsed.hiddenLineCount} more line${collapsed.hiddenLineCount === 1 ? "" : "s"} (`,
-      )}${theme.fg("dim", keyText("app.tools.expand"))}${theme.fg("muted", " to expand)")}`,
-      0,
-      0,
-    );
-  }
-
-  if (options.expanded && rawText.split("\n").length > DEFAULT_COLLAPSED_TOOL_RESULT_LINES) {
-    return new Text(
-      `${text}\n${theme.fg("muted", "(")}${theme.fg("dim", keyText("app.tools.expand"))}${theme.fg(
-        "muted",
-        " to collapse)",
-      )}`,
-      0,
-      0,
-    );
-  }
-
-  return new Text(text, 0, 0);
+  const normalized = normalizeToolResultText(rawText, options.expanded);
+  const text = normalized.text || theme.fg("dim", "(no text output)");
+  return new Text(`${text}${renderFoldHint(normalized, theme)}`, 0, 0);
 }
 
 export function retainToolResponse(result: RetainToolResult): ToolTextResponse<RetainToolResult> {
