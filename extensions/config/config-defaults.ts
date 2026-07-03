@@ -36,6 +36,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     injectionMode: "context",
     injectionPosition: "append",
     includeFactsInDebug: false,
+    preferObservations: true,
   },
   observations: {
     enabled: true,

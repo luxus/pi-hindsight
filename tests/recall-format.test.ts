@@ -373,6 +373,25 @@ describe("recall formatting", () => {
     expect(options[0]).not.toHaveProperty("maxSourceFactsTokens");
   });
 
+  it("passes preferObservations from config to the recall call", async () => {
+    const options: Record<string, unknown>[] = [];
+    await recallForContext({
+      client: {
+        retain: async () => undefined,
+        recall: async (_bankId, _query, opts) => {
+          options.push((opts ?? {}) as Record<string, unknown>);
+          return { results: [{ text: "x" }] };
+        },
+        reflect: async () => ({}),
+      },
+      config: { ...DEFAULT_CONFIG, recall: { ...DEFAULT_CONFIG.recall, preferObservations: true } },
+      scopes: [{ bankId: "b" }],
+      messages: [{ role: "user", content: "q", timestamp: 1 }] as unknown as AgentMessage[],
+    });
+
+    expect(options[0]).toMatchObject({ preferObservations: true });
+  });
+
   it("records slow recall as failed without throwing", async () => {
     const result = await recallForContext({
       client: {

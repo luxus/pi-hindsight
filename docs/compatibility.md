@@ -10,8 +10,8 @@ Pi Hindsight 1.0 is a Pi-first Hindsight integration. This page is the support c
 | npm                         | `>=10`                                                                                                                                                                               | `package.json#engines.npm`                                           |
 | Pi runtime packages         | Tested with the `@earendil-works/pi-*` versions pinned in `devDependencies`; peer dependencies accept Pi runtime packages supplied by the host Pi installation.                      | `package.json#devDependencies` and `package.json#peerDependencies`   |
 | TypeBox                     | `>=1.1.24 <2`                                                                                                                                                                        | `package.json#peerDependencies.typebox`                              |
-| Hindsight TypeScript client | `@vectorize-io/hindsight-client ^0.8.3`                                                                                                                                              | `package.json#dependencies`                                          |
-| Hindsight server            | **Hindsight 0.8+** with append `update_mode` support, compatible with `@vectorize-io/hindsight-client ^0.8.3`. Advanced surfaces are capability-gated where upstream support varies. | `/hindsight:doctor`, live smoke, and official Hindsight API behavior |
+| Hindsight TypeScript client | `@vectorize-io/hindsight-client ^0.8.4`                                                                                                                                              | `package.json#dependencies`                                          |
+| Hindsight server            | **Hindsight 0.8+** with append `update_mode` support, compatible with `@vectorize-io/hindsight-client ^0.8.4`. Advanced surfaces are capability-gated where upstream support varies. | `/hindsight:doctor`, live smoke, and official Hindsight API behavior |
 
 ## Required Hindsight capabilities
 

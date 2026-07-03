@@ -374,6 +374,17 @@ export function buildBaseConfigEditingFields(
       advanced: true,
     }),
     booleanField({
+      id: "recallPreferObservations",
+      tab: "Recall",
+      label: "Prefer observations",
+      description:
+        "Advanced. When recalling raw facts together with observations, drop raw facts superseded by a returned observation.",
+      value: config.recall.preferObservations,
+      defaultValue: defaults.recall.preferObservations,
+      resetKey: "recall.preferObservations",
+      advanced: true,
+    }),
+    booleanField({
       id: "retainEnabled",
       tab: "Retain",
       label: "Automatic retain",
@@ -708,6 +719,8 @@ export function patchForConfigEditingField(
       return { recallStoreLast: value === "Enable" };
     case "recallStoreFailures":
       return { recallStoreFailures: value === "Enable" };
+    case "recallPreferObservations":
+      return { recallPreferObservations: value === "Enable" };
     case "retainEnabled":
       return { retainEnabled: value === "Enable" };
     case "retainAsync":

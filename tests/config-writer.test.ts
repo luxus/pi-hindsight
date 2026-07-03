@@ -88,6 +88,7 @@ describe("config writer", () => {
         recallMaxTokens: 900,
         recallStoreLast: true,
         recallStoreFailures: true,
+        recallPreferObservations: false,
         retainAsync: false,
         importMode: "raw",
         importQualityProfile: "strict",
@@ -110,6 +111,7 @@ describe("config writer", () => {
         maxTokens: 900,
         storeLastRecall: true,
         storeLastRecallFailures: true,
+        preferObservations: false,
       },
       retain: { async: false },
       import: {

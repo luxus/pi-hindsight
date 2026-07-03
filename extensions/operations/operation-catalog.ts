@@ -160,6 +160,28 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
             description: "Optional Hindsight fact types to retrieve.",
           }),
         ),
+        preferObservations: Type.Optional(
+          Type.Boolean({
+            description:
+              "When recalling raw facts ('world'/'experience') together with 'observation', drop raw facts superseded by a returned observation. Defaults to the configured recall.preferObservations.",
+          }),
+        ),
+        minScores: Type.Optional(
+          Type.Unsafe<import("@vectorize-io/hindsight-client").MinScores>({
+            ...Type.Object({
+              semantic: Type.Optional(
+                Type.Number({ description: "Minimum vector similarity (0-1)." }),
+              ),
+              keyword: Type.Optional(Type.Number({ description: "Minimum keyword/BM25 score." })),
+              reranker: Type.Optional(
+                Type.Number({ description: "Minimum normalized reranker score (0-1)." }),
+              ),
+              final: Type.Optional(Type.Number({ description: "Minimum final ranking score." })),
+            }),
+            description:
+              "Optional per-stage score floors. Omitted stages impose no floor. No floor by default.",
+          }),
+        ),
         budget: Type.Optional(
           Type.Unsafe<import("../types.js").Budget>({
             ...budgetSchema,
@@ -216,6 +238,10 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           sessionFile,
           {
             ...(params.types ? { types: params.types } : {}),
+            ...(params.preferObservations !== undefined
+              ? { preferObservations: params.preferObservations }
+              : {}),
+            ...(params.minScores !== undefined ? { minScores: params.minScores } : {}),
             ...(params.budget ? { budget: params.budget } : {}),
             ...(params.maxTokens !== undefined ? { maxTokens: params.maxTokens } : {}),
             ...(params.queryTimestamp ? { queryTimestamp: params.queryTimestamp } : {}),

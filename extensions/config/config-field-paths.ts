@@ -20,6 +20,7 @@ export type FieldId =
   | "recallMaxTokens"
   | "recallStoreLast"
   | "recallStoreFailures"
+  | "recallPreferObservations"
   | "retainEnabled"
   | "retainAsync"
   | "queuePath"
@@ -62,6 +63,7 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   recallMaxTokens: ["recall", "maxTokens"],
   recallStoreLast: ["recall", "storeLastRecall"],
   recallStoreFailures: ["recall", "storeLastRecallFailures"],
+  recallPreferObservations: ["recall", "preferObservations"],
   retainEnabled: ["retain", "enabled"],
   retainAsync: ["retain", "async"],
   queuePath: ["retain", "queuePath"],
@@ -152,6 +154,7 @@ export const CONFIG_RESET_PATHS = {
   "recall.maxTokens": [["recall", "maxTokens"]],
   "recall.storeLastRecall": [["recall", "storeLastRecall"]],
   "recall.storeLastRecallFailures": [["recall", "storeLastRecallFailures"]],
+  "recall.preferObservations": [["recall", "preferObservations"]],
   "retain.enabled": [["retain", "enabled"]],
   "retain.async": [["retain", "async"]],
   "retain.queuePath": [["retain", "queuePath"]],
@@ -197,6 +200,7 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   recallMaxTokens: "recall.maxTokens",
   recallStoreLast: "recall.storeLastRecall",
   recallStoreFailures: "recall.storeLastRecallFailures",
+  recallPreferObservations: "recall.preferObservations",
   retainEnabled: "retain.enabled",
   retainAsync: "retain.async",
   queuePath: "retain.queuePath",

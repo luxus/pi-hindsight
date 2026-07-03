@@ -186,6 +186,7 @@ export async function recallForContext(args: {
           budget: args.config.recall.budget,
           maxTokens: args.config.recall.maxTokens,
           types: args.config.recall.types,
+          preferObservations: args.config.recall.preferObservations,
           ...(args.config.recall.includeSourceFacts
             ? {
                 includeSourceFacts: true,

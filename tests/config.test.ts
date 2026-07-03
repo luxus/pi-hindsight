@@ -263,6 +263,18 @@ describe("resolveConfig", () => {
     expect(config.recall.includeRepoHintsInQuery).toBe(false);
   });
 
+  it("accepts recall preferObservations override", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ recall: { preferObservations: false } }),
+    );
+
+    const config = resolveConfig(cwd);
+    expect(config.recall.preferObservations).toBe(false);
+  });
+
   it("reads JSONC config and release API knobs", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));
@@ -375,6 +387,7 @@ describe("resolveConfig", () => {
     expect(config.recall.timeoutMs).toBe(40_000);
     expect(config.recall.cacheTtlMs).toBe(60_000);
     expect(config.recall.injectionPosition).toBe("append");
+    expect(config.recall.preferObservations).toBe(true);
     expect(config.recall.queryTimestamp).toBeUndefined();
     expect(config.globalRetain.mode).toBe("explicit-only");
     expect(config.retain.content.toolResult).toEqual(["error"]);

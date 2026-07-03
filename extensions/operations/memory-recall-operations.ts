@@ -11,12 +11,15 @@ import {
   readSessionMemoryMeta,
 } from "../utils/session-memory-meta.js";
 import type { HindsightTagGroup, TagsMatch } from "../types.js";
+import type { MinScores } from "@vectorize-io/hindsight-client";
 
 interface ExplicitRecallFilters {
   budget?: import("../types.js").Budget;
   maxTokens?: number;
   queryTimestamp?: string;
   types?: string[];
+  preferObservations?: boolean;
+  minScores?: MinScores;
   trace?: boolean;
   includeEntities?: boolean;
   maxEntityTokens?: number;
@@ -65,6 +68,11 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
           ? { queryTimestamp: filters.queryTimestamp ?? config.recall.queryTimestamp }
           : {}),
         ...(filters.types ? { types: filters.types } : {}),
+        preferObservations: config.recall.preferObservations,
+        ...(filters.preferObservations !== undefined
+          ? { preferObservations: filters.preferObservations }
+          : {}),
+        ...(filters.minScores !== undefined ? { minScores: filters.minScores } : {}),
         ...(filters.trace !== undefined ? { trace: filters.trace } : {}),
         ...(filters.includeEntities !== undefined
           ? { includeEntities: filters.includeEntities }

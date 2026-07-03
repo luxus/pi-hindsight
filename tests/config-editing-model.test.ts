@@ -77,6 +77,11 @@ describe("config editing model", () => {
       "project",
       "global",
     ]);
+    expect(fields.find((field) => field.id === "recallPreferObservations")).toMatchObject({
+      kind: "boolean",
+      advanced: true,
+      value: "enabled",
+    });
     expect(fields.find((field) => field.id === "statusStyle")?.editableScopes).toEqual([
       "project",
       "global",
@@ -185,6 +190,14 @@ describe("config editing model", () => {
     expect(patchForConfigEditingField("recallMaxTokens", "1234", DEFAULT_CONFIG)).toEqual({
       recallMaxTokens: 1234,
     });
+    expect(
+      patchForConfigEditingField("recallPreferObservations", "Enable", DEFAULT_CONFIG),
+    ).toEqual({
+      recallPreferObservations: true,
+    });
+    expect(
+      patchForConfigEditingField("recallPreferObservations", "Disable", DEFAULT_CONFIG),
+    ).toEqual({ recallPreferObservations: false });
     expect(patchForConfigEditingField("importToolResults", "summary", DEFAULT_CONFIG)).toEqual({
       importToolResults: "summary",
     });

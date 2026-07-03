@@ -229,12 +229,16 @@ describe("operation catalog", () => {
     expect(properties.maxSourceFactsTokens?.type).toBe("integer");
     expect(properties.includeEntities?.type).toBe("boolean");
     expect(properties.trace?.type).toBe("boolean");
+    expect(properties.preferObservations?.type).toBe("boolean");
+    expect(properties.minScores?.type).toBe("object");
 
     await tool.execute(
       "call",
       {
         query: "find source context",
         types: ["world", "observation"],
+        preferObservations: true,
+        minScores: { semantic: 0.2, final: 0.5 },
         budget: "high",
         maxTokens: 0,
         includeChunks: true,
@@ -255,6 +259,8 @@ describe("operation catalog", () => {
       "find source context",
       expect.objectContaining({
         types: ["world", "observation"],
+        preferObservations: true,
+        minScores: { semantic: 0.2, final: 0.5 },
         budget: "high",
         maxTokens: 0,
         includeChunks: true,

@@ -1,4 +1,5 @@
 import type {
+  MinScores,
   TagGroupAndInput,
   TagGroupLeaf,
   TagGroupNotInput,
@@ -19,7 +20,7 @@ export type HindsightTagGroup =
 export type MentalModelDetail = "metadata" | "content" | "full";
 export type MentalModelTagsMatch = "any" | "all" | "exact";
 export type OperationStatus = "pending" | "processing" | "completed" | "failed" | "cancelled";
-export type GraphFactType = "world" | "experience" | "opinion";
+export type GraphFactType = "world" | "experience";
 export type DocumentTagsMatch = "any" | "all" | "any_strict" | "all_strict";
 export type TagSource = "memories" | "mental_models";
 export type HindsightObservationScopes = "per_tag" | "combined" | "all_combinations" | string[][];
@@ -80,6 +81,7 @@ export interface ResolvedConfig {
     injectionPosition: RecallInjectionPosition;
     includeFactsInDebug: boolean;
     queryTimestamp?: string;
+    preferObservations: boolean;
   };
   observations: {
     enabled: boolean;
@@ -248,6 +250,7 @@ export interface HindsightLikeClient {
     query: string,
     options?: {
       types?: string[];
+      preferObservations?: boolean;
       maxTokens?: number;
       budget?: Budget;
       queryTimestamp?: string;
@@ -261,6 +264,7 @@ export interface HindsightLikeClient {
       tags?: string[];
       tagsMatch?: TagsMatch;
       tagGroups?: HindsightTagGroup[];
+      minScores?: MinScores;
       signal?: AbortSignal;
     },
   ): Promise<unknown>;

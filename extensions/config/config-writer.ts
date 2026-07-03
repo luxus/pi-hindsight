@@ -106,6 +106,7 @@ export interface ProjectConfigPatchInput {
   recallMaxTokens?: number;
   recallStoreLast?: boolean;
   recallStoreFailures?: boolean;
+  recallPreferObservations?: boolean;
   retainEnabled?: boolean;
   retainAsync?: boolean;
   retainUpdateMode?: "append" | "replace";
@@ -223,7 +224,8 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     input.recallBudget ||
     input.recallMaxTokens !== undefined ||
     input.recallStoreLast !== undefined ||
-    input.recallStoreFailures !== undefined
+    input.recallStoreFailures !== undefined ||
+    input.recallPreferObservations !== undefined
   ) {
     patch.recall = {
       ...(input.recallEnabled !== undefined ? { enabled: input.recallEnabled } : {}),
@@ -232,6 +234,9 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
       ...(input.recallStoreLast !== undefined ? { storeLastRecall: input.recallStoreLast } : {}),
       ...(input.recallStoreFailures !== undefined
         ? { storeLastRecallFailures: input.recallStoreFailures }
+        : {}),
+      ...(input.recallPreferObservations !== undefined
+        ? { preferObservations: input.recallPreferObservations }
         : {}),
     };
   }

@@ -296,6 +296,10 @@ export function normalizeConfig(
         config.recall?.includeFactsInDebug,
         DEFAULT_CONFIG.recall.includeFactsInDebug,
       ),
+      preferObservations: bool(
+        config.recall?.preferObservations,
+        DEFAULT_CONFIG.recall.preferObservations,
+      ),
       ...(optionalString(config.recall?.queryTimestamp, DEFAULT_CONFIG.recall.queryTimestamp)
         ? {
             queryTimestamp: stringValue(
