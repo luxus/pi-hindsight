@@ -81,6 +81,20 @@ describe("resolveConfig", () => {
     expect(config.banks.global.retainMission).toBe("Global retain");
   });
 
+  it("normalizes retainStructuredChunkSize in bank mission config", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        banks: { project: { retainStructuredChunkSize: 4000 } },
+      }),
+    );
+
+    const config = resolveConfig(cwd);
+    expect(config.banks.project.retainStructuredChunkSize).toBe(4000);
+  });
+
   it("resolves env SecretRef API keys and lets direct env override win", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));

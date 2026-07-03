@@ -36,6 +36,7 @@ export interface BankMissionSettings {
   retainMission?: string;
   reflectMission?: string;
   observationsMission?: string;
+  retainStructuredChunkSize?: number;
 }
 
 export interface HindsightEntityInput {
@@ -295,6 +296,7 @@ export interface HindsightLikeClient {
       reflectMission?: string;
       retainMission?: string;
       retainExtractionMode?: string;
+      retainStructuredChunkSize?: number;
       enableObservations?: boolean;
       observationsMission?: string;
     },

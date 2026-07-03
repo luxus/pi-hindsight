@@ -92,6 +92,9 @@ export async function ensureProjectBank(
     ...missions,
     retainExtractionMode: "concise",
     enableObservations: config.enableObservations ?? true,
+    ...(config.retainStructuredChunkSize !== undefined
+      ? { retainStructuredChunkSize: config.retainStructuredChunkSize }
+      : {}),
   });
 }
 
@@ -107,5 +110,8 @@ export async function ensureGlobalBank(
     ...missions,
     retainExtractionMode: "concise",
     enableObservations: config.enableObservations ?? true,
+    ...(config.retainStructuredChunkSize !== undefined
+      ? { retainStructuredChunkSize: config.retainStructuredChunkSize }
+      : {}),
   });
 }

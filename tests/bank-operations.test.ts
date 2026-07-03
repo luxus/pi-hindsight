@@ -74,6 +74,28 @@ describe("bank operations", () => {
     );
   });
 
+  it("passes retainStructuredChunkSize to createBank when configured", async () => {
+    const createBank = vi.fn(async () => undefined);
+    await ensureProjectBank(client({ createBank }), "project-bank", {
+      retainStructuredChunkSize: 4000,
+    });
+
+    expect(createBank).toHaveBeenCalledWith(
+      "project-bank",
+      expect.objectContaining({ retainStructuredChunkSize: 4000 }),
+    );
+  });
+
+  it("omits retainStructuredChunkSize from createBank when not configured", async () => {
+    const createBank = vi.fn(async () => undefined);
+    await ensureProjectBank(client({ createBank }), "project-bank");
+
+    const options = (createBank.mock.calls as unknown[][])[0]?.[1] as
+      | Record<string, unknown>
+      | undefined;
+    expect(options).not.toHaveProperty("retainStructuredChunkSize");
+  });
+
   it("uses only explicit global mission fields when global bank is created", async () => {
     const createBank = vi.fn(async () => undefined);
     await ensureGlobalBank(client({ createBank }), "global-bank", {
