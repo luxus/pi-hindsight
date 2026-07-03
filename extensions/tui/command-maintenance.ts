@@ -144,5 +144,21 @@ export function maintenanceCommandOperations(operations: Operations): CommandOpe
         },
       },
     },
+    {
+      name: "hindsight:doctor",
+      spec: {
+        description:
+          "Emit a machine-readable Hindsight diagnostics report (connectivity, queue, imports, config) for bug reports.",
+        handler: async (_args, ctx) => {
+          try {
+            const report = await operations.doctor(ctx.cwd, sessionFile(ctx));
+            const health = (JSON.parse(report) as { health?: string }).health;
+            ctx.ui.notify(report, health === "reachable" ? "info" : "warning");
+          } catch (error) {
+            ctx.ui.notify(`Hindsight doctor report failed: ${redactError(error)}`, "warning");
+          }
+        },
+      },
+    },
   ];
 }

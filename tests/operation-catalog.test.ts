@@ -458,6 +458,7 @@ describe("operation catalog", () => {
       "hindsight:recall-cleanup",
       "hindsight:queue",
       "hindsight:flush",
+      "hindsight:doctor",
     ]);
   });
 });

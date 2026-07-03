@@ -5,6 +5,7 @@ import {
   importMemorySession,
 } from "../imports/import-sessions.js";
 import { createConfigOperations } from "./memory-config-operations.js";
+import { createDiagnosticsOperations } from "./memory-diagnostics-operations.js";
 import { createQueueOperations } from "../queue/queue-operations.js";
 import { createRecallOperations } from "./memory-recall-operations.js";
 import { createRetainOperations } from "./memory-retain-operations.js";
@@ -59,6 +60,7 @@ export function createMemoryOperations(deps: MemoryOperationsDeps) {
     ...createImportOperations(deps),
     ...createQueueOperations(deps),
     ...createSessionOperations(),
+    ...createDiagnosticsOperations(deps),
   };
 }
 

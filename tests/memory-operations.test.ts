@@ -264,4 +264,43 @@ describe("memory operations", () => {
       ]),
     );
   });
+
+  it("assembles a doctor report from live health, queue, and import state", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ops-"));
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), health: async () => ({}) }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const report = JSON.parse(await operations.doctor(cwd, "/tmp/session.jsonl")) as Record<
+      string,
+      unknown
+    >;
+
+    expect(report.health).toBe("reachable");
+    expect(report.projectBankId).toBe("project-bank");
+    expect(report.sessionFile).toBe("/tmp/session.jsonl");
+    expect(report.queueLength).toBe(0);
+    const imports = report.imports as { count: number };
+    expect(imports.count).toBe(0);
+  });
+
+  it("reports doctor health as unreachable when the client health check fails", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ops-"));
+    const operations = createMemoryOperations({
+      getClient: () => ({
+        ...client(),
+        health: async () => {
+          throw new Error("connection refused");
+        },
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const report = JSON.parse(await operations.doctor(cwd)) as Record<string, unknown>;
+
+    expect(report.health).toBe("unreachable: connection refused");
+  });
 });

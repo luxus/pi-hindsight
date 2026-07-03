@@ -181,6 +181,60 @@ describe("hindsight commands", () => {
     expect(message).not.toContain("supersecret123456");
   });
 
+  it("reports the doctor diagnostics report with reachable health", async () => {
+    const operation = maintenanceCommandOperations({
+      doctor: async () => JSON.stringify({ health: "reachable", queueLength: 0 }, null, 2),
+    } as never).find((candidate) => candidate.name === "hindsight:doctor");
+    const ctx = {
+      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: {},
+    };
+
+    await operation?.spec.handler("", ctx as never);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      JSON.stringify({ health: "reachable", queueLength: 0 }, null, 2),
+      "info",
+    );
+  });
+
+  it("reports the doctor diagnostics report as a warning when unreachable", async () => {
+    const operation = maintenanceCommandOperations({
+      doctor: async () =>
+        JSON.stringify({ health: "unreachable: connection refused", queueLength: 0 }, null, 2),
+    } as never).find((candidate) => candidate.name === "hindsight:doctor");
+    const ctx = {
+      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: {},
+    };
+
+    await operation?.spec.handler("", ctx as never);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("unreachable"), "warning");
+  });
+
+  it("redacts secrets when the doctor report itself fails", async () => {
+    const operation = maintenanceCommandOperations({
+      doctor: async () => {
+        throw new Error("failed to read api_key=supersecret123456");
+      },
+    } as never).find((candidate) => candidate.name === "hindsight:doctor");
+    const ctx = {
+      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: {},
+    };
+
+    await operation?.spec.handler("", ctx as never);
+
+    const message = ctx.ui.notify.mock.calls[0]?.[0] as string;
+    expect(message).toContain("Hindsight doctor report failed");
+    expect(message).toContain("api_key=[REDACTED]");
+    expect(message).not.toContain("supersecret123456");
+  });
+
   it("reports last recall snapshot summary", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
     mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
@@ -524,7 +578,7 @@ describe("hindsight commands", () => {
     );
   });
 
-  it("registers /hindsight TUI command and removes legacy status/debug commands", async () => {
+  it("registers /hindsight TUI command and doctor, and removes other legacy status/debug commands", async () => {
     const commands = new Map<string, RegisteredTestCommand>();
     registerCommands(
       {
@@ -540,8 +594,8 @@ describe("hindsight commands", () => {
     );
 
     expect(commands.has("hindsight")).toBe(true);
+    expect(commands.has("hindsight:doctor")).toBe(true);
     expect(commands.has("hindsight:status")).toBe(false);
-    expect(commands.has("hindsight:doctor")).toBe(false);
     expect(commands.has("hindsight:config")).toBe(false);
     expect(commands.has("hindsight:debug")).toBe(false);
     expect(commands.has("hindsight:setup")).toBe(false);

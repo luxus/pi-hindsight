@@ -44,9 +44,10 @@ Use dry-run before non-dry-run imports. See [Import controls](/pi-hindsight/refe
 /hindsight:last-recall --json
 /hindsight:recall-cleanup
 /hindsight:recall-cleanup <session.jsonl> --prune
+/hindsight:doctor
 ```
 
-`/hindsight:queue` summarizes active and dead-letter retain queues without printing retained payloads. Add `--jobs --json` for redacted job metadata such as job id, bank id, document id, tags, byte counts, retry count, and last error. `/hindsight:flush` flushes queued retain jobs. `/hindsight:last-recall` reads the opt-in local recall snapshot. Recall cleanup reports or prunes accidentally persisted `<hindsight-memory>` transcript lines.
+`/hindsight:queue` summarizes active and dead-letter retain queues without printing retained payloads. Add `--jobs --json` for redacted job metadata such as job id, bank id, document id, tags, byte counts, retry count, and last error. `/hindsight:flush` flushes queued retain jobs. `/hindsight:last-recall` reads the opt-in local recall snapshot. Recall cleanup reports or prunes accidentally persisted `<hindsight-memory>` transcript lines. `/hindsight:doctor` emits a machine-readable JSON diagnostics report (connectivity, queue/dead-letter state, import manifest status, bank routing, and redacted config) for bug reports; it never prints retained/recalled payloads or API keys.
 
 ## Session controls
 
