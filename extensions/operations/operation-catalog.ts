@@ -20,6 +20,7 @@ const tagMatchSchema = Type.Union([
   Type.Literal("all"),
   Type.Literal("any_strict"),
   Type.Literal("all_strict"),
+  Type.Literal("exact"),
 ]);
 
 const budgetSchema = Type.Union([Type.Literal("low"), Type.Literal("mid"), Type.Literal("high")]);

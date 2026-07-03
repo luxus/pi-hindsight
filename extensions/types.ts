@@ -11,7 +11,7 @@ export type UpdateMode = "append" | "replace";
 export type RetainUserContent = "text";
 export type RetainAssistantContent = "text" | "toolCall" | "thinking";
 export type RetainToolResultContent = "error" | "summary" | "content";
-export type TagsMatch = "any" | "all" | "any_strict" | "all_strict";
+export type TagsMatch = "any" | "all" | "any_strict" | "all_strict" | "exact";
 export type HindsightTagGroup =
   | TagGroupLeaf
   | TagGroupAndInput

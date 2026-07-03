@@ -224,6 +224,13 @@ describe("operation catalog", () => {
       "observation",
     ]);
     expect(properties.budget?.anyOf?.map((schema) => schema.const)).toEqual(["low", "mid", "high"]);
+    expect(properties.tagsMatch?.anyOf?.map((schema) => schema.const)).toEqual([
+      "any",
+      "all",
+      "any_strict",
+      "all_strict",
+      "exact",
+    ]);
     expect(properties.maxTokens?.type).toBe("integer");
     expect(properties.maxTokens?.minimum).toBe(0);
     expect(properties.includeChunks?.type).toBe("boolean");
