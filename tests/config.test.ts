@@ -55,6 +55,22 @@ describe("resolveConfig", () => {
     expect(configured.recall.maxSourceFactsTokens).toBe(256);
   });
 
+  it("defaults User Bank recall to a smaller budget than the Project Bank, and normalizes overrides", () => {
+    const cwd = tmp();
+    const defaults = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(defaults.recall.userMaxTokens).toBe(400);
+    expect(defaults.recall.userMaxTokens).toBeLessThan(defaults.recall.maxTokens);
+
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ recall: { userMaxTokens: 250 } }),
+    );
+    const configured = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(configured.recall.userMaxTokens).toBe(250);
+    expect(configured.recall.maxTokens).toBe(800);
+  });
+
   it("normalizes granular bank missions", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));

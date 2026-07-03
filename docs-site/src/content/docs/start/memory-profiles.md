@@ -8,7 +8,7 @@ Choose the narrowest memory route that fits the repository.
 
 Best for most personal coding.
 
-- Recall can read project memory and user memory.
+- Recall can read project memory and user memory. Project Bank recall and User Bank recall each have their own token budget (`recall.maxTokens` and `recall.userMaxTokens`), so enabling User Bank recall does not silently grow the total context injected per turn.
 - Automatic retain writes repository session deltas to the Project Bank.
 - User Bank settings are stored once in global Pi config and reused across repositories.
 
@@ -30,7 +30,7 @@ Best for non-repo assistance.
 
 - Project Bank is disabled.
 - User Bank settings are stored in global Pi config.
-- Automatic retain follows user-memory policy rather than project-memory policy.
+- Automatic retain is off, same as every other profile; use `hindsight_retain_global` or a command to write User Bank memory explicitly.
 
 Use this when project-specific memory would be noise but user preferences still matter.
 

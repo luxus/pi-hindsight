@@ -104,6 +104,7 @@ export interface ProjectConfigPatchInput {
   recallEnabled?: boolean;
   recallBudget?: "low" | "mid" | "high";
   recallMaxTokens?: number;
+  recallUserMaxTokens?: number;
   recallStoreLast?: boolean;
   recallStoreFailures?: boolean;
   recallPreferObservations?: boolean;
@@ -223,6 +224,7 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     input.recallEnabled !== undefined ||
     input.recallBudget ||
     input.recallMaxTokens !== undefined ||
+    input.recallUserMaxTokens !== undefined ||
     input.recallStoreLast !== undefined ||
     input.recallStoreFailures !== undefined ||
     input.recallPreferObservations !== undefined
@@ -231,6 +233,9 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
       ...(input.recallEnabled !== undefined ? { enabled: input.recallEnabled } : {}),
       ...(input.recallBudget ? { budget: input.recallBudget } : {}),
       ...(input.recallMaxTokens !== undefined ? { maxTokens: input.recallMaxTokens } : {}),
+      ...(input.recallUserMaxTokens !== undefined
+        ? { userMaxTokens: input.recallUserMaxTokens }
+        : {}),
       ...(input.recallStoreLast !== undefined ? { storeLastRecall: input.recallStoreLast } : {}),
       ...(input.recallStoreFailures !== undefined
         ? { storeLastRecallFailures: input.recallStoreFailures }

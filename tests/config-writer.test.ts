@@ -86,6 +86,7 @@ describe("config writer", () => {
         apiKeyEnvVar: "HINDSIGHT_API_KEY",
         recallBudget: "mid",
         recallMaxTokens: 900,
+        recallUserMaxTokens: 300,
         recallStoreLast: true,
         recallStoreFailures: true,
         recallPreferObservations: false,
@@ -109,6 +110,7 @@ describe("config writer", () => {
       recall: {
         budget: "mid",
         maxTokens: 900,
+        userMaxTokens: 300,
         storeLastRecall: true,
         storeLastRecallFailures: true,
         preferObservations: false,

@@ -11,8 +11,10 @@ Use the narrowest memory route that fits the repository. Start with **Project On
 | -------------- | --------------------------- | ----------------------- | ------------------------------------------ |
 | Project + User | Project Bank plus User Bank | Project Bank            | personal coding with durable preferences   |
 | Project Only   | Project Bank                | Project Bank            | client work, sensitive repos, shared repos |
-| User Only      | User Bank                   | user-memory policy      | intentional user-only memory               |
+| User Only      | User Bank                   | disabled                | intentional user-only memory               |
 | Recall Only    | configured memory banks     | disabled                | cautious adoption and read-only sessions   |
+
+Automatic retain never writes to the User Bank in any profile; use `hindsight_retain_global` or a command for explicit User Bank writes.
 
 ## Configure through `/hindsight`
 

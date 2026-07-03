@@ -12,6 +12,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     enabled: true,
     budget: "mid",
     maxTokens: 800,
+    userMaxTokens: 400,
     types: ["observation"],
     includeSourceFacts: false,
     maxSourceFactsTokens: 4096,

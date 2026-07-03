@@ -231,6 +231,7 @@ export function normalizeConfig(
         DEFAULT_CONFIG.recall.budget,
       ),
       maxTokens: positiveInt(config.recall?.maxTokens, DEFAULT_CONFIG.recall.maxTokens),
+      userMaxTokens: positiveInt(config.recall?.userMaxTokens, DEFAULT_CONFIG.recall.userMaxTokens),
       types: stringArray(config.recall?.types, DEFAULT_CONFIG.recall.types),
       includeSourceFacts: bool(
         config.recall?.includeSourceFacts,

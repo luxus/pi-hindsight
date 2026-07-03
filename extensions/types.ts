@@ -65,6 +65,7 @@ export interface ResolvedConfig {
     enabled: boolean;
     budget: Budget;
     maxTokens: number;
+    userMaxTokens: number;
     types: string[];
     includeSourceFacts: boolean;
     maxSourceFactsTokens: number;

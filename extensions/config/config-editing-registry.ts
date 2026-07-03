@@ -346,10 +346,21 @@ export function buildBaseConfigEditingFields(
       id: "recallMaxTokens",
       tab: "Recall",
       label: "Recall token limit",
-      description: "Maximum memory tokens injected into context.",
+      description: "Maximum Project Bank memory tokens injected into context.",
       value: config.recall.maxTokens,
       defaultValue: defaults.recall.maxTokens,
       resetKey: "recall.maxTokens",
+    }),
+    positiveIntField({
+      id: "recallUserMaxTokens",
+      tab: "Recall",
+      label: "User Bank recall token limit",
+      description:
+        "Maximum User Bank memory tokens injected into context, independent of the Project Bank limit.",
+      value: config.recall.userMaxTokens,
+      defaultValue: defaults.recall.userMaxTokens,
+      resetKey: "recall.userMaxTokens",
+      advanced: true,
     }),
     booleanField({
       id: "recallStoreLast",
@@ -715,6 +726,8 @@ export function patchForConfigEditingField(
       return { recallBudget: value as "low" | "mid" | "high" };
     case "recallMaxTokens":
       return { recallMaxTokens: Number(value) };
+    case "recallUserMaxTokens":
+      return { recallUserMaxTokens: Number(value) };
     case "recallStoreLast":
       return { recallStoreLast: value === "Enable" };
     case "recallStoreFailures":
@@ -794,6 +807,8 @@ export function inputDefaultForConfigEditingField(
       return String(config.hindsight.timeoutMs);
     case "recallMaxTokens":
       return String(config.recall.maxTokens);
+    case "recallUserMaxTokens":
+      return String(config.recall.userMaxTokens);
     case "statusMaxLength":
       return String(config.status.maxLength);
     case "baseUrl":

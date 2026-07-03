@@ -392,6 +392,31 @@ describe("recall formatting", () => {
     expect(options[0]).toMatchObject({ preferObservations: true });
   });
 
+  it("bounds User Bank recall with userMaxTokens, independent of the Project Bank budget", async () => {
+    const options: Record<string, unknown>[] = [];
+    await recallForContext({
+      client: {
+        retain: async () => undefined,
+        recall: async (_bankId, _query, opts) => {
+          options.push((opts ?? {}) as Record<string, unknown>);
+          return { results: [] };
+        },
+        reflect: async () => ({}),
+      },
+      config: DEFAULT_CONFIG,
+      scopes: [
+        { kind: "project", bankId: "project-bank" },
+        { kind: "global", bankId: "global-bank" },
+      ],
+      cwd: "/repo/project",
+      messages: [{ role: "user", content: "q", timestamp: 1 }] as unknown as AgentMessage[],
+    });
+
+    expect(options[0]).toMatchObject({ maxTokens: DEFAULT_CONFIG.recall.maxTokens });
+    expect(options[1]).toMatchObject({ maxTokens: DEFAULT_CONFIG.recall.userMaxTokens });
+    expect(DEFAULT_CONFIG.recall.userMaxTokens).toBeLessThan(DEFAULT_CONFIG.recall.maxTokens);
+  });
+
   it("records slow recall as failed without throwing", async () => {
     const result = await recallForContext({
       client: {

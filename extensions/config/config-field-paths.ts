@@ -18,6 +18,7 @@ export type FieldId =
   | "recallEnabled"
   | "recallBudget"
   | "recallMaxTokens"
+  | "recallUserMaxTokens"
   | "recallStoreLast"
   | "recallStoreFailures"
   | "recallPreferObservations"
@@ -61,6 +62,7 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   recallEnabled: ["recall", "enabled"],
   recallBudget: ["recall", "budget"],
   recallMaxTokens: ["recall", "maxTokens"],
+  recallUserMaxTokens: ["recall", "userMaxTokens"],
   recallStoreLast: ["recall", "storeLastRecall"],
   recallStoreFailures: ["recall", "storeLastRecallFailures"],
   recallPreferObservations: ["recall", "preferObservations"],
@@ -152,6 +154,7 @@ export const CONFIG_RESET_PATHS = {
   "recall.enabled": [["recall", "enabled"]],
   "recall.budget": [["recall", "budget"]],
   "recall.maxTokens": [["recall", "maxTokens"]],
+  "recall.userMaxTokens": [["recall", "userMaxTokens"]],
   "recall.storeLastRecall": [["recall", "storeLastRecall"]],
   "recall.storeLastRecallFailures": [["recall", "storeLastRecallFailures"]],
   "recall.preferObservations": [["recall", "preferObservations"]],
@@ -198,6 +201,7 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   recallEnabled: "recall.enabled",
   recallBudget: "recall.budget",
   recallMaxTokens: "recall.maxTokens",
+  recallUserMaxTokens: "recall.userMaxTokens",
   recallStoreLast: "recall.storeLastRecall",
   recallStoreFailures: "recall.storeLastRecallFailures",
   recallPreferObservations: "recall.preferObservations",

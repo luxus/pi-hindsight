@@ -28,7 +28,7 @@ A **User Bank** is an optional cross-project bank for durable user-level memory 
 
 Guided setup configures the User Bank once in global Pi config for profiles that use user memory. Repository config then chooses whether the current project participates in user memory.
 
-Automatic User Bank writes are disabled unless a setup profile or routing mode intentionally enables them. Use explicit retain when you want to write user memory manually.
+Automatic retain never writes to the User Bank, in any profile. Use explicit retain (the `hindsight_retain_global` tool or a command) when you want to write user memory.
 
 ## Legacy global naming
 

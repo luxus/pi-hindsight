@@ -150,6 +150,13 @@ function preambleForScope(config: ResolvedConfig, scope: RecallScope): string {
   return config.recall.queryPreamble;
 }
 
+// User Bank recall is a smaller, durable supplement to project context, not an equal-weight
+// second corpus, so it gets its own (smaller by default) token budget. Project Bank recall
+// keeps recall.maxTokens unchanged so single-scope callers see no behavior change.
+function maxTokensForScope(config: ResolvedConfig, scope: RecallScope): number {
+  return scope.kind === "global" ? config.recall.userMaxTokens : config.recall.maxTokens;
+}
+
 function queryHints(cwd: string, config: ResolvedConfig, scope: RecallScope): string[] {
   const hints = scope.kind ? [`scope:${scope.kind}`] : [];
   if (!config.recall.includeRepoHintsInQuery || scope.kind === "global") return hints;
@@ -184,7 +191,7 @@ export async function recallForContext(args: {
       const response = await withTimeout("hindsight recall", args.config.recall.timeoutMs, () =>
         args.client.recall(scope.bankId, query, {
           budget: args.config.recall.budget,
-          maxTokens: args.config.recall.maxTokens,
+          maxTokens: maxTokensForScope(args.config, scope),
           types: args.config.recall.types,
           preferObservations: args.config.recall.preferObservations,
           ...(args.config.recall.includeSourceFacts
