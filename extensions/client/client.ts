@@ -224,6 +224,16 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
       withTimeout("hindsight getVersion", timeoutMs, (signal) =>
         withRetry("getVersion", () => raw.getVersion({ signal })),
       ),
+    listMemories: (...args) =>
+      withTimeout(
+        "hindsight listMemories",
+        timeoutMs,
+        (signal) => {
+          const [bankId, options] = args;
+          return raw.listMemories(bankId, { ...options, signal });
+        },
+        args[1]?.signal,
+      ),
   };
 }
 

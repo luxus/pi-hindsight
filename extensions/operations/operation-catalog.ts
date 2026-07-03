@@ -277,6 +277,56 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       renderResult: renderMemoryToolTextResult,
     }),
     defineCatalogTool({
+      name: "hindsight_list_memories",
+      label: "Hindsight List Memories",
+      description:
+        "DRAFT/DISCUSSION ONLY (see #452): List raw memory units in a bank with pagination, unlike hindsight_recall which does semantic search. Use for inspecting retain results or auditing bank state.",
+      parameters: Type.Object({
+        bank: Type.Optional(
+          Type.String({ description: "Optional bank id. Defaults to project bank." }),
+        ),
+        limit: Type.Optional(Type.Integer({ minimum: 1, description: "Page size." })),
+        offset: Type.Optional(Type.Integer({ minimum: 0, description: "Page offset." })),
+        type: Type.Optional(
+          Type.String({ description: "Optional Hindsight fact type filter (e.g. observation)." }),
+        ),
+        q: Type.Optional(
+          Type.String({ description: "Optional text search within memory content." }),
+        ),
+        consolidationState: Type.Optional(
+          Type.Union([Type.Literal("failed"), Type.Literal("pending"), Type.Literal("done")], {
+            description: "Filter by observation consolidation state.",
+          }),
+        ),
+        state: Type.Optional(
+          Type.Union([Type.Literal("valid"), Type.Literal("invalidated")], {
+            description: "Filter by memory validity state.",
+          }),
+        ),
+        documentId: Type.Optional(
+          Type.String({ description: "Optional Hindsight document id filter." }),
+        ),
+      }),
+      async execute(_id, params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const { bankId, result } = await operations.listMemories(params.bank, {
+          ...(params.limit !== undefined ? { limit: params.limit } : {}),
+          ...(params.offset !== undefined ? { offset: params.offset } : {}),
+          ...(params.type ? { type: params.type } : {}),
+          ...(params.q ? { q: params.q } : {}),
+          ...(params.consolidationState ? { consolidationState: params.consolidationState } : {}),
+          ...(params.state ? { state: params.state } : {}),
+          ...(params.documentId ? { documentId: params.documentId } : {}),
+          ...(signal ? { signal } : {}),
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: { bankId },
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
+    defineCatalogTool({
       name: "hindsight_retain",
       label: "Hindsight Retain",
       description: "Retain explicit raw content in Hindsight. Use for durable facts or decisions.",

@@ -10,12 +10,13 @@ This reference is generated from the operation catalog and config editing regist
 
 Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi workflow tools are part of the stable 1.0 contract. Capability-gated tools are supported when the connected Hindsight server exposes the required upstream endpoint or field; unsupported servers should return a clear capability error.
 
-| Tool                      | Scope    |
-| ------------------------- | -------- |
-| `hindsight_recall`        | core 1.0 |
-| `hindsight_retain`        | core 1.0 |
-| `hindsight_retain_global` | core 1.0 |
-| `hindsight_reflect`       | core 1.0 |
+| Tool                      | Scope                |
+| ------------------------- | -------------------- |
+| `hindsight_recall`        | core 1.0             |
+| `hindsight_list_memories` | capability-gated 1.0 |
+| `hindsight_retain`        | core 1.0             |
+| `hindsight_retain_global` | core 1.0             |
+| `hindsight_reflect`       | core 1.0             |
 
 ## Deferred or non-goal upstream surfaces
 
@@ -51,6 +52,21 @@ Recall raw memories from Hindsight for this project.
 | `tags`                  | array<string>                                   | no       | Additional tag filter.                                                                                                                                                                  |
 | `tagsMatch`             | any \| all \| any_strict \| all_strict \| exact | no       |                                                                                                                                                                                         |
 | `tagGroups`             | array<object>                                   | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.                                                                                           |
+
+### `hindsight_list_memories`
+
+DRAFT/DISCUSSION ONLY (see #452): List raw memory units in a bank with pagination, unlike hindsight_recall which does semantic search. Use for inspecting retain results or auditing bank state.
+
+| Parameter            | Type                      | Required | Description                                             |
+| -------------------- | ------------------------- | -------- | ------------------------------------------------------- |
+| `bank`               | string                    | no       | Optional bank id. Defaults to project bank.             |
+| `limit`              | integer                   | no       | Page size.                                              |
+| `offset`             | integer                   | no       | Page offset.                                            |
+| `type`               | string                    | no       | Optional Hindsight fact type filter (e.g. observation). |
+| `q`                  | string                    | no       | Optional text search within memory content.             |
+| `consolidationState` | failed \| pending \| done | no       | Filter by observation consolidation state.              |
+| `state`              | valid \| invalidated      | no       | Filter by memory validity state.                        |
+| `documentId`         | string                    | no       | Optional Hindsight document id filter.                  |
 
 ### `hindsight_retain`
 

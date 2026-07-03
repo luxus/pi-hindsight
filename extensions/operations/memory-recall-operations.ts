@@ -134,6 +134,33 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
       return { bankId, result };
     },
 
+    async listMemories(
+      bank: string | undefined,
+      filters: {
+        limit?: number;
+        offset?: number;
+        type?: string;
+        q?: string;
+        consolidationState?: "failed" | "pending" | "done";
+        state?: "valid" | "invalidated";
+        documentId?: string;
+        signal?: AbortSignal;
+      } = {},
+    ) {
+      const config = deps.getConfig();
+      const bankId = resolveOperationBank({
+        requestedBank: bank,
+        config,
+        projectBankId: deps.getProjectBankId(),
+      });
+      const client = deps.getClient();
+      if (!client.listMemories) {
+        throw new Error("Connected Hindsight server does not support listing memories.");
+      }
+      const result = await client.listMemories(bankId, filters);
+      return { bankId, result };
+    },
+
     async lastRecall(cwd: string) {
       const config = deps.getConfig();
       const path = resolveLastRecallPath(cwd, config.recall.lastRecallPath);

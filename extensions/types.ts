@@ -311,4 +311,17 @@ export interface HindsightLikeClient {
   getBankConfig?(bankId: string): Promise<unknown>;
   health?(): Promise<unknown>;
   getVersion?(): Promise<unknown>;
+  listMemories?(
+    bankId: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+      type?: string;
+      q?: string;
+      consolidationState?: "failed" | "pending" | "done";
+      state?: "valid" | "invalidated";
+      documentId?: string;
+      signal?: AbortSignal;
+    },
+  ): Promise<unknown>;
 }

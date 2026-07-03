@@ -476,7 +476,11 @@ describe("extension hooks", () => {
     const { default: hindsightExtension } = await import("../extensions/index.js");
     hindsightExtension(pi as any);
 
+    // DRAFT/DISCUSSION (see #452): this assertion encodes the "exactly four tools" policy from
+    // #417. Adding hindsight_list_memories here is the change under discussion, not a decided
+    // outcome -- revert this test alongside the rest of this branch if the policy holds.
     expect(Object.keys(tools).sort()).toEqual([
+      "hindsight_list_memories",
       "hindsight_recall",
       "hindsight_reflect",
       "hindsight_retain",

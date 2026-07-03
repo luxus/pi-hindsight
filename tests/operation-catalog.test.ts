@@ -289,6 +289,30 @@ describe("operation catalog", () => {
     );
   });
 
+  it("DRAFT #452: hindsight_list_memories lists raw memory units with pagination filters", async () => {
+    const listMemories = vi.fn(async () => ({ items: [], total: 0, limit: 20, offset: 0 }));
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-catalog-"));
+    const catalog = createOperationCatalog({
+      getClient: () => ({ ...client(), listMemories }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+    const tool = requireTool(catalog, "hindsight_list_memories");
+
+    await tool.execute(
+      "call",
+      { limit: 20, state: "invalidated", documentId: "doc-1" },
+      new AbortController().signal,
+      () => undefined,
+      { cwd, sessionManager: {} } as never,
+    );
+
+    expect(listMemories).toHaveBeenCalledWith(
+      "project-bank",
+      expect.objectContaining({ limit: 20, state: "invalidated", documentId: "doc-1" }),
+    );
+  });
+
   it("exposes and maps low-risk explicit reflect controls", async () => {
     const reflect = vi.fn(async (_bankId: string, _query: string, _options?: ReflectOptions) => ({
       ok: true,
@@ -400,8 +424,11 @@ describe("operation catalog", () => {
       getProjectBankId: () => "bank",
     });
 
+    // DRAFT/DISCUSSION (see #452): hindsight_list_memories addition is the change under
+    // discussion, not a decided outcome.
     expect(catalog.tools.map((tool) => tool.name)).toEqual([
       "hindsight_recall",
+      "hindsight_list_memories",
       "hindsight_retain",
       "hindsight_retain_global",
       "hindsight_reflect",
