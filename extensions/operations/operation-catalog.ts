@@ -60,10 +60,11 @@ const observationScopesSchema = Type.Unsafe<import("../types.js").HindsightObser
     Type.Literal("per_tag"),
     Type.Literal("combined"),
     Type.Literal("all_combinations"),
+    Type.Literal("shared"),
     Type.Array(Type.Array(Type.String())),
   ]),
   description:
-    "Optional Hindsight observation scopes. Use per_tag, combined, all_combinations, or explicit string groups. When provided, overrides configured default observation scopes for this retain call.",
+    "Optional Hindsight observation scopes. Use per_tag, combined, all_combinations, shared, or explicit string groups. When provided, overrides configured default observation scopes for this retain call.",
 });
 
 function explicitRetainOptionParameters() {

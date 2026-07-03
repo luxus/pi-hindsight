@@ -83,6 +83,9 @@ describe("operation catalog", () => {
     expect(properties.observationScopes?.anyOf?.some((entry) => entry.const === "combined")).toBe(
       true,
     );
+    expect(properties.observationScopes?.anyOf?.some((entry) => entry.const === "shared")).toBe(
+      true,
+    );
     expect(properties.documentTags?.items?.type).toBe("string");
     expect(properties.async?.type).toBe("boolean");
 

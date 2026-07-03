@@ -23,7 +23,12 @@ export type OperationStatus = "pending" | "processing" | "completed" | "failed" 
 export type GraphFactType = "world" | "experience";
 export type DocumentTagsMatch = "any" | "all" | "any_strict" | "all_strict";
 export type TagSource = "memories" | "mental_models";
-export type HindsightObservationScopes = "per_tag" | "combined" | "all_combinations" | string[][];
+export type HindsightObservationScopes =
+  | "per_tag"
+  | "combined"
+  | "all_combinations"
+  | "shared"
+  | string[][];
 export type StatusStyle = "off" | "text" | "emoji" | "nerdfont";
 export type StatusDetail = "minimal" | "project" | "activity" | "verbose";
 export type RecallRole = "user" | "assistant" | "tool" | "system";
