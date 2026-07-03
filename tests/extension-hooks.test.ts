@@ -1734,4 +1734,42 @@ describe("extension hooks", () => {
       { context: "Post-retain reflection" },
     );
   });
+
+  it("notifies (without failing retain) when postRetainReflect fails", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ retain: { postRetainReflect: true } }),
+    );
+    mocked.client.reflect.mockRejectedValueOnce(new Error("reflect unavailable"));
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    await handlers.agent_end?.[0]?.(
+      { messages: [{ role: "assistant", content: "new decision", timestamp: 2 }] },
+      ctx,
+    );
+
+    expect(mocked.client.retain).toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringMatching(/^Hindsight post-retain reflect failed: reflect unavailable$/),
+      "warning",
+    );
+  });
 });

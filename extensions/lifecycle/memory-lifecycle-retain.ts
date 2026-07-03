@@ -166,6 +166,7 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
         let sent = 0;
         let remaining = 0;
         let queued = false;
+        let reflectError: string | undefined;
         for (const bankId of targets) {
           const result = await enqueueRetainFromAgentEnd({
             event: { ...event, messages },
@@ -179,6 +180,7 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
           queued ||= result.queued;
           sent += result.sent;
           remaining = result.remaining;
+          reflectError ??= result.reflectError;
         }
         if (queued) await markRetainedMessages(runtime, event.messages, messages);
         deps.setMemoryStatus(runtime, remaining > 0 ? "retain-queued" : "retained", remaining);
@@ -188,6 +190,12 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
             `Hindsight retained ${messageCount} new message${messageCount === 1 ? "" : "s"} to ${targets.join(", ")}${decision ? `; ${decision.reason}` : ""}${remaining > 0 ? `; ${remaining} queued` : ""}`,
             "info",
           );
+        }
+        // Post-retain reflect is opt-in (retain.postRetainReflect, off by default); users who
+        // enable it have opted into this extra visibility, so surface failures like other
+        // opt-in feature failures in this file do, without requiring notifications.retain.
+        if (reflectError) {
+          deps.notify(runtime, `Hindsight post-retain reflect failed: ${reflectError}`, "warning");
         }
         return { queued, sent, remaining };
       } catch (error) {

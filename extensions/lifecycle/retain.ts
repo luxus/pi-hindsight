@@ -9,6 +9,7 @@ import type {
 } from "../types.js";
 import { baseTags } from "../banks/banking.js";
 import { projectMessages } from "../utils/messages.js";
+import { redactError } from "../utils/sanitize.js";
 import { contextLabel, liveDocumentId, stableSessionId } from "../utils/session.js";
 import {
   enqueueRetain,
@@ -95,7 +96,7 @@ export async function enqueueRetainFromAgentEnd(args: {
   client: HindsightLikeClient;
   bankId: string;
   extraTags?: string[];
-}): Promise<{ queued: boolean; sent: number; remaining: number }> {
+}): Promise<{ queued: boolean; sent: number; remaining: number; reflectError?: string }> {
   if (!args.config.enabled || !args.config.retain.enabled)
     return { queued: false, sent: 0, remaining: 0 };
   const job = buildRetainJob({
@@ -110,6 +111,7 @@ export async function enqueueRetainFromAgentEnd(args: {
   await enqueueRetain(args.cwd, args.config, job);
   const result = await flushRetain(args.cwd, args.config, args.client);
   await recordRetainDeliveries(args.cwd, args.config, result);
+  let reflectError: string | undefined;
   if (args.config.retain.postRetainReflect) {
     try {
       await args.client.reflect(
@@ -117,11 +119,19 @@ export async function enqueueRetainFromAgentEnd(args: {
         "Reflect on the recently retained session to extract insights",
         { context: "Post-retain reflection" },
       );
-    } catch {
-      /* best-effort reflect after retain */
+    } catch (error) {
+      // Best-effort reflect after retain; the retain itself already succeeded above.
+      // Surface the (redacted) cause to the caller instead of swallowing it silently,
+      // so callers with a notification channel can make it debug-visible.
+      reflectError = redactError(error);
     }
   }
-  return { queued: true, sent: result.sent, remaining: result.remaining };
+  return {
+    queued: true,
+    sent: result.sent,
+    remaining: result.remaining,
+    ...(reflectError ? { reflectError } : {}),
+  };
 }
 
 export type DurableRetainSource = "auto" | "tool" | "command" | "import";

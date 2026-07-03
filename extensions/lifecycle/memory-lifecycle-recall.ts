@@ -164,8 +164,31 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
           return patchWithRecallMessage(event, recallMessage);
         }
         return { messages: [recallMessage, ...event.messages] };
-      } catch {
+      } catch (error) {
         deps.setMemoryStatus(runtime, "recall-failed");
+        // Recall runs every turn, so this stays debug-gated behind the same opt-in flags that
+        // already gate the last-recall sidecar, instead of notifying (which would spam normal
+        // usage). Users who enabled storeLastRecall + storeLastRecallFailures can inspect the
+        // redacted cause via /hindsight:last-recall.
+        if (config.recall.storeLastRecall && config.recall.storeLastRecallFailures) {
+          try {
+            await writeLastRecallSnapshot(runtime.cwd, config.recall.lastRecallPath, {
+              query: "",
+              rendered: "",
+              blocks: [],
+              failed: 1,
+              failures: [
+                {
+                  bankId: "pre-scope-failure",
+                  query: "",
+                  error: `Unexpected recall failure: ${redactError(error)}`,
+                },
+              ],
+            });
+          } catch {
+            // Best-effort debug snapshot; do not let a write failure mask the original recall failure.
+          }
+        }
         return undefined;
       }
     },
