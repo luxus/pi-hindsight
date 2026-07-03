@@ -15,7 +15,7 @@ Pi Hindsight already supports two kinds of memory: a per-repo **Project Bank** a
 - Dual-bank recall already works. When a repo's config enables `banks.user`, `selectMemoryScopes` returns both a project scope and a user scope; `recallForContext` queries each bank independently and merges the rendered blocks. This is exposed today as the **"Project + User"** guided-setup profile ([Memory profiles](/pi-hindsight/start/memory-profiles/)), alongside "Project Only", "User Only", and "Recall Only".
 - Automatic retain is project-only in every profile except "User Only". Even in "Project + User", the User Bank only receives writes through explicit tools (`hindsight_retain_global`) or commands — never automatically. This is a deliberate safety choice from [ADR-002](/pi-hindsight/architecture/adr/002-explicit-routing-strategy-seam/) ("User Bank writes require high confidence or explicit user action") and is unchanged by this ADR.
 - A heuristic memory router (`extensions/operations/memory-router.ts`, `extensions/lifecycle/routing-strategy.ts`) exists to auto-classify candidate retain content as `project`/`global`/`both`/`skip` using regex keyword patterns and mission-term matching. It only auto-engages when `userRetain.mode: "router"`, which the guided-setup writer only sets for the **"User Only"** profile (no project bank to fall back to). Its own dry-run inspection tool (`hindsight_route_memory`) was already removed in the slim-surface rewrite (#417), so it now runs with no user-visible explanation of its decisions. It carries ~580 lines of implementation plus 38 parametrized eval-fixture tests.
-- **Recall token budget is not split across banks.** `recallForContext` requests the full `config.recall.maxTokens` independently for every active scope. Enabling the User Bank alongside the Project Bank silently up to doubles the memory tokens injected into every turn; nothing documents or bounds this today.
+- **Recall token budget is not split across banks.** `recallForContext` requests the full `config.recall.maxTokens` independently for every active scope. Enabling the User Bank alongside the Project Bank can silently double (or more) the memory tokens injected into every turn; nothing documents or bounds this today.
 - Config migration from the legacy `global` naming (`banks.global` → `banks.user`, `globalRetain` → `userRetain`, `globalQueryPreamble` → `userQueryPreamble`) already exists and is unaffected by this ADR.
 
 ## Options considered
@@ -67,11 +67,16 @@ Unchanged from the existing 1.0 support scope ([Surface reference](/pi-hindsight
 
 ## Consequences
 
-- No default behavior changes for existing Project Only, Recall Only, or Project + User users beyond the new `recall.userMaxTokens` cap taking effect for whichever of them already have the User Bank enabled.
-- "User Only" loses automatic classifier-driven retain; those users must use explicit retain (tool or future command) for User Bank writes going forward. This is a narrower, more predictable contract, consistent with every other profile.
-- `extensions/operations/memory-router.ts`, `extensions/lifecycle/routing-strategy.ts`, and `tests/memory-router.test.ts` are removed, along with the `"router"` value from `userRetain.mode`/`globalRetain.mode` and the router-eval-fixture taxonomy documented in ADR-002.
-- ADR-002 (explicit routing strategy seam) is superseded by this decision for the router's future; its routing-input/output shape documentation becomes historical context, not a live contract to maintain.
-- A new `recall.userMaxTokens` config field, default value, and normalization ship as part of the follow-up work.
+Once the follow-up implementation issues below land:
+
+- There will be no default behavior changes for existing Project Only, Recall Only, or Project + User users beyond the new `recall.userMaxTokens` cap applying to whichever of them already have the User Bank enabled.
+- "User Only" will lose automatic classifier-driven retain; those users will need to use explicit retain (tool or future command) for User Bank writes going forward. This is a narrower, more predictable contract, consistent with every other profile.
+- `extensions/operations/memory-router.ts`, `extensions/lifecycle/routing-strategy.ts`, and `tests/memory-router.test.ts` will be removed, along with the `"router"` value from `userRetain.mode`/`globalRetain.mode` and the router-eval-fixture taxonomy documented in ADR-002.
+- A new `recall.userMaxTokens` config field, default value, and normalization will ship.
+
+Effective immediately with this ADR:
+
+- ADR-002 (explicit routing strategy seam) is superseded by this decision for the router's future; its routing-input/output shape documentation becomes historical context, not a live contract to maintain (see the amendment added to ADR-002).
 
 ## Follow-up implementation issues
 
