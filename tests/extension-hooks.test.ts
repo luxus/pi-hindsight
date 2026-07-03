@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { enqueueRetainJob, readRetainQueue, resolveQueuePath } from "../extensions/queue/queue.js";
 import {
   addSessionMemoryTag,
@@ -715,7 +716,7 @@ describe("extension hooks", () => {
     expect(mocked.client.recall.mock.calls[0]?.[1]).toContain("scope:project");
     expect(mocked.client.recall.mock.calls[0]?.[1]).toContain("user: What do I know?");
     expect(mocked.client.recall.mock.calls[0]?.[2]).toMatchObject({
-      maxTokens: 800,
+      maxTokens: DEFAULT_CONFIG.recall.maxTokens,
       types: ["observation"],
       tagGroups: [{ tags: [expect.stringMatching(/^repo:/)], match: "any_strict" }],
     });
@@ -726,7 +727,7 @@ describe("extension hooks", () => {
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain("scope:global");
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain("user: What do I know?");
     expect(mocked.client.recall.mock.calls[1]?.[2]).toMatchObject({
-      maxTokens: 400,
+      maxTokens: DEFAULT_CONFIG.recall.userMaxTokens,
       tagGroups: [{ tags: ["source:pi"], match: "any_strict" }],
     });
     expect(mocked.ensureGlobalBank).toHaveBeenCalledWith(

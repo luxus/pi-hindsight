@@ -345,7 +345,7 @@ export function buildBaseConfigEditingFields(
     positiveIntField({
       id: "recallMaxTokens",
       tab: "Recall",
-      label: "Recall token limit",
+      label: "Project Bank recall token limit",
       description: "Maximum Project Bank memory tokens injected into context.",
       value: config.recall.maxTokens,
       defaultValue: defaults.recall.maxTokens,
