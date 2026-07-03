@@ -116,6 +116,10 @@ export default defineConfig({
                   label: "ADR 003: TUI memory mode vocabulary",
                   slug: "architecture/adr/003-tui-memory-mode-vocabulary",
                 },
+                {
+                  label: "ADR 004: lifeOS dual-bank design",
+                  slug: "architecture/adr/004-lifeos-dual-bank-design",
+                },
               ],
             },
           ],
