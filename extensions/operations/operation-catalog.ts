@@ -25,7 +25,7 @@ const tagMatchSchema = Type.Union(
   ],
   {
     description:
-      "How to match tags. Always enforced together with the automatic Pi project/user scope tag filter. 'exact' folds the automatic scope tags into the exact-match set (memory tags must equal scope tags plus these tags, no more, no less) instead of AND-ing a separate scope group, since scope tags must still be present.",
+      "How to match tags. Always enforced together with the automatic Pi project/user scope tag filter. 'exact' folds the automatic scope tags into the exact-match set (memory tags must equal scope tags plus these tags, no more, no less) instead of AND-ing a separate scope group, since scope tags must still be present. Note: 'exact' with empty/omitted tags -- Hindsight's pattern for recalling shared/untagged observations -- is incompatible with scope isolation and will not surface those observations here; see issue #450.",
   },
 );
 
