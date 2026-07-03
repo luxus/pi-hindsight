@@ -267,6 +267,33 @@ describe("resolveConfig", () => {
     expect(migrated).not.toHaveProperty("globalRetain");
   });
 
+  it("normalizes a removed legacy router retain mode to explicit-only without throwing", () => {
+    const userRetainCwd = tmp();
+    mkdirSync(join(userRetainCwd, ".pi"));
+    writeFileSync(
+      join(userRetainCwd, ".pi", "hindsight.json"),
+      JSON.stringify({ userRetain: { mode: "router" } }),
+    );
+    let userRetainConfig: ReturnType<typeof resolveConfig> | undefined;
+    expect(() => {
+      userRetainConfig = resolveConfig(userRetainCwd);
+    }).not.toThrow();
+    expect(userRetainConfig?.userRetain.mode).toBe("explicit-only");
+
+    const globalRetainCwd = tmp();
+    mkdirSync(join(globalRetainCwd, ".pi"));
+    writeFileSync(
+      join(globalRetainCwd, ".pi", "hindsight.json"),
+      JSON.stringify({ globalRetain: { mode: "router" } }),
+    );
+    let globalRetainConfig: ReturnType<typeof resolveConfig> | undefined;
+    expect(() => {
+      globalRetainConfig = resolveConfig(globalRetainCwd);
+    }).not.toThrow();
+    expect(globalRetainConfig?.userRetain.mode).toBe("explicit-only");
+    expect(globalRetainConfig?.globalRetain.mode).toBe("explicit-only");
+  });
+
   it("accepts recall query builder overrides", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));
