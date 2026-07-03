@@ -339,6 +339,13 @@ describe("operation catalog", () => {
     expect(properties.factTypes?.type).toBe("array");
     expect(properties.excludeMentalModels?.type).toBe("boolean");
     expect(properties.excludeMentalModelIds?.type).toBe("array");
+    expect(properties.tagsMatch?.anyOf?.map((schema) => schema.const)).toEqual([
+      "any",
+      "all",
+      "any_strict",
+      "all_strict",
+      "exact",
+    ]);
 
     await tool.execute(
       "call",

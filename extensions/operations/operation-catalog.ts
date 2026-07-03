@@ -178,11 +178,19 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           Type.Unsafe<import("@vectorize-io/hindsight-client").MinScores>({
             ...Type.Object({
               semantic: Type.Optional(
-                Type.Number({ description: "Minimum vector similarity (0-1)." }),
+                Type.Number({
+                  minimum: 0,
+                  maximum: 1,
+                  description: "Minimum vector similarity (0-1).",
+                }),
               ),
               keyword: Type.Optional(Type.Number({ description: "Minimum keyword/BM25 score." })),
               reranker: Type.Optional(
-                Type.Number({ description: "Minimum normalized reranker score (0-1)." }),
+                Type.Number({
+                  minimum: 0,
+                  maximum: 1,
+                  description: "Minimum normalized reranker score (0-1).",
+                }),
               ),
               final: Type.Optional(Type.Number({ description: "Minimum final ranking score." })),
             }),

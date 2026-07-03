@@ -149,7 +149,8 @@ function missionFields(bankConfig: unknown) {
       ? { observationsMission: bankConfig.observationsMission }
       : {}),
     ...(typeof bankConfig.retainStructuredChunkSize === "number" &&
-    Number.isFinite(bankConfig.retainStructuredChunkSize)
+    Number.isInteger(bankConfig.retainStructuredChunkSize) &&
+    bankConfig.retainStructuredChunkSize > 0
       ? { retainStructuredChunkSize: bankConfig.retainStructuredChunkSize }
       : {}),
   };

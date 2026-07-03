@@ -95,6 +95,20 @@ describe("resolveConfig", () => {
     expect(config.banks.project.retainStructuredChunkSize).toBe(4000);
   });
 
+  it("ignores invalid retainStructuredChunkSize values (negative, fractional, zero)", () => {
+    for (const invalid of [-100, 12.5, 0]) {
+      const cwd = tmp();
+      mkdirSync(join(cwd, ".pi"));
+      writeFileSync(
+        join(cwd, ".pi", "hindsight.json"),
+        JSON.stringify({ banks: { project: { retainStructuredChunkSize: invalid } } }),
+      );
+
+      const config = resolveConfig(cwd);
+      expect(config.banks.project.retainStructuredChunkSize).toBeUndefined();
+    }
+  });
+
   it("resolves env SecretRef API keys and lets direct env override win", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));

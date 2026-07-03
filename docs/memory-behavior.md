@@ -93,6 +93,8 @@ Pi still understands legacy local mission fields (`retainMission`, `reflectMissi
 
 Project banks focus on repo architecture, decisions, constraints, bugs, fixes, TODOs, conventions, and project-local preferences. Global banks focus on durable user preferences, recurring workflows, coding habits, and stable assistant behavior while excluding repo-specific code facts by default.
 
+`banks.project.retainStructuredChunkSize` and `banks.user.retainStructuredChunkSize` (Hindsight 0.8.x) tune how large a structured JSONL conversation turn can grow before Hindsight splits it into a new chunk during retain. Like the mission fields above, this is a raw-JSON-only bank config field with no TUI wiring; it only takes effect the first time pi-hindsight creates the bank, not on existing banks.
+
 ## Observation scopes
 
 Observation scope configuration lives under `observations`. The extension validates and expands scope placeholders for diagnostics, passes `observations.enabled` to bank ensure as Hindsight `enableObservations`, and stores expanded scopes on queued retain jobs so retries preserve the policy active when the job was created.
