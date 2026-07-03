@@ -289,6 +289,34 @@ describe("operation catalog", () => {
     );
   });
 
+  it("folds automatic scope tags into an exact tagsMatch filter for recall", async () => {
+    const recall = vi.fn(async (_bankId: string, _query: string, _options?: RecallOptions) => ({
+      ok: true,
+    }));
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-catalog-"));
+    const catalog = createOperationCatalog({
+      getClient: () => ({ ...client(), recall }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+    const tool = requireTool(catalog, "hindsight_recall");
+
+    await tool.execute(
+      "call",
+      { query: "find exact scope", tags: ["topic:auth"], tagsMatch: "exact" },
+      new AbortController().signal,
+      () => undefined,
+      { cwd, sessionManager: {} } as never,
+    );
+
+    const options = (recall.mock.calls as unknown[][])[0]?.[2] as { tagGroups?: unknown[] };
+    expect(options.tagGroups).toHaveLength(1);
+    expect(options.tagGroups?.[0]).toEqual({
+      match: "exact",
+      tags: expect.arrayContaining([expect.stringMatching(/^repo:/), "topic:auth"]),
+    });
+  });
+
   it("exposes and maps low-risk explicit reflect controls", async () => {
     const reflect = vi.fn(async (_bankId: string, _query: string, _options?: ReflectOptions) => ({
       ok: true,

@@ -167,6 +167,38 @@ describe("Hindsight best-practice invariants", () => {
     expect(scopes[0]!.tagGroups).not.toEqual(scopes[1]!.tagGroups);
   });
 
+  it("folds scope tags into the exact set instead of AND-ing an unsatisfiable scope group", () => {
+    // "exact" is set-equality; AND-ing a separate mandatory scope-tag group with a caller
+    // exact group would require the memory to have the scope tag AND have exactly the
+    // caller's tags, which no memory could ever satisfy. Scope tags must be folded into the
+    // exact set so scope isolation is preserved while the filter stays satisfiable.
+    expect(
+      composeScopedTagFilter(["repo:abc"], { tags: ["topic:auth"], tagsMatch: "exact" }),
+    ).toEqual({
+      tagGroups: [{ tags: ["repo:abc", "topic:auth"], match: "exact" }],
+    });
+
+    // De-duplicates when the caller happens to pass a tag that overlaps the scope tags.
+    expect(
+      composeScopedTagFilter(["repo:abc"], {
+        tags: ["repo:abc", "topic:auth"],
+        tagsMatch: "exact",
+      }),
+    ).toEqual({
+      tagGroups: [{ tags: ["repo:abc", "topic:auth"], match: "exact" }],
+    });
+
+    // Other match modes are unaffected and keep the separate scope + caller groups.
+    expect(
+      composeScopedTagFilter(["repo:abc"], { tags: ["topic:auth"], tagsMatch: "any_strict" }),
+    ).toEqual({
+      tagGroups: [
+        { tags: ["repo:abc"], match: "any_strict" },
+        { tags: ["topic:auth"], match: "any_strict" },
+      ],
+    });
+  });
+
   it("uses deterministic replace documents for historical imports", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-best-practices-"));
     mkdirSync(join(cwd, ".git"));

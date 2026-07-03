@@ -25,9 +25,19 @@ export function composeScopedTagFilter(
   filters: ScopedTagFilterInput = {},
 ): { tagGroups: HindsightTagGroup[] } | Record<string, never> {
   const groups: HindsightTagGroup[] = [];
-  if (scopeTags.length) groups.push({ tags: scopeTags, match: "any_strict" });
-  if (filters.tags?.length)
-    groups.push({ tags: filters.tags, match: filters.tagsMatch ?? "any_strict" });
+  if (filters.tags?.length && filters.tagsMatch === "exact") {
+    // "exact" is set-equality: a memory's tag set must equal this group's tags exactly.
+    // AND-ing it with a separate mandatory scope-tag group (any_strict) would require the
+    // memory to have the scope tags AND have exactly the caller's tags, which is
+    // unsatisfiable unless the caller already knows the opaque scope tags. Fold the scope
+    // tags into the exact set instead so scope isolation is preserved and the filter stays
+    // satisfiable.
+    groups.push({ tags: [...new Set([...scopeTags, ...filters.tags])], match: "exact" });
+  } else {
+    if (scopeTags.length) groups.push({ tags: scopeTags, match: "any_strict" });
+    if (filters.tags?.length)
+      groups.push({ tags: filters.tags, match: filters.tagsMatch ?? "any_strict" });
+  }
   if (filters.tagGroups?.length) groups.push(...filters.tagGroups);
   return groups.length ? { tagGroups: groups } : {};
 }
