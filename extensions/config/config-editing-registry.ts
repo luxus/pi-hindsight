@@ -418,11 +418,11 @@ export function buildBaseConfigEditingFields(
       tab: "Retain",
       label: "User retain mode",
       description:
-        "Advanced. explicit-only keeps global writes manual; router enables future high-confidence routing.",
+        "Advanced. explicit-only keeps User Bank writes manual (the only supported mode).",
       value: config.userRetain.mode,
       defaultValue: defaults.userRetain.mode,
       resetKey: "globalRetain.mode",
-      choices: ["explicit-only", "router"],
+      choices: ["explicit-only"],
       advanced: true,
     }),
     selectField({
@@ -708,7 +708,7 @@ export function patchForConfigEditingField(
     case "globalObservationsMission":
       return { globalObservationsMission: value.trim() };
     case "globalRetainMode":
-      return { globalRetainMode: value as "explicit-only" | "router" };
+      return { globalRetainMode: value as "explicit-only" };
     case "recallEnabled":
       return { recallEnabled: value === "Enable" };
     case "recallBudget":

@@ -4,9 +4,7 @@ These notes record deepening work completed after the mission/global-memory pass
 
 ## Memory routing
 
-- Keep `globalRetain.mode = "explicit-only"` as the default.
-- Router mode is explicit opt-in and now routes automatic retain through a mission-aware Adapter before enqueueing project/global/both/skip writes.
-- Evaluation fixtures cover balanced project/global/both/skip decisions across style, identity, workflow, implementation, delivery, and ephemeral artifact cases. Future work: add an LLM-backed Adapter behind the same Interface only if heuristic quality is not enough.
+- `globalRetain.mode`/`userRetain.mode` is `"explicit-only"` in every profile; automatic retain always targets the Project Bank only. The heuristic memory router that used to classify content into project/global/both/skip was removed per ADR 004; User Bank writes are always explicit (tool or command).
 
 ## Config editing
 

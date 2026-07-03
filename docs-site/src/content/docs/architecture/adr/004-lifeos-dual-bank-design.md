@@ -67,22 +67,21 @@ Unchanged from the existing 1.0 support scope ([Surface reference](/pi-hindsight
 
 ## Consequences
 
-Once the follow-up implementation issues below land:
-
-- There will be no default behavior changes for existing Project Only, Recall Only, or Project + User users beyond the new `recall.userMaxTokens` cap applying to whichever of them already have the User Bank enabled.
-- "User Only" will lose automatic classifier-driven retain; those users will need to use explicit retain (tool or future command) for User Bank writes going forward. This is a narrower, more predictable contract, consistent with every other profile.
-- `extensions/operations/memory-router.ts`, `extensions/lifecycle/routing-strategy.ts`, and `tests/memory-router.test.ts` will be removed, along with the `"router"` value from `userRetain.mode`/`globalRetain.mode` and the router-eval-fixture taxonomy documented in ADR-002.
-- A new `recall.userMaxTokens` config field, default value, and normalization will ship.
-
-Effective immediately with this ADR:
-
-- ADR-002 (explicit routing strategy seam) is superseded by this decision for the router's future; its routing-input/output shape documentation becomes historical context, not a live contract to maintain (see the amendment added to ADR-002).
+- No default behavior changes for existing Project Only, Recall Only, or Project + User users, other than the new `recall.userMaxTokens` cap (once #460 lands) applying to whichever of them already have the User Bank enabled.
+- "User Only" lost automatic classifier-driven retain; those users must use explicit retain (tool or future command) for User Bank writes going forward. This is a narrower, more predictable contract, consistent with every other profile.
+- `extensions/operations/memory-router.ts`, `extensions/lifecycle/routing-strategy.ts`, and `tests/memory-router.test.ts` are removed, along with the `"router"` value from `userRetain.mode`/`globalRetain.mode` and the router-eval-fixture taxonomy documented in ADR-002.
+- ADR-002 (explicit routing strategy seam) is superseded by this decision for the router's future; its routing-input/output shape documentation is historical context, not a live contract to maintain (see the amendment added to ADR-002).
+- A new `recall.userMaxTokens` config field, default value, and normalization will ship once #460 lands.
 
 ## Follow-up implementation issues
 
 Filed from this ADR's acceptance, per #424's acceptance criteria:
 
-- Remove the heuristic memory router (`memory-router.ts`, `routing-strategy.ts`, router eval tests), drop `"router"` from the `userRetain.mode`/`globalRetain.mode` type, and add config migration/normalization so existing `"router"`-mode configs fall back to `"explicit-only"` without erroring.
-- Add `recall.userMaxTokens` (default 400) and apply it to the User Bank recall scope in `recallForContext`, independent of `recall.maxTokens`.
-- Update [Memory profiles](/pi-hindsight/start/memory-profiles/), [Memory Banks](/pi-hindsight/concepts/memory-banks/), and [Compatibility matrix](/pi-hindsight/reference/compatibility/) to reflect the router removal and the per-bank token budget split.
-- Mark ADR-002 as superseded by this ADR for the router-specific sections once the removal ships.
+Completed:
+
+- #459: remove the heuristic memory router (`memory-router.ts`, `routing-strategy.ts`, router eval tests), drop `"router"` from the `userRetain.mode`/`globalRetain.mode` type, and add config migration/normalization so existing `"router"`-mode configs fall back to `"explicit-only"` without erroring. Also updated `CONTEXT.md`, `CONTRIBUTING.md`, `docs/architecture-todos.md`, `docs/memory-behavior.md`, and this ADR's ADR-002 amendment.
+
+Still future:
+
+- #460: add `recall.userMaxTokens` (default 400) and apply it to the User Bank recall scope in `recallForContext`, independent of `recall.maxTokens`.
+- Update [Memory profiles](/pi-hindsight/start/memory-profiles/), [Memory Banks](/pi-hindsight/concepts/memory-banks/), and [Compatibility matrix](/pi-hindsight/reference/compatibility/) to reflect the per-bank token budget split once #460 lands.

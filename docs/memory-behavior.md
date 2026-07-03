@@ -128,8 +128,8 @@ Per-session governance is stored outside provider-visible messages under `.pi/hi
 
 ## Global memory policy
 
-`globalRetain.mode` defaults to `explicit-only`. That means automatic project transcript retain does not write global memory unless the user explicitly opts into router mode.
+`globalRetain.mode` is always `explicit-only`. Automatic project transcript retain never writes User Bank (global) memory in any profile.
 
 `hindsight_retain_global` is the preferred tool for durable global user identity, preferences, and cross-project workflows.
 
-The internal memory router classifies retain candidates as `project`, `global`, `both`, or `skip` when `globalRetain.mode` is `router`. In the default `explicit-only` mode, routing never writes global memory automatically. ADR 002 documents the explicit routing strategy seam and safety policy for future richer bank topologies.
+ADR 004 removed the heuristic memory router that used to classify retain candidates as `project`, `global`, `both`, or `skip`; ADR 002 documents the explicit routing strategy seam it superseded.

@@ -22,7 +22,7 @@ The bank selected for the current repository. It stores repo-specific architectu
 
 ### User Bank
 
-An optional shared bank for durable user-level preferences, recurring workflows, and cross-project habits. It is disabled unless explicitly configured. Automatic User Bank retain only happens when an explicit profile or Router Mode enables it; otherwise User Bank writes are explicit. Legacy config/tool aliases may still call this bank `global`.
+An optional shared bank for durable user-level preferences, recurring workflows, and cross-project habits. It is disabled unless explicitly configured. Automatic retain never writes to the User Bank; User Bank writes are always explicit, through a tool or command. Legacy config/tool aliases may still call this bank `global`.
 
 ### Bank Alias
 
@@ -144,10 +144,6 @@ The shared service behind tools, commands, setup flows, and smoke tests. It owns
 
 The single catalog that registers public tools and commands. It maps Pi-facing surfaces to Memory Operation Service calls and keeps schemas/presenters centralized.
 
-### Memory Router
-
-The opt-in policy that decides whether automatic retain should write to project memory, user memory, both, or skip. The default User Bank retain mode is `explicit-only`; Router Mode must remain explicit because user-memory pollution is costly.
-
 ### Redaction
 
 The safety layer that removes or masks secrets before retain, diagnostics, or debug sidecars. Tokens, API keys, cookies, bearer headers, private URLs, and known secret-like values must not be logged or retained in normal mode.
@@ -161,7 +157,6 @@ The safety layer that removes or masks secrets before retain, diagnostics, or de
 - Use **Last-Recall Snapshot** for local recall debugging sidecars; do not call it cache.
 - Use **Recall Block** for ephemeral injected context; do not call it transcript memory.
 - Use **Memory Operation Service** for shared intent logic; use **Operation Catalog** for registration.
-- Use **Memory Router** only for the opt-in automatic retain routing policy, not for explicit retain.
 
 ## Architectural boundaries
 
@@ -179,7 +174,7 @@ The safety layer that removes or masks secrets before retain, diagnostics, or de
 - Retain writes raw rich content, not summaries.
 - Live session retains use stable document IDs and `append` mode.
 - Historical imports use deterministic document IDs and `replace` mode where reimport idempotency requires it.
-- Project memory is the default; User Bank memory requires explicit configuration and explicit writes unless an explicit profile or Router Mode enables automatic User Bank retain.
+- Project memory is the default; User Bank memory requires explicit configuration, and automatic retain never writes to the User Bank. User Bank writes are always explicit (tool or command).
 - Tags define scope and visibility; metadata records provenance and links back to source records.
 - Queue-first durability applies to automatic retain, explicit retain, and imports.
 - Debug visibility must be opt-in and must redact secrets before persistence.

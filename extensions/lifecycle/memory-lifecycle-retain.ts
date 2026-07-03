@@ -1,7 +1,6 @@
 import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { projectMessages } from "../utils/messages.js";
-import { routeMemoryCandidate, type MemoryRouteDecision } from "../operations/memory-router.js";
 import { enqueueRetainFromAgentEnd } from "./retain.js";
 import {
   advanceRetainCursor,
@@ -87,27 +86,9 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
   const retainableMessageCount = (messages: AgentEndEvent["messages"]): number =>
     retainableMessages(messages).length;
 
-  const retainTargets = (
-    runtime: RuntimeSnapshot,
-    messages: AgentEndEvent["messages"],
-  ): { targets: string[]; decision?: MemoryRouteDecision } => {
+  const retainTargets = (): string[] => {
     const config = deps.getConfig();
-    if (config.userRetain.mode !== "router") {
-      return { targets: config.banks.project.enabled ? [deps.getProjectBankId()] : [] };
-    }
-    const content = JSON.stringify(retainableMessages(messages), null, 2);
-    const decision = routeMemoryCandidate({
-      content,
-      context: "Automatic retain from Pi agent_end.",
-      config,
-    });
-    const targets = decision.writes.flatMap((target) => {
-      if (target === "project" && config.banks.project.enabled) return [deps.getProjectBankId()];
-      if (target === "global" && config.banks.user.enabled && config.banks.user.bankId)
-        return [config.banks.user.bankId];
-      return [];
-    });
-    return { targets: [...new Set(targets)], decision };
+    return config.banks.project.enabled ? [deps.getProjectBankId()] : [];
   };
 
   return {
@@ -150,14 +131,14 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
 
       try {
         deps.setMemoryStatus(runtime, "retaining");
-        const { targets, decision } = retainTargets(runtime, messages);
+        const targets = retainTargets();
         if (targets.length === 0) {
           await markRetainedMessages(runtime, event.messages, messages);
           deps.setMemoryStatus(runtime, "retained", 0);
           if (config.notifications.retain) {
             deps.notify(
               runtime,
-              `Hindsight router skipped ${messageCount} new message${messageCount === 1 ? "" : "s"}${decision ? `; ${decision.reason}` : ""}`,
+              `Hindsight skipped ${messageCount} new message${messageCount === 1 ? "" : "s"}; no automatic-retain bank enabled`,
               "info",
             );
           }
@@ -187,7 +168,7 @@ export function createRetainTurnPolicy(deps: RetainTurnPolicyDeps): RetainTurnPo
         if (config.notifications.retain) {
           deps.notify(
             runtime,
-            `Hindsight retained ${messageCount} new message${messageCount === 1 ? "" : "s"} to ${targets.join(", ")}${decision ? `; ${decision.reason}` : ""}${remaining > 0 ? `; ${remaining} queued` : ""}`,
+            `Hindsight retained ${messageCount} new message${messageCount === 1 ? "" : "s"} to ${targets.join(", ")}${remaining > 0 ? `; ${remaining} queued` : ""}`,
             "info",
           );
         }

@@ -98,7 +98,7 @@ export interface ProjectConfigPatchInput {
   globalRetainMission?: string;
   globalReflectMission?: string;
   globalObservationsMission?: string;
-  globalRetainMode?: "explicit-only" | "router";
+  globalRetainMode?: "explicit-only";
   enableGlobalBank?: boolean;
   memoryProfile?: MemoryProfile;
   recallEnabled?: boolean;
@@ -175,7 +175,7 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
         project: { enabled: false },
         user: userBankPatch,
       };
-      patch.userRetain = { mode: "router" };
+      patch.userRetain = { mode: "explicit-only" };
       patch.recall = { enabled: true };
       patch.retain = { enabled: true };
     } else {

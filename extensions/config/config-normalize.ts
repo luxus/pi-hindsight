@@ -212,14 +212,14 @@ export function normalizeConfig(
     userRetain: {
       mode: enumValue(
         config.userRetain?.mode ?? config.globalRetain?.mode,
-        ["explicit-only", "router"],
+        ["explicit-only"],
         DEFAULT_CONFIG.userRetain.mode,
       ),
     },
     globalRetain: {
       mode: enumValue(
         config.userRetain?.mode ?? config.globalRetain?.mode,
-        ["explicit-only", "router"],
+        ["explicit-only"],
         DEFAULT_CONFIG.userRetain.mode,
       ),
     },

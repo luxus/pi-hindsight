@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted and partially implemented. Reviewed 2026-05-09; still relevant.
+Superseded by [ADR-004](004-lifeos-dual-bank-design.md) (2026-07-03). Kept for historical record; not a live contract.
 
-The typed strategy seam, richer dry-run presenter output, and expanded eval fixtures have shipped. The broader guidance remains active for future routing work, especially named-bank or identity-aware routing.
+The typed strategy seam, richer dry-run presenter output, and expanded eval fixtures shipped and were later removed. This ADR's routing-input/output shapes, safety policy, and eval-fixture taxonomy below describe the router as it existed, not current behavior. `userRetain.mode`/`globalRetain.mode` is `"explicit-only"` in every profile today; there is no router mode.
 
-Amendment (2026-06): the `hindsight_route_memory` dry-run tool was removed in the slim-surface rewrite (#417). The router itself and the strategy seam remain; dry-run inspection would return through the `/hindsight` TUI if needed. References to the tool below are historical.
+Amendment (2026-06): the `hindsight_route_memory` dry-run tool was removed in the slim-surface rewrite (#417). References to the tool below are historical.
 
-Amendment (2026-07): [ADR-004](004-lifeos-dual-bank-design.md) decided to remove the heuristic memory router entirely rather than revive its dry-run visibility. Once that removal ships, this ADR's routing-input/output shapes, safety policy, and eval-fixture taxonomy become historical record of a superseded design, not a live contract.
+Amendment (2026-07): ADR-004 decided to remove the heuristic memory router entirely rather than revive its dry-run visibility, because it only ever auto-engaged in the narrow "User Only" profile, its own dry-run visibility was already gone, and an unexplainable heuristic classifier making automatic User Bank writes was exactly the silent-pollution risk this ADR warned against. The router, the `RoutingStrategy` seam, and the `"router"` config value were removed; personal-fact retain routing is explicit tools/commands only, matching every other profile.
 
 ## Context
 

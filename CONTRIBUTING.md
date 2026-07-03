@@ -100,7 +100,7 @@ Every code change must preserve these rules:
 - Historical imports use deterministic document IDs and preserve reimport idempotency.
 - **Recall** happens before answer generation and remains ephemeral.
 - **Recall Blocks** must not be persisted into transcript history or retained back into Hindsight.
-- **User Bank** writes are explicit by default; automatic User Bank retain requires an explicit profile or Router Mode.
+- **User Bank** writes are always explicit; automatic retain never writes to the User Bank.
 - Tags define scope and visibility; metadata records provenance.
 - Retain paths are queue-first.
 - Debug visibility is opt-in and must redact secrets before persistence.

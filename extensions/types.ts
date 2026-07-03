@@ -33,7 +33,7 @@ export type StatusStyle = "off" | "text" | "emoji" | "nerdfont";
 export type StatusDetail = "minimal" | "project" | "activity" | "verbose";
 export type RecallRole = "user" | "assistant" | "tool" | "system";
 export type RecallInjectionPosition = "prepend" | "append";
-export type GlobalRetainMode = "explicit-only" | "router";
+export type GlobalRetainMode = "explicit-only";
 export type ImportMode = "curated" | "raw" | "forensic";
 export type ImportQualityProfile = "compatible" | "strict";
 

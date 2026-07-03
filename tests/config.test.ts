@@ -207,7 +207,7 @@ describe("resolveConfig", () => {
           global: { enabled: true, bankId: "old-global" },
         },
         userRetain: { mode: "explicit-only" },
-        globalRetain: { mode: "router" },
+        globalRetain: { mode: "explicit-only" },
         recall: {
           userQueryPreamble: "Preferred preamble",
           globalQueryPreamble: "Legacy preamble",
@@ -250,7 +250,7 @@ describe("resolveConfig", () => {
           global: { enabled: false, bankId: "legacy-bank", retainMission: "Legacy retain" },
         },
         userRetain: {},
-        globalRetain: { mode: "router" },
+        globalRetain: { mode: "explicit-only" },
       }),
     );
 
@@ -262,7 +262,7 @@ describe("resolveConfig", () => {
       bankId: "legacy-bank",
       retainMission: "Legacy retain",
     });
-    expect(config.userRetain.mode).toBe("router");
+    expect(config.userRetain.mode).toBe("explicit-only");
     expect(migrated).not.toHaveProperty("banks.global");
     expect(migrated).not.toHaveProperty("globalRetain");
   });

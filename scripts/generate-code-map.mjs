@@ -48,13 +48,11 @@ const sections = [
     ],
   },
   {
-    title: "Identity, scope, and routing",
+    title: "Identity and scope",
     doc: "/pi-hindsight/concepts/memory-banks/",
     files: [
       ["extensions/memory-identity.ts", "Derives stable repo/session/document identity."],
       ["extensions/memory-scope.ts", "Selects project/global scopes and tags."],
-      ["extensions/memory-router.ts", "Routes memory behavior by mode and operation."],
-      ["extensions/routing-strategy.ts", "Keeps routing policy behind an explicit strategy seam."],
       ["extensions/observation-scopes.ts", "Defines retain observation-scope vocabulary."],
     ],
   },
@@ -164,7 +162,7 @@ ${section.files.map(([file, role]) => `- \`${file}\` — ${role}`).join("\n")}`,
 ## Data-flow sketch
 
 1. Pi calls the extension entrypoint and lifecycle hooks.
-2. Runtime and config modules derive repo/session identity, selected banks, document IDs, tags, and routing policy.
+2. Runtime and config modules derive repo/session identity, selected banks, document IDs, and tags.
 3. The context hook performs Recall and injects an ephemeral Recall Block.
 4. Agent-end retain builds a sanitized structured delta and enqueues a Retain Job before delivery.
 5. Queue delivery flushes jobs to Hindsight through the client adapter; failures remain durable for replay.

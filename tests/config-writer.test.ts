@@ -69,7 +69,7 @@ describe("config writer", () => {
       }),
     ).toEqual({
       banks: { project: { enabled: false }, user: { enabled: true, bankId: "shared" } },
-      userRetain: { mode: "router" },
+      userRetain: { mode: "explicit-only" },
       recall: { enabled: true },
       retain: { enabled: true },
     });
@@ -129,8 +129,8 @@ describe("config writer", () => {
   });
 
   it("builds user retain mode patch", () => {
-    expect(buildProjectConfigPatch({ globalRetainMode: "router" })).toEqual({
-      userRetain: { mode: "router" },
+    expect(buildProjectConfigPatch({ globalRetainMode: "explicit-only" })).toEqual({
+      userRetain: { mode: "explicit-only" },
     });
   });
 
