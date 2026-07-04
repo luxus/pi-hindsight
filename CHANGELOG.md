@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.7.0](https://github.com/luxus/pi-hindsight/compare/v0.6.0...v0.7.0) (2026-07-04)
+
+
+### Features
+
+* add exact tagsMatch mode for recall and reflect from Hindsight 0.8.x ([#449](https://github.com/luxus/pi-hindsight/issues/449)) ([bd6dc9d](https://github.com/luxus/pi-hindsight/commit/bd6dc9d4043cb5d7af0629f1b71f49ff0a4988b7))
+* add shared observation scope from Hindsight 0.8.x ([#448](https://github.com/luxus/pi-hindsight/issues/448)) ([52fbad4](https://github.com/luxus/pi-hindsight/commit/52fbad4a56df87b63265b138a6a2637c05919dac))
+* adopt Hindsight client 0.8.4 recall options, drop 'opinion' fact type ([#446](https://github.com/luxus/pi-hindsight/issues/446)) ([f1a0095](https://github.com/luxus/pi-hindsight/commit/f1a0095d17a92fe70517bfc6c4844b3239114d59))
+* adopt retainStructuredChunkSize bank config from Hindsight 0.8.x ([#447](https://github.com/luxus/pi-hindsight/issues/447)) ([eef92cd](https://github.com/luxus/pi-hindsight/commit/eef92cd0cfcb0eab5e0727e7f68fd4521281d8a0))
+* **bench:** add memory-quality benchmark harness over live Hindsight ([ddf7acb](https://github.com/luxus/pi-hindsight/commit/ddf7acbdfc40baa8cefc38da39483ebf83661632))
+* **client:** upgrade hindsight-client to 0.8.1 and retire REST shims ([d34cffa](https://github.com/luxus/pi-hindsight/commit/d34cffad08dd1df6a0d386a922cadf8e94139960))
+* **diagnostics:** revive /hindsight:doctor command ([#457](https://github.com/luxus/pi-hindsight/issues/457)) ([a430ef6](https://github.com/luxus/pi-hindsight/commit/a430ef6703ecbad41e28aad2578bd1433f4f78c4))
+* **diagnostics:** surface connected server version and feature flags ([3ce502d](https://github.com/luxus/pi-hindsight/commit/3ce502d0779c32ebe60bffd67249d33073a19d46))
+* **diagnostics:** surface connected server version and feature flags ([4b25732](https://github.com/luxus/pi-hindsight/commit/4b25732673fdf84be78aa0c954f99a2c4ea39c96))
+* **diagnostics:** surface connected server version and feature flags ([#441](https://github.com/luxus/pi-hindsight/issues/441)) ([3ce502d](https://github.com/luxus/pi-hindsight/commit/3ce502d0779c32ebe60bffd67249d33073a19d46))
+* land slim-core 0.8 rewrite ([#430](https://github.com/luxus/pi-hindsight/issues/430)) ([51776ee](https://github.com/luxus/pi-hindsight/commit/51776ee04eb6812a96ca0b427e44ea9c49693718))
+* land slim-core 0.8 rewrite (slim surface + native hindsight-client 0.8) ([51776ee](https://github.com/luxus/pi-hindsight/commit/51776ee04eb6812a96ca0b427e44ea9c49693718))
+* **recall:** add recall.userMaxTokens per ADR-004 ([#462](https://github.com/luxus/pi-hindsight/issues/462)) ([75060ad](https://github.com/luxus/pi-hindsight/commit/75060ad77b4a338cdca5b0613dfef9eb07bdc19f))
+* **recall:** expose source-fact enrichment in lifecycle recall and formatter ([1693bfd](https://github.com/luxus/pi-hindsight/commit/1693bfde926e39549a9a43808306f54ae7e0ce72))
+* **recall:** use tag-group scope isolation for lifecycle recall and tools ([a59b718](https://github.com/luxus/pi-hindsight/commit/a59b71860b8390da3a6488c299839f23455d00f4))
+* **reflect:** adopt 0.8 reflect options natively and summarize output ([92400dc](https://github.com/luxus/pi-hindsight/commit/92400dc07463764a6e7e7c6fb20bbf5aa82b86a3))
+* **retain:** surface retain outcome metadata in flush, queue, and status ([7e1b9b2](https://github.com/luxus/pi-hindsight/commit/7e1b9b2e96b8479f6c7a0bed3c51b337ae959783))
+* support expandable memory tool output ([#444](https://github.com/luxus/pi-hindsight/issues/444)) ([5da82de](https://github.com/luxus/pi-hindsight/commit/5da82ded2b243b8d5499e4e468af91fa56b823d9))
+
+
+### Bug Fixes
+
+* **ci:** repoint stale coverage include/thresholds after slim-core reorg ([81e3d50](https://github.com/luxus/pi-hindsight/commit/81e3d50e7a7c1664df4b053c8b9573df8969bbcc))
+* **ci:** repoint stale coverage include/thresholds after slim-core reorg ([f0dfc27](https://github.com/luxus/pi-hindsight/commit/f0dfc272bd830f75988fba51bc76398a5e63471c))
+* **ci:** repoint stale coverage include/thresholds after slim-core reorg ([#442](https://github.com/luxus/pi-hindsight/issues/442)) ([81e3d50](https://github.com/luxus/pi-hindsight/commit/81e3d50e7a7c1664df4b053c8b9573df8969bbcc))
+* **client:** remove append capability seam and consolidate retry ([69041be](https://github.com/luxus/pi-hindsight/commit/69041be8cb171a38942476596d63884b6cd3ac43))
+* **lifecycle:** record inspectable init health and make recall cache TTL configurable ([3d88772](https://github.com/luxus/pi-hindsight/commit/3d88772266391703a0727b5aacedc1fd6f19865c))
+* **observability:** surface best-effort failures in post-retain reflect and lifecycle recall ([#456](https://github.com/luxus/pi-hindsight/issues/456)) ([178aba4](https://github.com/luxus/pi-hindsight/commit/178aba4568dfe7fdb6c51ff71c3f26eae9271a5f))
+* **recall:** fold scope tags into exact tagsMatch instead of an unsatisfiable AND ([#451](https://github.com/luxus/pi-hindsight/issues/451)) ([0e0f9a2](https://github.com/luxus/pi-hindsight/commit/0e0f9a27d9233b2fdbd28d049306a24992b9f480))
+* **retain-cursor:** bound v3 cursor, fix edit dedupe regression ([5035748](https://github.com/luxus/pi-hindsight/commit/5035748ec014210114c2f558d9a6da0f64f927d8))
+* **retain-cursor:** clamp frontier when branch shrinks transcript ([99ec414](https://github.com/luxus/pi-hindsight/commit/99ec414ec6b6845ab1152a32b8e390437c37f4bd))
+* **retain:** harden retain-cursor dedupe for long sessions ([2704dc0](https://github.com/luxus/pi-hindsight/commit/2704dc0e36d2ee4d7f1b1993d33a5446955408c1))
+
 ## [0.6.0](https://github.com/luxus/pi-hindsight/compare/v0.5.0...v0.6.0) (2026-05-20)
 
 
