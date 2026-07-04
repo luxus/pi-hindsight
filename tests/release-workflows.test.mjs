@@ -8,7 +8,9 @@ describe(".github/workflows/release-please.yml", () => {
     expect(content).toContain("Dispatch trusted release workflow");
     expect(content).toContain("RELEASE_TAG: ${{ steps.release.outputs.tag_name }}");
     expect(content).toContain('test -n "${RELEASE_TAG}"');
-    expect(content).toContain('gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=');
+    expect(content).toMatch(
+      /gh workflow run release\.yml --ref "\$\{RELEASE_TAG\}" -f publish=(true|false)\b/,
+    );
     expect(content).not.toContain("npm publish --provenance --access public");
   });
 });
