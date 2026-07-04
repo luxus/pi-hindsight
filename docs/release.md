@@ -2,7 +2,9 @@
 
 Release automation uses [`release-please`](https://github.com/googleapis/release-please) to turn Conventional Commits on `main` into a release PR. The release PR updates `package.json`, `package-lock.json`, `.release-please-manifest.json`, and `CHANGELOG.md`.
 
-After the release PR merges, release-please creates the tag and GitHub release. The release-please config intentionally disables component tag prefixes so generated tags stay in the `vX.Y.Z` namespace used by the release workflow, rather than `pi-hindsight-vX.Y.Z`. Release Please then dispatches the trusted `Release` workflow at the immutable release tag with `publish=true`; that workflow verifies and publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC. The workflow does not use `NPM_TOKEN`.
+After the release PR merges, release-please creates the tag and GitHub release. The release-please config intentionally disables component tag prefixes so generated tags stay in the `vX.Y.Z` namespace used by the release workflow, rather than `pi-hindsight-vX.Y.Z`. Release Please then dispatches the trusted `Release` workflow at the immutable release tag; that workflow always verifies the release, and publishes `@luxusai/pi-hindsight` through npm trusted publishing with GitHub OIDC only when dispatched with `publish=true`. The workflow does not use `NPM_TOKEN`.
+
+The `publish` value release-please dispatches with is currently held at `false` in `.github/workflows/release-please.yml` (see the comment on the dispatch step), so merging a release PR creates the tag/GitHub release and runs verification without publishing. A maintainer publishes explicitly with `gh workflow run release.yml --ref vX.Y.Z -f publish=true` once ready. Flip the dispatch step back to `publish=true` to resume automatic publish-on-merge for future releases.
 
 ## Release checks
 
@@ -38,8 +40,8 @@ npm run check:release
 4. Confirm release/package verification passes. Use the `ci:package` or `ci:full` labels if additional gates are needed.
 5. Merge the release PR.
 6. Release-please creates the `v*.*.*` tag and GitHub release.
-7. Release Please dispatches the trusted `Release` workflow at the release tag with `publish=true`.
-8. The `Release` workflow verifies the tagged release commit and publishes to npm through trusted publishing.
+7. Release Please dispatches the trusted `Release` workflow at the release tag. It verifies the tagged release commit, and publishes to npm through trusted publishing only if the dispatch's `publish` input is `true` (currently held at `false`; see above).
+8. If publish was held, a maintainer runs `gh workflow run release.yml --ref vX.Y.Z -f publish=true` to publish once ready.
 
 Manual `Release Please` workflow dispatch can refresh the release PR if needed.
 
@@ -114,6 +116,6 @@ Optional secret and variables:
 
 An unconfigured workflow skip is not release proof for memory-path changes. Capability-gated smoke steps are evidence only for the server capabilities that actually ran; skipped advanced steps must be called out in PR verification notes.
 
-## Manual publish fallback
+## Manual publish
 
-Manual workflow dispatch of the `Release` workflow can verify only, or publish when `publish=true`. Use this fallback only when the normal release-please tag flow is blocked and a maintainer explicitly approves the manual release.
+Manual workflow dispatch of the `Release` workflow can verify only, or publish when `publish=true`. While automatic publish is held (see above), this manual dispatch is the normal way to publish after a release-please merge, not just a fallback. It is also available if the normal release-please tag flow is blocked and a maintainer explicitly approves a manual release.

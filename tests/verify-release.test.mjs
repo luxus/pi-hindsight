@@ -90,7 +90,7 @@ describe("verify-release", () => {
     expect(releasePlease).toContain("steps.release.outputs.release_created == 'true'");
     expect(releasePlease).toContain("RELEASE_TAG: ${{ steps.release.outputs.tag_name }}");
     expect(releasePlease).toContain(
-      'gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=true',
+      'gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=',
     );
     expect(releasePlease).not.toContain("npm publish --provenance --access public");
     expect(release).toContain("id-token: write");

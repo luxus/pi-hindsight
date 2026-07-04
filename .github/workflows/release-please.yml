@@ -36,4 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${RELEASE_TAG}"
-          gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=true
+          # publish is held at false for now (see docs/release.md); a maintainer
+          # runs `gh workflow run release.yml --ref "$RELEASE_TAG" -f publish=true`
+          # to actually publish once ready. Flip back to true to resume
+          # auto-publish on every release-please merge.
+          gh workflow run release.yml --ref "${RELEASE_TAG}" -f publish=false
