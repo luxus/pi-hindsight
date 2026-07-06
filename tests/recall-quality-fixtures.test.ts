@@ -31,6 +31,26 @@ describe("recall quality fixtures", () => {
     });
   });
 
+  it("drops recall results below configured score floors and fails open for missing scores", () => {
+    const result = filterRecallQuality(
+      [
+        { text: "Relevant project decision.", scores: { semantic: 0.72, reranker: 0.41 } },
+        { text: "Low semantic candidate.", scores: { semantic: 0.2, reranker: 0.9 } },
+        { text: "Low reranker candidate.", scores: { semantic: 0.9, reranker: 0.03 } },
+        { text: "BM25-only candidate without scores." },
+        { text: "Passthrough reranker candidate.", scores: { semantic: 0.9 } },
+      ],
+      { semantic: 0.65, reranker: 0.2 },
+    );
+
+    expect(result.items.map((item) => item.text)).toEqual([
+      "Relevant project decision.",
+      "BM25-only candidate without scores.",
+      "Passthrough reranker candidate.",
+    ]);
+    expect(result.reasonCounts).toEqual({ "below-score-floor": 2 });
+  });
+
   it("keeps high-signal workflow memories and excludes recalled-memory artifacts in context recall", async () => {
     const client: HindsightLikeClient = {
       retain: async () => undefined,

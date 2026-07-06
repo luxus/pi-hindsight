@@ -27,6 +27,9 @@ export PI_HINDSIGHT_PROJECT_BANK_ID=pi-project-my-repo
 export PI_HINDSIGHT_USER_BANK_ID=user-luxus
 # Legacy fallback still works during migration:
 # export PI_HINDSIGHT_GLOBAL_BANK_ID=global-luxus
+# Optional recall quality floors:
+export PI_HINDSIGHT_MIN_RERANKER=0.2
+export PI_HINDSIGHT_MIN_SEMANTIC=0.65
 ```
 
 Project config SecretRef shape:
@@ -105,7 +108,11 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
     "topK": 8,
     "timeoutMs": 40000,
     "cacheTtlMs": 60000,
-    "injectionPosition": "append"
+    "injectionPosition": "append",
+    "minScores": {
+      "reranker": 0.2,
+      "semantic": 0.65
+    }
   },
   "observations": {
     "enabled": true,
@@ -139,3 +146,10 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
   }
 }
 ```
+
+`recall.minScores` is optional and defaults to no floors, preserving current recall behavior.
+When set, automatic recall drops results whose returned `scores.semantic`, `scores.reranker`,
+`scores.final`, or `scores.keyword` is below the configured floor. Results with no `scores`
+object, or with a missing score field, pass through so BM25-only hits and passthrough
+rerankers are not silently discarded. `PI_HINDSIGHT_MIN_SEMANTIC` and
+`PI_HINDSIGHT_MIN_RERANKER` override the matching config floors when set.

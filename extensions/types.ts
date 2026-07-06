@@ -37,6 +37,10 @@ export type GlobalRetainMode = "explicit-only";
 export type ImportMode = "curated" | "raw" | "forensic";
 export type ImportQualityProfile = "compatible" | "strict";
 
+export const RECALL_SCORE_FIELDS = ["semantic", "reranker", "final", "keyword"] as const;
+export type RecallScoreField = (typeof RECALL_SCORE_FIELDS)[number];
+export type RecallMinScores = Partial<Record<RecallScoreField, number>>;
+
 export interface BankMissionSettings {
   retainMission?: string;
   reflectMission?: string;
@@ -89,6 +93,7 @@ export interface ResolvedConfig {
     includeFactsInDebug: boolean;
     queryTimestamp?: string;
     preferObservations: boolean;
+    minScores?: RecallMinScores;
   };
   observations: {
     enabled: boolean;
@@ -168,6 +173,14 @@ export interface RecallResultItem {
   occurred_start?: string | null;
   source_fact_ids?: string[];
   sourceFacts?: string[];
+  scores?: RecallResultScores;
+}
+
+export interface RecallResultScores {
+  semantic?: number | null;
+  reranker?: number | null;
+  final?: number | null;
+  keyword?: number | null;
 }
 
 export interface RecallFailure {

@@ -1,11 +1,13 @@
 import { basename } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { RECALL_SCORE_FIELDS } from "../types.js";
 import type {
   HindsightLikeClient,
   HindsightTagGroup,
   RecallBlock,
   RecallFailure,
   RecallResultItem,
+  RecallMinScores,
   RecallRole,
   ResolvedConfig,
 } from "../types.js";
@@ -206,7 +208,10 @@ export async function recallForContext(args: {
           ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
         }),
       );
-      const results = filterRecallQuality(textFromRecallResponse(response)).items;
+      const results = filterRecallQuality(
+        textFromRecallResponse(response),
+        args.config.recall.minScores,
+      ).items;
       blocks.push({
         bankId: scope.bankId,
         query,
@@ -233,7 +238,11 @@ export async function recallForContext(args: {
   };
 }
 
-export type RecallQualityDropReason = "blank-memory" | "recall-contamination" | "duplicate-memory";
+export type RecallQualityDropReason =
+  | "blank-memory"
+  | "recall-contamination"
+  | "duplicate-memory"
+  | "below-score-floor";
 
 export interface RecallQualityDecision {
   item: RecallResultItem;
@@ -251,27 +260,46 @@ function isRecallContamination(text: string): boolean {
   );
 }
 
+function isBelowScoreFloor(item: RecallResultItem, minScores?: RecallMinScores): boolean {
+  if (!minScores) return false;
+  const scores = item.scores;
+  // Fail open when Hindsight omits scores so BM25-only hits and passthrough rerankers
+  // are not silently discarded by local policy.
+  if (!scores) return false;
+  for (const field of RECALL_SCORE_FIELDS) {
+    const floor = minScores[field];
+    const value = scores[field];
+    if (typeof floor === "number" && typeof value === "number" && value < floor) return true;
+  }
+  return false;
+}
+
 export function classifyRecallQuality(
   item: RecallResultItem,
   seen: Set<string>,
+  minScores?: RecallMinScores,
 ): RecallQualityDecision {
   const text = normalizedMemoryText(item);
   const reasons: RecallQualityDropReason[] = [];
   if (!text) reasons.push("blank-memory");
   if (isRecallContamination(itemText(item))) reasons.push("recall-contamination");
   if (text && seen.has(text)) reasons.push("duplicate-memory");
+  if (isBelowScoreFloor(item, minScores)) reasons.push("below-score-floor");
   if (!reasons.length) seen.add(text);
   return { item, decision: reasons.length ? "drop" : "keep", reasons };
 }
 
-export function filterRecallQuality(items: RecallResultItem[]): {
+export function filterRecallQuality(
+  items: RecallResultItem[],
+  minScores?: RecallMinScores,
+): {
   items: RecallResultItem[];
   decisions: RecallQualityDecision[];
   dropped: number;
   reasonCounts: Partial<Record<RecallQualityDropReason, number>>;
 } {
   const seen = new Set<string>();
-  const decisions = items.map((item) => classifyRecallQuality(item, seen));
+  const decisions = items.map((item) => classifyRecallQuality(item, seen, minScores));
   const reasonCounts: Partial<Record<RecallQualityDropReason, number>> = {};
   for (const decision of decisions) {
     for (const reason of decision.reasons) reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
