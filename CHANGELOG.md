@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/luxus/pi-hindsight/compare/v0.7.0...v0.8.0) (2026-07-06)
+
+
+### Features
+
+* **banks:** bundle starter bank templates with browse/apply commands ([#475](https://github.com/luxus/pi-hindsight/issues/475)) ([08a2055](https://github.com/luxus/pi-hindsight/commit/08a2055fe6ea12de4a29d25654977c9a82a7cd19))
+
 ## [0.7.0](https://github.com/luxus/pi-hindsight/compare/v0.6.0...v0.7.0) (2026-07-04)
 
 
