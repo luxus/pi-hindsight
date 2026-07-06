@@ -44,7 +44,10 @@ export interface BankMissionConfig extends BankMissionSettings {
   enableObservations?: boolean;
 }
 
-function resolveBankMissions(config: BankMissionSettings, defaults: BankMissionDefaults) {
+export function resolveBankMissions(
+  config: BankMissionSettings,
+  defaults: BankMissionDefaults,
+): BankMissionDefaults {
   return {
     reflectMission: config.reflectMission ?? defaults.reflectMission,
     retainMission: config.retainMission ?? defaults.retainMission,

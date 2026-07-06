@@ -6,7 +6,7 @@ import {
   createConfig,
   sdk,
 } from "@vectorize-io/hindsight-client";
-import type { Client, ReflectRequest } from "@vectorize-io/hindsight-client";
+import type { BankTemplateManifest, Client, ReflectRequest } from "@vectorize-io/hindsight-client";
 import { redactError } from "../utils/sanitize.js";
 import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { PI_HINDSIGHT_USER_AGENT } from "../version.js";
@@ -144,6 +144,26 @@ async function reflect(
   return args.raw.reflect(args.bankId, args.query, { ...args.options, signal });
 }
 
+async function importBankTemplate(
+  lowLevel: Client,
+  bankId: string,
+  manifest: BankTemplateManifest,
+  options: { dryRun?: boolean } | undefined,
+  signal: AbortSignal,
+): Promise<unknown> {
+  const response = await sdk.importBankTemplate({
+    client: lowLevel,
+    path: { bank_id: bankId },
+    ...(options?.dryRun ? { query: { dry_run: true } } : {}),
+    // The generated SDK types `body` as `never` for this endpoint: the OpenAPI schema
+    // declares a raw JSON object rather than a typed model. The request body is still the
+    // documented BankTemplateManifest shape (Hindsight's Bank Templates API docs).
+    body: manifest as never,
+    signal,
+  });
+  return unwrapSdkResponse(response, "importBankTemplate");
+}
+
 export function createHindsightClient(config: ResolvedConfig): HindsightLikeClient {
   installFetchRequestCompat();
 
@@ -212,6 +232,13 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
     getBankConfig: (bankId) =>
       withTimeout("hindsight getBankConfig", timeoutMs, (signal) =>
         withRetry("getBankConfig", () => raw.getBankConfig(bankId, { signal })),
+      ),
+    importBankTemplate: (bankId, manifest, options) =>
+      withTimeout(
+        "hindsight importBankTemplate",
+        timeoutMs,
+        (signal) => importBankTemplate(lowLevel, bankId, manifest, options, signal),
+        options?.signal,
       ),
     health: () =>
       withTimeout("hindsight health", timeoutMs, (signal) =>

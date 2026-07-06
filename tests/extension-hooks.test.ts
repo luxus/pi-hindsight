@@ -46,10 +46,14 @@ vi.mock("../extensions/client/client.js", () => ({
   checkHindsight: mocked.checkHindsight,
 }));
 
-vi.mock("../extensions/banks/bank-operations.js", () => ({
-  ensureGlobalBank: mocked.ensureGlobalBank,
-  ensureProjectBank: mocked.ensureProjectBank,
-}));
+vi.mock("../extensions/banks/bank-operations.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../extensions/banks/bank-operations.js")>();
+  return {
+    ...actual,
+    ensureGlobalBank: mocked.ensureGlobalBank,
+    ensureProjectBank: mocked.ensureProjectBank,
+  };
+});
 
 describe("extension hooks", () => {
   const originalHome = process.env.HOME;

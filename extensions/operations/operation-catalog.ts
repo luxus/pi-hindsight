@@ -7,6 +7,7 @@ import {
 import { importCommandOperations } from "../tui/command-imports.js";
 import { maintenanceCommandOperations } from "../tui/command-maintenance.js";
 import { sessionCommandOperations } from "../tui/command-session.js";
+import { templateCommandOperations } from "../tui/command-templates.js";
 import type { MemoryOperationsDeps } from "./memory-operation-service.js";
 import { createMemoryOperations } from "./memory-operation-service.js";
 import { formatReflectResult } from "./reflect-presenter.js";
@@ -483,6 +484,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     ...importCommandOperations(operations),
     ...sessionCommandOperations(operations),
     ...maintenanceCommandOperations(operations),
+    ...templateCommandOperations(operations),
   ];
 
   return { tools, commands };

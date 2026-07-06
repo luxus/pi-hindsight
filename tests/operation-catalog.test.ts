@@ -459,6 +459,8 @@ describe("operation catalog", () => {
       "hindsight:queue",
       "hindsight:flush",
       "hindsight:doctor",
+      "hindsight:templates",
+      "hindsight:template-apply",
     ]);
   });
 });

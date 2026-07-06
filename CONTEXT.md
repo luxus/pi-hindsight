@@ -28,6 +28,14 @@ An optional shared bank for durable user-level preferences, recurring workflows,
 
 A stable name that resolves to a real bank ID. `project` means the selected Project Bank. `global` is the legacy/internal alias for the configured User Bank. Prefer **User Bank** in user-facing docs when the exact bank ID is not important.
 
+### Bank Template
+
+A Hindsight manifest (bank config overrides, mental models, directives) that provisions a bank in one call. `pi-hindsight` bundles a small, fixed set of built-in templates (`/hindsight:templates`, `/hindsight:template-apply`) targeted at its own Project Bank and User Bank missions; browsing, editing, and exporting arbitrary templates remains a Hindsight control-plane responsibility.
+
+### Mental Model
+
+A Hindsight-synthesized, reusable answer to a recurring question over stored memory, refreshed via Reflect rather than recalled raw. `pi-hindsight` does not expose ad hoc mental model creation, editing, or refresh; the Hindsight control-plane web UI owns that lifecycle. The bundled Bank Templates are the one explicit, dry-run-gated exception: applying one creates or updates its fixed set of starter mental models.
+
 ### Retain
 
 A write to Hindsight. Retain stores raw rich content, not summaries. Automatic retain writes structured session deltas after turns; explicit retain writes user-provided content through tools or commands.

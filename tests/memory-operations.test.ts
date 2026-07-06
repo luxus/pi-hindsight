@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { defaultProjectBankMissions } from "../extensions/banks/bank-operations.js";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { createMemoryOperations } from "../extensions/operations/memory-operation-service.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
@@ -302,5 +303,160 @@ describe("memory operations", () => {
     const report = JSON.parse(await operations.doctor(cwd)) as Record<string, unknown>;
 
     expect(report.health).toBe("unreachable: connection refused");
+  });
+
+  it("lists the bundled bank templates", () => {
+    const operations = createMemoryOperations({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const templates = operations.listBankTemplates();
+
+    expect(templates.map((template) => template.id)).toEqual(
+      expect.arrayContaining(["pi-coding-project", "pi-user-preferences"]),
+    );
+  });
+
+  it("applies a project-targeted bank template to the resolved project bank", async () => {
+    const importBankTemplate = vi.fn(async () => ({
+      bank_id: "project-bank",
+      config_applied: true,
+    }));
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), importBankTemplate }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const result = await operations.applyBankTemplate({
+      templateId: "pi-coding-project",
+      dryRun: true,
+    });
+
+    expect(result.bankId).toBe("project-bank");
+    expect(importBankTemplate).toHaveBeenCalledWith(
+      "project-bank",
+      expect.objectContaining({ version: "1" }),
+      { dryRun: true },
+    );
+  });
+
+  it("applies a user-targeted bank template to the configured user bank", async () => {
+    const importBankTemplate = vi.fn(async () => ({
+      bank_id: "global-luxus",
+      config_applied: true,
+    }));
+    const config = {
+      ...DEFAULT_CONFIG,
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "global-luxus" } },
+    };
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), importBankTemplate }),
+      getConfig: () => config,
+      getProjectBankId: () => "project-bank",
+    });
+
+    const result = await operations.applyBankTemplate({ templateId: "pi-user-preferences" });
+
+    expect(result.bankId).toBe("global-luxus");
+    expect(result.dryRun).toBe(true);
+    expect(importBankTemplate).toHaveBeenCalledWith(
+      "global-luxus",
+      expect.objectContaining({ version: "1" }),
+      { dryRun: true },
+    );
+  });
+
+  it("keeps a customized project mission instead of overwriting it with the template default", async () => {
+    const importBankTemplate = vi.fn(async () => ({
+      bank_id: "project-bank",
+      config_applied: true,
+    }));
+    const config = {
+      ...DEFAULT_CONFIG,
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        project: { ...DEFAULT_CONFIG.banks.project, retainMission: "Custom retain mission" },
+      },
+    };
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), importBankTemplate }),
+      getConfig: () => config,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await operations.applyBankTemplate({ templateId: "pi-coding-project" });
+
+    const manifest = (importBankTemplate.mock.calls as unknown[][])[0]?.[1] as {
+      bank?: { retain_mission?: string; reflect_mission?: string };
+    };
+    expect(manifest.bank?.retain_mission).toBe("Custom retain mission");
+    expect(manifest.bank?.reflect_mission).toBe(defaultProjectBankMissions().reflectMission);
+  });
+
+  it("keeps a customized user mission instead of overwriting it with the template default", async () => {
+    const importBankTemplate = vi.fn(async () => ({
+      bank_id: "global-luxus",
+      config_applied: true,
+    }));
+    const config = {
+      ...DEFAULT_CONFIG,
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        user: { enabled: true, bankId: "global-luxus", reflectMission: "Custom reflect mission" },
+      },
+    };
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), importBankTemplate }),
+      getConfig: () => config,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await operations.applyBankTemplate({ templateId: "pi-user-preferences" });
+
+    const manifest = (importBankTemplate.mock.calls as unknown[][])[0]?.[1] as {
+      bank?: { reflect_mission?: string };
+    };
+    expect(manifest.bank?.reflect_mission).toBe("Custom reflect mission");
+  });
+
+  it("rejects applying a user-targeted template when the user bank is disabled", async () => {
+    const importBankTemplate = vi.fn(async () => ({}));
+    const operations = createMemoryOperations({
+      getClient: () => ({ ...client(), importBankTemplate }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await expect(
+      operations.applyBankTemplate({ templateId: "pi-user-preferences" }),
+    ).rejects.toThrow("User Hindsight bank is disabled");
+    expect(importBankTemplate).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown bank template id", async () => {
+    const operations = createMemoryOperations({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await expect(operations.applyBankTemplate({ templateId: "does-not-exist" })).rejects.toThrow(
+      "Unknown bank template id",
+    );
+  });
+
+  it("rejects applying a bank template when the client does not support import", async () => {
+    const operations = createMemoryOperations({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await expect(operations.applyBankTemplate({ templateId: "pi-coding-project" })).rejects.toThrow(
+      "does not support bank template import",
+    );
   });
 });

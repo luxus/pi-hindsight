@@ -600,4 +600,183 @@ describe("hindsight commands", () => {
     expect(commands.has("hindsight:debug")).toBe(false);
     expect(commands.has("hindsight:setup")).toBe(false);
   });
+
+  it("lists bundled bank templates", async () => {
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd: "/tmp", ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:templates")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringMatching(/pi-coding-project[\s\S]*pi-user-preferences/),
+      "info",
+    );
+  });
+
+  it("shows usage when template-apply is called without an id", async () => {
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = { cwd: "/tmp", ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
+
+    await commands.get("hindsight:template-apply")?.handler([], ctx);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("Usage:"), "warning");
+  });
+
+  it("shows a bank template dry-run preview without asking for confirmation", async () => {
+    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => ({ ...client(), importBankTemplate }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd: "/tmp",
+      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn() },
+      sessionManager: {},
+    };
+
+    await commands
+      .get("hindsight:template-apply")
+      ?.handler(["pi-coding-project", "--dry-run"], ctx);
+
+    expect(importBankTemplate).toHaveBeenCalledTimes(1);
+    expect(importBankTemplate).toHaveBeenCalledWith("bank", expect.any(Object), { dryRun: true });
+    expect(ctx.ui.select).not.toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Bank template preview: pi-coding-project -> bank"),
+      "info",
+    );
+  });
+
+  it("asks before applying a bank template and cancels safely", async () => {
+    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => ({ ...client(), importBankTemplate }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd: "/tmp",
+      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Cancel") },
+      sessionManager: {},
+    };
+
+    await commands.get("hindsight:template-apply")?.handler(["pi-coding-project"], ctx);
+
+    expect(importBankTemplate).toHaveBeenCalledTimes(1);
+    expect(importBankTemplate).toHaveBeenCalledWith("bank", expect.any(Object), { dryRun: true });
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      "Hindsight bank template apply cancelled.",
+      "warning",
+    );
+  });
+
+  it("applies a bank template after confirmation", async () => {
+    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => ({ ...client(), importBankTemplate }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd: "/tmp",
+      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Apply") },
+      sessionManager: {},
+    };
+
+    await commands.get("hindsight:template-apply")?.handler(["pi-coding-project"], ctx);
+
+    expect(importBankTemplate).toHaveBeenCalledTimes(2);
+    expect(importBankTemplate).toHaveBeenNthCalledWith(1, "bank", expect.any(Object), {
+      dryRun: true,
+    });
+    expect(importBankTemplate).toHaveBeenNthCalledWith(2, "bank", expect.any(Object), {
+      dryRun: false,
+    });
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining("Applied bank template: pi-coding-project -> bank"),
+      "info",
+    );
+  });
+
+  it("redacts secrets when bank template apply fails", async () => {
+    const importBankTemplate = vi.fn(async () => {
+      throw new Error("failed to reach api_key=supersecret123456");
+    });
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => ({ ...client(), importBankTemplate }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd: "/tmp",
+      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn() },
+      sessionManager: {},
+    };
+
+    await commands
+      .get("hindsight:template-apply")
+      ?.handler(["pi-coding-project", "--dry-run"], ctx);
+
+    const message = ctx.ui.notify.mock.calls[0]?.[0] as string;
+    expect(message).toContain("Hindsight bank template apply failed");
+    expect(message).toContain("api_key=[REDACTED]");
+    expect(message).not.toContain("supersecret123456");
+  });
 });

@@ -4,7 +4,9 @@ Mental models should start as explicit, inspectable user choices. Pi Hindsight m
 
 ## Placement decision
 
-Starter suggestions live in docs only. Mental models are created and managed in the Hindsight control-plane web UI; Pi does not expose mental model creation. Use the suggestions below as copy-paste material when creating models in the web UI.
+Starter suggestions live in docs only, and ad hoc mental models are created and managed in the Hindsight control-plane web UI; Pi does not expose general-purpose mental model creation. Use the suggestions below as copy-paste material when creating custom models in the web UI.
+
+The one exception: the suggestions on this page are also the exact content of pi-hindsight's bundled [bank templates](https://luxus.github.io/pi-hindsight/reference/tools-and-commands/#bank-templates) (`/hindsight:templates`, `/hindsight:template-apply`). Applying one of those two fixed, reviewed templates does create these specific mental models via Hindsight's bank-template import endpoint — a curated, dry-run-gated, explicit-command action, not the general mental-model editor described below. This page is the source of truth for what those bundled mental models ask and why; keep `extensions/banks/bank-templates.ts` in sync with it, not the other way around.
 
 ## Product rules
 
@@ -53,4 +55,6 @@ Avoid starter mental models for:
 
 ## Web UI handoff
 
-Pi intentionally does not recreate Hindsight's mental model editor. All create/edit/refresh/delete happens in the Hindsight control-plane web UI. If Pi ever surfaces these suggestions interactively, it must stay read-only with a web interface handoff, and it should not hide source queries behind friendly labels.
+Pi intentionally does not recreate Hindsight's mental model editor. Custom mental models — anything beyond the two bundled bank templates above — are create/edit/refresh/delete only in the Hindsight control-plane web UI. If Pi ever surfaces these suggestions interactively outside of applying a bundled template, it must stay read-only with a web interface handoff, and it should not hide source queries behind friendly labels.
+
+The bundled bank templates are held to a narrower, still-conservative bar: they are exactly the fixed content on this page (no free-form model authoring), applying one is always an explicit command with a dry-run preview, and the preview always shows each model's name, source query, and tags before the user is asked to confirm.

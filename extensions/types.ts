@@ -1,4 +1,5 @@
 import type {
+  BankTemplateManifest,
   MinScores,
   TagGroupAndInput,
   TagGroupLeaf,
@@ -310,6 +311,11 @@ export interface HindsightLikeClient {
   getBankProfile?(bankId: string): Promise<unknown>;
   getBankStats?(bankId: string): Promise<unknown>;
   getBankConfig?(bankId: string): Promise<unknown>;
+  importBankTemplate?(
+    bankId: string,
+    manifest: BankTemplateManifest,
+    options?: { dryRun?: boolean; signal?: AbortSignal },
+  ): Promise<unknown>;
   health?(): Promise<unknown>;
   getVersion?(): Promise<unknown>;
 }

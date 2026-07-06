@@ -12,7 +12,7 @@ For a generated reference of registered tools, commands, and editable config fie
 /hindsight
 ```
 
-Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. Status activity can distinguish recall, retain, and import work, including `importing`, `imported`, `import-queued`, and `import-failed`. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI. Mental models and directives are managed in the Hindsight control-plane web UI.
+Shows memory status, selected banks, config facts, retain queue status, import status, and recent retain receipts. Status activity can distinguish recall, retain, and import work, including `importing`, `imported`, `import-queued`, and `import-failed`. It also exposes setup/config editing actions. Press `f` to flush queued retain jobs from the TUI. Directives, and arbitrary/custom mental models, are managed in the Hindsight control-plane web UI; see [Bank templates](#bank-templates) below for the one exception (a small bundled set of starter mental models).
 
 ## Setup and config
 
@@ -69,6 +69,16 @@ Use dry-run before non-dry-run imports. See [Import controls](/pi-hindsight/refe
 - `next-opt-out`: skips automatic retain once, then clears itself.
 - manual tags are merged into automatic retain jobs.
 
+## Bank templates
+
+```text
+/hindsight:templates
+/hindsight:template-apply <id>
+/hindsight:template-apply <id> --dry-run
+```
+
+`/hindsight:templates` lists pi-hindsight's small, fixed set of bundled bank templates (see [Starter mental model suggestions](/pi-hindsight/concepts/starter-mental-model-suggestions/) for the mental models they create). `/hindsight:template-apply <id>` writes bank config overrides and creates/updates the template's mental models via Hindsight's bank-template import endpoint, targeting whichever bank (Project or User) the template declares. Bank config falls back to Pi's default missions the same way `ensureProjectBank`/`ensureGlobalBank` do — any mission you've already customized in config is kept, never overwritten by the template default. It previews with `dryRun` and asks for confirmation before writing unless `--dry-run` is passed. This is the one place pi-hindsight creates mental models directly; everything beyond these bundled templates — arbitrary template authoring, editing, export, and directive management — stays in the Hindsight control-plane web UI.
+
 ## Explicit tools
 
 Pi exposes exactly four memory tools:
@@ -78,7 +88,7 @@ Pi exposes exactly four memory tools:
 - `hindsight_retain_global`
 - `hindsight_reflect`
 
-Everything else — bank config/profile administration, document/entity/graph/tag browsing, memory inspection, consolidation control, and operation management — lives in the Hindsight control-plane web UI.
+Everything else — bank config/profile administration, document/entity/graph/tag browsing, memory inspection, consolidation control, and operation management — lives in the Hindsight control-plane web UI, except for the bundled [Bank templates](#bank-templates) commands above.
 
 Tool notes:
 

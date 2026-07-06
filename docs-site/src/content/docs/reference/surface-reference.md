@@ -113,24 +113,26 @@ Ask Hindsight to synthesize an answer from memory. Use explicitly, not for defau
 
 ## Commands
 
-| Command                              | Description                                                                                                  |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `/hindsight`                         | Open Hindsight memory TUI.                                                                                   |
-| `/hindsight:init`                    | Write .pi/hindsight.json with the currently selected project bank.                                           |
-| `/hindsight:import`                  | Import the current Pi session JSONL into Hindsight.                                                          |
-| `/hindsight:import-current`          | Import the current Pi session JSONL into Hindsight.                                                          |
-| `/hindsight:import-file`             | Import an explicit Pi session JSONL file into Hindsight.                                                     |
-| `/hindsight:import-project-sessions` | Import Pi session JSONL files scoped to the current repo/cwd.                                                |
-| `/hindsight:session`                 | Show current Hindsight session memory mode and tags.                                                         |
-| `/hindsight:mode`                    | Set session memory mode: normal, read-only, or ignored.                                                      |
-| `/hindsight:next-opt-out`            | Skip automatic retain for the next agent run in this session.                                                |
-| `/hindsight:retain`                  | Enable or disable retain for this session.                                                                   |
-| `/hindsight:tag`                     | Add or remove a Hindsight tag for this session.                                                              |
-| `/hindsight:last-recall`             | Show the last opt-in persisted recall snapshot.                                                              |
-| `/hindsight:recall-cleanup`          | Scan or prune accidentally persisted Hindsight recall blocks from the current session transcript.            |
-| `/hindsight:queue`                   | Inspect local retain queue and dead-letter metadata without printing payloads.                               |
-| `/hindsight:flush`                   | Flush queued retain jobs.                                                                                    |
-| `/hindsight:doctor`                  | Emit a machine-readable Hindsight diagnostics report (connectivity, queue, imports, config) for bug reports. |
+| Command                              | Description                                                                                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/hindsight`                         | Open Hindsight memory TUI.                                                                                                                                     |
+| `/hindsight:init`                    | Write .pi/hindsight.json with the currently selected project bank.                                                                                             |
+| `/hindsight:import`                  | Import the current Pi session JSONL into Hindsight.                                                                                                            |
+| `/hindsight:import-current`          | Import the current Pi session JSONL into Hindsight.                                                                                                            |
+| `/hindsight:import-file`             | Import an explicit Pi session JSONL file into Hindsight.                                                                                                       |
+| `/hindsight:import-project-sessions` | Import Pi session JSONL files scoped to the current repo/cwd.                                                                                                  |
+| `/hindsight:session`                 | Show current Hindsight session memory mode and tags.                                                                                                           |
+| `/hindsight:mode`                    | Set session memory mode: normal, read-only, or ignored.                                                                                                        |
+| `/hindsight:next-opt-out`            | Skip automatic retain for the next agent run in this session.                                                                                                  |
+| `/hindsight:retain`                  | Enable or disable retain for this session.                                                                                                                     |
+| `/hindsight:tag`                     | Add or remove a Hindsight tag for this session.                                                                                                                |
+| `/hindsight:last-recall`             | Show the last opt-in persisted recall snapshot.                                                                                                                |
+| `/hindsight:recall-cleanup`          | Scan or prune accidentally persisted Hindsight recall blocks from the current session transcript.                                                              |
+| `/hindsight:queue`                   | Inspect local retain queue and dead-letter metadata without printing payloads.                                                                                 |
+| `/hindsight:flush`                   | Flush queued retain jobs.                                                                                                                                      |
+| `/hindsight:doctor`                  | Emit a machine-readable Hindsight diagnostics report (connectivity, queue, imports, config) for bug reports.                                                   |
+| `/hindsight:templates`               | List bundled Hindsight bank templates.                                                                                                                         |
+| `/hindsight:template-apply`          | Apply a bundled Hindsight bank template: writes bank config and creates/updates mental models. Defaults to a dry-run preview with confirmation before writing. |
 
 ## Config fields
 

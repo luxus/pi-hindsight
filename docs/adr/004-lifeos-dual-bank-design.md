@@ -4,6 +4,8 @@
 
 Accepted 2026-07-03.
 
+Amendment (2026-07): the "What stays in the web UI" section below cited `docs/surface-reference.md`'s deferred-surfaces table for "template management remains a Hindsight control-plane responsibility." That table (generated from the operation catalog) never actually listed template management as a row; the citation was inaccurate, not a decision this ADR made. Separately, #467 narrowed the underlying claim: `pi-hindsight` now bundles a small, fixed set of starter bank templates (`/hindsight:templates`, `/hindsight:template-apply`) applied via the official Hindsight client's bank-template import endpoint. Arbitrary template authoring, editing, export, and cross-bank template catalog browsing remain control-plane-only; applying one of the two bundled, reviewed templates to the already-selected bank does not.
+
 ## Context
 
 Pi Hindsight already supports two kinds of memory: a per-repo **Project Bank** and an optional cross-project **User Bank** (the "lifeOS" memory — durable preferences, recurring workflows, coding habits). #420 built tag-group scope isolation specifically so recall could merge both banks safely. This ADR answers the question #424 asked: should the User Bank become a first-class default next to the Project Bank, or stay opt-in, and what should happen to the heuristic memory router along the way.
@@ -61,7 +63,7 @@ No changes. `defaultProjectBankMissions()` and `defaultGlobalBankMissions()` (`e
 
 ## What stays in the web UI
 
-Unchanged from the existing 1.0 support scope (`docs/surface-reference.md`'s deferred-surfaces table): cross-bank listing, bank creation/deletion, and template management remain Hindsight control-plane responsibilities. This ADR is only about which already-selected banks participate in a given repo's recall/retain and how routing between them works — not about managing banks themselves.
+Unchanged from the existing 1.0 support scope (`docs/surface-reference.md`'s "Deferred or non-goal upstream surfaces" table): cross-bank listing and bank deletion remain Hindsight control-plane responsibilities. Template management is narrower after #467: `pi-hindsight` bundles a small, fixed set of reviewed starter templates and can apply one to the already-selected bank, but arbitrary template authoring, editing, export, and a general template catalog stay control-plane-only. This ADR is only about which already-selected banks participate in a given repo's recall/retain and how routing between them works — not about managing banks themselves.
 
 ## Consequences
 
