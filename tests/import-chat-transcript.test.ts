@@ -20,6 +20,10 @@ describe("chat transcript import", () => {
         JSON.stringify({ kind: "process_end", output: "done" }),
         JSON.stringify({ type: "extension_ui_request", content: "noise" }),
         "{bad",
+        // Non-object JSON and typeless objects count as malformed lines.
+        "42",
+        JSON.stringify(["not", "a", "record"]),
+        JSON.stringify({ content: "missing type field" }),
       ].join("\n"),
     );
 
@@ -33,7 +37,7 @@ describe("chat transcript import", () => {
       { type: "extension_ui_request", count: 1 },
       { type: "message_update", count: 1 },
     ]);
-    expect(parsed.malformedLineCount).toBe(1);
+    expect(parsed.malformedLineCount).toBe(4);
   });
 
   it("dry-runs chat transcript import with user-memory provenance metrics", async () => {
