@@ -5,6 +5,8 @@ export type FieldId =
   | "apiKeyDirect"
   | "timeoutMs"
   | "memoryProfile"
+  | "agentUse"
+  | "mentalModelsInject"
   | "projectBankId"
   | "projectRetainMission"
   | "projectReflectMission"
@@ -49,6 +51,8 @@ export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   apiKeyDirect: ["hindsight", "apiKey"],
   timeoutMs: ["hindsight", "timeoutMs"],
   memoryProfile: ["retain", "enabled"],
+  agentUse: ["agentUse"],
+  mentalModelsInject: ["mentalModels", "inject"],
   projectBankId: ["banks", "project", "bankId"],
   projectRetainMission: ["banks", "project", "retainMission"],
   projectReflectMission: ["banks", "project", "reflectMission"],
@@ -104,6 +108,8 @@ export const CONFIG_RESET_PATHS = {
     ["recall", "enabled"],
     ["retain", "enabled"],
   ],
+  agentUse: [["agentUse"]],
+  "mentalModels.inject": [["mentalModels", "inject"]],
   "banks.project.bankId": [
     ["banks", "project", "bankId"],
     ["banks", "project", "derive"],
@@ -188,6 +194,8 @@ export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   apiKeyDirect: "hindsight.apiKey",
   timeoutMs: "hindsight.timeoutMs",
   memoryProfile: "banks.profile",
+  agentUse: "agentUse",
+  mentalModelsInject: "mentalModels.inject",
   projectBankId: "banks.project.bankId",
   projectRetainMission: "banks.project.retainMission",
   projectReflectMission: "banks.project.reflectMission",

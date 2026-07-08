@@ -44,11 +44,6 @@ From the TUI:
 - remove selected config overrides
 - inspect deployment setup fields
 
-Use command shortcuts when you do not need the full TUI:
+From the hub: press `f` to flush the retain queue, `i` for import, `o` for doctor. Last-recall debug snapshots are opt-in local files under `.pi/hindsight/` when `recall.storeLastRecall` is enabled.
 
-```text
-/hindsight:flush
-/hindsight:last-recall
-```
-
-For first-time imports, prefer guided setup's dry-run-first import prompt. For later explicit imports, see [Importing sessions](./importing-sessions/). See [Tools and commands](../reference/tools-and-commands/) for the full command surface.
+For first-time imports, prefer guided setup's dry-run-first import prompt. For later imports, see [Importing sessions](./importing-sessions/). See [Tools and commands](../reference/tools-and-commands/) for the public surface.

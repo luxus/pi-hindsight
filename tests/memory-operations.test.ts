@@ -315,7 +315,12 @@ describe("memory operations", () => {
     const templates = operations.listBankTemplates();
 
     expect(templates.map((template) => template.id)).toEqual(
-      expect.arrayContaining(["pi-coding-project", "pi-user-preferences"]),
+      expect.arrayContaining([
+        "pi-coding-project",
+        "pi-conversation-project",
+        "pi-coding-user",
+        "pi-conversation-user",
+      ]),
     );
   });
 

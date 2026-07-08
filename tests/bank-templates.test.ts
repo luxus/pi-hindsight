@@ -40,17 +40,27 @@ describe("bank templates", () => {
     });
   });
 
-  it("matches Pi's own default user-bank missions for the user template", () => {
-    const template = getBuiltInBankTemplate("pi-user-preferences");
+  it("matches Pi's own default user-bank missions for the coding user template", () => {
+    const template = getBuiltInBankTemplate("pi-coding-user");
     const defaults = defaultGlobalBankMissions();
 
     expect(template?.target).toBe("user");
+    expect(template?.agentUse).toBe("coding");
     expect(template?.manifest.bank).toMatchObject({
       reflect_mission: defaults.reflectMission,
       retain_mission: defaults.retainMission,
       observations_mission: defaults.observationsMission,
       enable_observations: true,
     });
+  });
+
+  it("includes a conversation project template distinct from coding", () => {
+    const coding = getBuiltInBankTemplate("pi-coding-project");
+    const conversation = getBuiltInBankTemplate("pi-conversation-project");
+    expect(conversation?.agentUse).toBe("conversation");
+    expect(conversation?.manifest.mental_models?.map((m) => m.id)).not.toEqual(
+      coding?.manifest.mental_models?.map((m) => m.id),
+    );
   });
 
   it("does not set an auto-refresh trigger on bundled mental models", () => {

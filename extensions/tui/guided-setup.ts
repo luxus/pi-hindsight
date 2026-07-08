@@ -10,7 +10,12 @@ import { importDocumentSummary } from "../imports/import-presentation.js";
 import type { ImportProgressEvent } from "../imports/import-sessions.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "../config/config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
-import type { ResolvedConfig } from "../types.js";
+import type { AgentUseProfile, ResolvedConfig } from "../types.js";
+import { defaultTemplateIdFor } from "../banks/bank-templates.js";
+import {
+  renderBankTemplateApplyResult,
+  renderBankTemplateMentalModelDetails,
+} from "./bank-template-presentation.js";
 
 export function hasProjectHindsightConfig(cwd: string): boolean {
   return (
@@ -96,6 +101,44 @@ function setupDocsHint(topic: string, path: string): string {
 
 function setupImportProgressMessage(event: ImportProgressEvent): string {
   return `Hindsight import progress: ${event.message}`;
+}
+
+async function maybeOfferMentalModelsForSetup(args: {
+  ctx: ExtensionCommandContext;
+  operations: MemoryOperations;
+  agentUse: AgentUseProfile;
+  setupProfile: SetupProfileChoice;
+}): Promise<void> {
+  const targets: Array<"project" | "user"> = [];
+  if (profileUsesProject(args.setupProfile)) targets.push("project");
+  if (profileUsesUser(args.setupProfile)) targets.push("user");
+  if (targets.length === 0) return;
+
+  const proceed = await args.ctx.ui.confirm(
+    "Provision starter mental models?",
+    `Agent use: ${args.agentUse}. Dry-run preview first; nothing is written without confirmation. Mental models become part of automatic context when present.`,
+  );
+  if (!proceed) return;
+
+  for (const target of targets) {
+    const templateId = defaultTemplateIdFor(target, args.agentUse);
+    try {
+      const dryRun = await args.operations.applyBankTemplate({ templateId, dryRun: true });
+      const details = renderBankTemplateMentalModelDetails(dryRun.template);
+      const confirmed = await args.ctx.ui.confirm(
+        `Apply ${templateId} to ${dryRun.bankId}?`,
+        `${details ? `${details}\n\n` : ""}${renderBankTemplateApplyResult(dryRun)}`,
+      );
+      if (!confirmed) continue;
+      const applied = await args.operations.applyBankTemplate({ templateId, dryRun: false });
+      args.ctx.ui.notify(renderBankTemplateApplyResult(applied), "info");
+    } catch (error) {
+      args.ctx.ui.notify(
+        `Mental model template ${templateId} skipped: ${error instanceof Error ? error.message : String(error)}`,
+        "warning",
+      );
+    }
+  }
 }
 
 function setupImportProgressReporter(ctx: ExtensionCommandContext) {
@@ -214,6 +257,16 @@ export async function runGuidedSetup(args: {
     "User Only": "user-only",
     "Recall Only": "recall-only",
   }[profile] as SetupProfileChoice;
+
+  const agentUseLabel = await args.ctx.ui.select("How do you use this Pi agent?", [
+    "Coding (architecture, conventions, decisions)",
+    "Conversation / real-life tasks (goals, people, commitments)",
+  ]);
+  if (!agentUseLabel) return false;
+  const agentUse = agentUseLabel.startsWith("Conversation")
+    ? ("conversation" as const)
+    : ("coding" as const);
+
   const config = args.deps.getConfig();
   const projectBankId = profileUsesProject(setupProfile)
     ? await askBankId({
@@ -236,12 +289,15 @@ export async function runGuidedSetup(args: {
     return false;
   }
 
-  const patch = buildGuidedSetupPatch({
-    profile: setupProfile,
-    ...(projectBankId !== undefined ? { projectBankId } : {}),
-    ...(globalBankId !== undefined ? { globalBankId } : {}),
-    config,
-  });
+  const patch = {
+    ...buildGuidedSetupPatch({
+      profile: setupProfile,
+      ...(projectBankId !== undefined ? { projectBankId } : {}),
+      ...(globalBankId !== undefined ? { globalBankId } : {}),
+      config,
+    }),
+    agentUse,
+  };
   const globalPatch = buildGuidedSetupGlobalPatch({
     profile: setupProfile,
     ...(globalBankId !== undefined ? { globalBankId } : {}),
@@ -249,6 +305,7 @@ export async function runGuidedSetup(args: {
   });
   const summary = [
     `Profile: ${setupProfileChoiceToMemoryProfile(setupProfile)}`,
+    `Agent use: ${agentUse}`,
     ...(projectBankId ? [`Project config: project bank ${projectBankId}`] : []),
     ...(globalBankId ? [`Global config: user bank ${globalBankId}`] : []),
     ...(setupProfile === "recall-only"
@@ -265,6 +322,13 @@ export async function runGuidedSetup(args: {
   }
   const result = await operations.configure(args.cwd, patch);
   args.ctx.ui.notify(`Wrote ${result.path}`, "info");
+
+  await maybeOfferMentalModelsForSetup({
+    ctx: args.ctx,
+    operations,
+    agentUse,
+    setupProfile,
+  });
 
   await maybeOfferHistoricalImportForSetup({
     ctx: args.ctx,

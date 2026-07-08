@@ -3,6 +3,11 @@ import type { ResolvedConfig } from "../types.js";
 export const DEFAULT_CONFIG: ResolvedConfig = {
   enabled: true,
   hindsight: { baseUrl: "http://localhost:8888", timeoutMs: 30_000 },
+  agentUse: "coding",
+  mentalModels: {
+    inject: true,
+    maxChars: 12_000,
+  },
   banks: {
     project: { enabled: true, derive: "repo" },
     global: { enabled: false },

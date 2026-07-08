@@ -4,10 +4,6 @@ import {
   type ExtensionAPI,
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { importCommandOperations } from "../tui/command-imports.js";
-import { maintenanceCommandOperations } from "../tui/command-maintenance.js";
-import { sessionCommandOperations } from "../tui/command-session.js";
-import { templateCommandOperations } from "../tui/command-templates.js";
 import type { MemoryOperationsDeps } from "./memory-operation-service.js";
 import { createMemoryOperations } from "./memory-operation-service.js";
 import { formatReflectResult } from "./reflect-presenter.js";
@@ -458,33 +454,19 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     }),
   ];
 
+  // Human surface is TUI-first: only `/hindsight` is registered publicly.
+  // Day-to-day ops (mode, import, mental models, flush, doctor, init) live in the hub.
   const commands: CommandOperation[] = [
     {
       name: "hindsight",
       spec: {
-        description: "Open Hindsight memory TUI.",
+        description:
+          "Open Hindsight memory hub (status, mode, mental models, import, flush, doctor, setup).",
         handler: async (_args, ctx) => {
           await runHindsightSetupTui(ctx, deps);
         },
       },
     },
-    {
-      name: "hindsight:init",
-      spec: {
-        description: "Write .pi/hindsight.json with the currently selected project bank.",
-        handler: async (_args, ctx) => {
-          const result = await operations.init(ctx.cwd);
-          ctx.ui.notify(
-            `Wrote ${result.path}; project bank ${result.projectBankId}. Run /hindsight to inspect status.`,
-            "info",
-          );
-        },
-      },
-    },
-    ...importCommandOperations(operations),
-    ...sessionCommandOperations(operations),
-    ...maintenanceCommandOperations(operations),
-    ...templateCommandOperations(operations),
   ];
 
   return { tools, commands };

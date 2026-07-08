@@ -34,9 +34,8 @@ Risks:
 Safe alternative:
 
 - Keep recall ephemeral by default.
-- Use `recall.storeLastRecall` to write the latest recall snapshot to a local sidecar file.
-- Use `/hindsight:last-recall` to inspect the latest snapshot.
-- Use `/hindsight:recall-cleanup` only for accidental persisted recall blocks.
+- Use `recall.storeLastRecall` to write the latest recall snapshot to a local sidecar file under `.pi/hindsight/`.
+- Inspect that sidecar on disk when debugging; there is no public last-recall slash command.
 
 Design rule:
 

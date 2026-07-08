@@ -223,23 +223,23 @@ describe("config editing model", () => {
   });
 
   it("hides advanced fields unless advanced mode is enabled", () => {
-    const basicBanks = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers()).find(
-      (tab) => tab.id === "Banks",
-    );
+    // Default hub is Status-only; settings tabs require advanced mode.
+    const basicTabs = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers());
+    expect(basicTabs.map((tab) => tab.id)).toEqual(["Status"]);
+
     const advancedBanks = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers(), [], {
       showAdvanced: true,
     }).find((tab) => tab.id === "Banks");
-    const basicRecall = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers()).find(
-      (tab) => tab.id === "Recall",
-    );
     const advancedRecall = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", layers(), [], {
       showAdvanced: true,
     }).find((tab) => tab.id === "Recall");
 
-    expect(basicBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
+    expect(advancedBanks?.fields.map((field) => field.id)).toContain("agentUse");
+    expect(advancedBanks?.fields.map((field) => field.id)).toContain("mentalModelsInject");
     expect(advancedBanks?.fields.map((field) => field.id)).not.toContain("projectRetainMission");
-    expect(basicRecall?.fields.map((field) => field.id)).not.toContain("recallStoreFailures");
+    // Advanced mode shows advanced-marked fields.
     expect(advancedRecall?.fields.map((field) => field.id)).toContain("recallStoreFailures");
+    expect(advancedRecall?.fields.map((field) => field.id)).toContain("recallStoreLast");
   });
 
   it("hides local mission editors because missions are Hindsight bank config", () => {

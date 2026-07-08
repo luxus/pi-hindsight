@@ -13,6 +13,7 @@ import { isInjectedHindsightMemory, projectMessageText } from "../utils/messages
 import { createMemoryIdentity } from "../operations/memory-identity.js";
 import { redactError } from "../utils/sanitize.js";
 import { withTimeout } from "../client/timeout.js";
+import { loadMentalModelsForScopes } from "./mental-models.js";
 
 export interface RecallScope {
   kind?: "project" | "global";
@@ -224,10 +225,16 @@ export async function recallForContext(args: {
       });
     }
   }
-  const rendered = renderRecallBlocks(blocks, args.config.recall.topK);
+  const recallRendered = renderRecallBlocks(blocks, args.config.recall.topK);
+  const mental = await loadMentalModelsForScopes({
+    client: args.client,
+    config: args.config,
+    bankIds: args.scopes.map((scope) => scope.bankId),
+  });
+  const rendered = [mental.rendered, recallRendered].filter(Boolean).join("\n\n");
   return {
     rendered,
-    blocks: blocks.map((block) => ({ ...block, rendered })),
+    blocks: blocks.map((block) => ({ ...block, rendered: recallRendered })),
     failed: failures.length,
     failures,
   };
@@ -246,7 +253,7 @@ function normalizedMemoryText(item: RecallResultItem): string {
 }
 
 function isRecallContamination(text: string): boolean {
-  return /<\/?hindsight[-_]memor(?:y|ies)>|customType["']?\s*:\s*["']hindsight-recall|last-recall\.json/.test(
+  return /<\/?hindsight[-_]memor(?:y|ies)>|<\/?hindsight-mental-models>|<\/?mental_models>|customType["']?\s*:\s*["']hindsight-(?:recall|mental-models)|last-recall\.json/.test(
     text,
   );
 }

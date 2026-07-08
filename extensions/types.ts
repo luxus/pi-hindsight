@@ -37,6 +37,8 @@ export type RecallInjectionPosition = "prepend" | "append";
 export type GlobalRetainMode = "explicit-only";
 export type ImportMode = "curated" | "raw" | "forensic";
 export type ImportQualityProfile = "compatible" | "strict";
+/** Agent use profile selects mental-model seed sets (coding vs conversation/life). */
+export type AgentUseProfile = "coding" | "conversation";
 
 export interface BankMissionSettings {
   retainMission?: string;
@@ -53,6 +55,14 @@ export interface HindsightEntityInput {
 export interface ResolvedConfig {
   enabled: boolean;
   hindsight: { baseUrl: string; apiKey?: string; apiKeyRef?: string; timeoutMs: number };
+  /** Selects default mental-model sets (coding vs conversation/real-life). */
+  agentUse: AgentUseProfile;
+  mentalModels: {
+    /** When true, inject non-empty mental models into automatic context. */
+    inject: boolean;
+    /** Total character budget for injected mental-model blocks. */
+    maxChars: number;
+  };
   banks: {
     project: BankMissionSettings & {
       enabled: boolean;
@@ -215,6 +225,14 @@ export interface RetainJob {
   deadLetteredAt?: string;
 }
 
+export interface MentalModelSummary {
+  id: string;
+  name: string;
+  content?: string;
+  tags?: string[];
+  lastRefreshedAt?: string;
+}
+
 export interface HindsightLikeClient {
   retain(
     bankId: string,
@@ -315,6 +333,10 @@ export interface HindsightLikeClient {
     bankId: string,
     manifest: BankTemplateManifest,
     options?: { dryRun?: boolean; signal?: AbortSignal },
+  ): Promise<unknown>;
+  listMentalModels?(
+    bankId: string,
+    options?: { tags?: string[]; signal?: AbortSignal },
   ): Promise<unknown>;
   health?(): Promise<unknown>;
   getVersion?(): Promise<unknown>;

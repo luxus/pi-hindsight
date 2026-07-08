@@ -272,12 +272,9 @@ Required:
 - `hindsight_retain`
 - `hindsight_reflect`
 
-Suggested commands:
+Suggested human surface:
 
-- `/hindsight:status`
-- `/hindsight:doctor`
-- `/hindsight:config`
-- `/hindsight:import`
+- `/hindsight` TUI hub (status, mode, mental models, import, flush, doctor, setup)
 
 ## Implementation priorities
 

@@ -295,6 +295,27 @@ export function buildBaseConfigEditingFields(
       resetKey: "banks.profile",
       choices: ["project-only", "project+global", "global-only", "recall-only"],
     }),
+    selectField({
+      id: "agentUse",
+      tab: "Banks",
+      label: "Agent use",
+      description:
+        "Selects starter mental-model sets. Coding: architecture/conventions/decisions. Conversation: goals, people/context, and life-task preferences.",
+      value: config.agentUse,
+      defaultValue: defaults.agentUse,
+      resetKey: "agentUse",
+      choices: ["coding", "conversation"],
+    }),
+    booleanField({
+      id: "mentalModelsInject",
+      tab: "Banks",
+      label: "Inject mental models",
+      description:
+        "When models exist on the active bank(s), inject their content into automatic context alongside recall.",
+      value: config.mentalModels.inject,
+      defaultValue: defaults.mentalModels.inject,
+      resetKey: "mentalModels.inject",
+    }),
     textField({
       id: "projectBankId",
       tab: "Banks",
@@ -367,7 +388,7 @@ export function buildBaseConfigEditingFields(
       tab: "Recall",
       label: "Store last recall snapshot",
       description:
-        "Advanced. Writes the latest successful recall snapshot to a local sidecar for /hindsight:last-recall.",
+        "Advanced. Writes the latest successful recall snapshot to a local sidecar under .pi/hindsight/ for debugging.",
       value: config.recall.storeLastRecall,
       defaultValue: defaults.recall.storeLastRecall,
       resetKey: "recall.storeLastRecall",
@@ -600,6 +621,8 @@ export function buildBaseConfigEditingFields(
 export const PROJECT_ONLY_FIELD_IDS = new Set<FieldId>([
   "projectBankId",
   "memoryProfile",
+  "agentUse",
+  "mentalModelsInject",
   "queuePath",
   "importMode",
   "importQualityProfile",
@@ -700,6 +723,10 @@ export function patchForConfigEditingField(
         memoryProfile: value as MemoryProfile,
         globalBankId: config.banks.user.bankId ?? DEFAULT_GLOBAL_BANK_ID,
       };
+    case "agentUse":
+      return { agentUse: value as "coding" | "conversation" };
+    case "mentalModelsInject":
+      return { mentalModelsInject: value === "Enable" };
     case "projectBankId":
       return { projectBankId: value.trim() };
     case "projectRetainMission":
@@ -838,6 +865,13 @@ export function buildStatusFacts(
     ...extraFacts,
     ["Extension", enabledDisabled(config.enabled)],
     ["Memory scope", profile],
+    ["Agent use", config.agentUse],
+    [
+      "Mental models",
+      config.mentalModels.inject
+        ? `inject on (budget ${config.mentalModels.maxChars})`
+        : "inject off",
+    ],
     ["Active project bank", config.banks.project.enabled ? projectBankId : "disabled"],
     [
       "User bank",

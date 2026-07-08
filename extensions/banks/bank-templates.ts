@@ -9,15 +9,24 @@ import {
   resolveBankMissions,
 } from "./bank-operations.js";
 import type { BankMissionDefaults } from "./bank-operations.js";
-import type { BankMissionSettings } from "../types.js";
+import type { AgentUseProfile, BankMissionSettings } from "../types.js";
 
-export type BankTemplateProfileId = "pi-coding-project" | "pi-user-preferences";
+export type BankTemplateProfileId =
+  | "pi-coding-project"
+  | "pi-conversation-project"
+  | "pi-coding-user"
+  | "pi-conversation-user"
+  /** @deprecated alias for pi-coding-user */
+  | "pi-user-preferences";
+
 export type BankTemplateTarget = "project" | "user";
 
 export interface BuiltInBankTemplate {
   id: BankTemplateProfileId;
   label: string;
   target: BankTemplateTarget;
+  /** Which agent use profile this template is for. */
+  agentUse: AgentUseProfile;
   description: string;
   manifest: BankTemplateManifest;
 }
@@ -31,130 +40,206 @@ function bankConfigFromMissions(missions: BankMissionDefaults): BankTemplateConf
   };
 }
 
-// Mirrors docs/starter-mental-model-suggestions.md's project-bank suggestions. Keep in sync;
-// that doc is the source of truth for what these mental models ask and why. No refresh
-// trigger is set: refresh stays explicit per that doc's product rules.
-const PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
+// Tags must be a subset of tags written at retain time (source:pi, repo:*, session:*)
+// so Hindsight mental-model refresh does not match empty with all_strict.
+const RETAIN_COMPAT_TAGS = ["source:pi"] as const;
+
+// Coding project models — durable engineering knowledge (oh-my-pi-shaped core + a few extras).
+const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
   {
     id: "project-architecture-and-seams",
     name: "Project architecture and seams",
     source_query:
       "What are the stable architecture boundaries, modules, and seams in this project?",
-    tags: ["project", "architecture", "stable"],
-    max_tokens: 2048,
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 800,
   },
   {
-    id: "testing-and-release-process",
-    name: "Testing and release process",
-    source_query: "What test, CI, release, and verification practices does this project use?",
-    tags: ["project", "workflow", "release"],
-    max_tokens: 2048,
-  },
-  {
-    id: "memory-safety-policy",
-    name: "Memory safety policy",
+    id: "project-conventions",
+    name: "Project conventions",
     source_query:
-      "What memory rules, safety constraints, and anti-patterns matter in this project?",
-    tags: ["project", "memory-policy", "safety"],
-    max_tokens: 2048,
+      "What are this project's conventions for code style, build, testing, release, and review? Only include conventions explicit in the project or repeatedly enforced.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 800,
   },
   {
-    id: "current-roadmap-and-priorities",
-    name: "Current roadmap and priorities",
+    id: "project-decisions",
+    name: "Project decisions",
     source_query:
-      "What roadmap themes, active priorities, and deferred non-goals recur for this project?",
-    tags: ["project", "roadmap", "priority"],
-    max_tokens: 2048,
-  },
-  {
-    id: "code-style-and-naming-conventions",
-    name: "Code style and naming conventions",
-    source_query: "What code style, naming, module, and testing conventions recur in this project?",
-    tags: ["project", "conventions", "style"],
-    max_tokens: 2048,
+      "What durable architectural or product decisions have been made for this project, and what rationale or trade-offs were recorded? Exclude transient plans and active task state.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 800,
   },
 ];
 
-// Mirrors docs/starter-mental-model-suggestions.md's global-bank suggestions. Keep in sync.
-const USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
+// Conversation / real-life task project models — not coding-centric.
+const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
+  {
+    id: "active-goals-and-commitments",
+    name: "Active goals and commitments",
+    source_query:
+      "What goals, commitments, deadlines, and open loops is the user tracking in this context? Prefer durable ongoing items over one-off chat filler.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 800,
+  },
+  {
+    id: "people-and-context",
+    name: "People and context",
+    source_query:
+      "Which people, roles, relationships, and recurring situations matter here? Capture only durable context the assistant needs, not sensitive private details.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
+  },
+  {
+    id: "decisions-and-preferences",
+    name: "Decisions and preferences",
+    source_query:
+      "What durable decisions, preferences, and constraints has the user stated for this conversation or life domain? Exclude one-off requests.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 800,
+  },
+];
+
+const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
   {
     id: "user-collaboration-preferences",
     name: "User collaboration preferences",
     source_query:
       "What durable preferences has the user shown for collaboration, review, autonomy, and communication?",
-    tags: ["global", "user-preference", "collaboration"],
-    max_tokens: 2048,
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
   },
   {
     id: "coding-assistant-operating-preferences",
     name: "Coding assistant operating preferences",
     source_query:
       "What durable preferences has the user shown for how coding assistants should plan, verify, commit, and use tools?",
-    tags: ["global", "assistant-workflow", "preference"],
-    max_tokens: 2048,
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
   },
   {
     id: "cross-project-workflow-habits",
     name: "Cross-project workflow habits",
     source_query:
       "What workflow habits recur across the user's repositories, issue tracking, PR review, and release process?",
-    tags: ["global", "workflow", "cross-project"],
-    max_tokens: 2048,
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
+  },
+];
+
+const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
+  {
+    id: "communication-preferences",
+    name: "Communication preferences",
+    source_query:
+      "What durable preferences has the user shown for tone, length, language, and how the assistant should respond?",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
   },
   {
-    id: "tooling-and-review-preferences",
-    name: "Tooling and review preferences",
+    id: "life-workflow-habits",
+    name: "Life and task workflow habits",
     source_query:
-      "What tools, checks, review loops, and quality gates does the user repeatedly prefer?",
-    tags: ["global", "tooling", "review"],
-    max_tokens: 2048,
+      "What recurring real-life workflows, planning habits, and task-management preferences does the user express across conversations?",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
+  },
+  {
+    id: "priority-and-scheduling-preferences",
+    name: "Priority and scheduling preferences",
+    source_query:
+      "How does the user prefer to prioritize, schedule, and trade off time across personal and work tasks? Capture durable patterns only.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
   },
 ];
 
 export const BUILT_IN_BANK_TEMPLATES: readonly BuiltInBankTemplate[] = [
   {
     id: "pi-coding-project",
-    label: "Pi Coding Project",
+    label: "Coding project",
     target: "project",
-    description:
-      "Repo-focused memory for architecture, decisions, conventions, and recurring issues. Bank config falls back to Pi Hindsight's default project-bank missions, keeping any mission you've already customized; adds starter mental models from docs/starter-mental-model-suggestions.md.",
+    agentUse: "coding",
+    description: "Repo-focused mental models for architecture, conventions, and durable decisions.",
     manifest: {
       version: "1",
       bank: bankConfigFromMissions(defaultProjectBankMissions()),
-      mental_models: PROJECT_MENTAL_MODELS,
+      mental_models: CODING_PROJECT_MENTAL_MODELS,
     },
   },
   {
-    id: "pi-user-preferences",
-    label: "Pi User Preferences",
-    target: "user",
+    id: "pi-conversation-project",
+    label: "Conversation / life tasks",
+    target: "project",
+    agentUse: "conversation",
     description:
-      "Cross-project durable preferences, workflow habits, and assistant behavior guidance. Bank config falls back to Pi Hindsight's default user-bank missions, keeping any mission you've already customized; adds starter mental models from docs/starter-mental-model-suggestions.md.",
+      "Non-coding mental models for goals, people/context, and durable decisions in a conversation or real-life task agent.",
+    manifest: {
+      version: "1",
+      bank: bankConfigFromMissions(defaultProjectBankMissions()),
+      mental_models: CONVERSATION_PROJECT_MENTAL_MODELS,
+    },
+  },
+  {
+    id: "pi-coding-user",
+    label: "Coding user preferences",
+    target: "user",
+    agentUse: "coding",
+    description: "Cross-project durable coding-assistant and collaboration preferences.",
     manifest: {
       version: "1",
       bank: bankConfigFromMissions(defaultGlobalBankMissions()),
-      mental_models: USER_MENTAL_MODELS,
+      mental_models: CODING_USER_MENTAL_MODELS,
+    },
+  },
+  {
+    id: "pi-conversation-user",
+    label: "Conversation user preferences",
+    target: "user",
+    agentUse: "conversation",
+    description: "Cross-context durable communication and life-workflow preferences.",
+    manifest: {
+      version: "1",
+      bank: bankConfigFromMissions(defaultGlobalBankMissions()),
+      mental_models: CONVERSATION_USER_MENTAL_MODELS,
     },
   },
 ] as const;
+
+/** Legacy id still resolves for older docs/scripts. */
+const LEGACY_TEMPLATE_ALIASES: Record<string, BankTemplateProfileId> = {
+  "pi-user-preferences": "pi-coding-user",
+};
 
 export function listBuiltInBankTemplates(): readonly BuiltInBankTemplate[] {
   return BUILT_IN_BANK_TEMPLATES;
 }
 
+export function listBankTemplatesForAgentUse(
+  agentUse: AgentUseProfile,
+): readonly BuiltInBankTemplate[] {
+  return BUILT_IN_BANK_TEMPLATES.filter((template) => template.agentUse === agentUse);
+}
+
+export function defaultTemplateIdFor(
+  target: BankTemplateTarget,
+  agentUse: AgentUseProfile,
+): BankTemplateProfileId {
+  if (target === "project") {
+    return agentUse === "conversation" ? "pi-conversation-project" : "pi-coding-project";
+  }
+  return agentUse === "conversation" ? "pi-conversation-user" : "pi-coding-user";
+}
+
 export function getBuiltInBankTemplate(id: string): BuiltInBankTemplate | undefined {
-  return BUILT_IN_BANK_TEMPLATES.find((template) => template.id === id);
+  const resolved = LEGACY_TEMPLATE_ALIASES[id] ?? id;
+  return BUILT_IN_BANK_TEMPLATES.find((template) => template.id === resolved);
 }
 
 function defaultMissionsForTarget(target: BankTemplateTarget): BankMissionDefaults {
   return target === "user" ? defaultGlobalBankMissions() : defaultProjectBankMissions();
 }
 
-// Resolves the manifest actually sent for a template against the caller's current bank
-// mission settings, so applying a bundled template never clobbers a mission the user already
-// customized away from Pi's defaults -- the same fallback ensureProjectBank/ensureGlobalBank
-// use for bank creation. Falls back to the template's own default-based manifest.bank when the
-// caller hasn't customized anything.
 export function resolveBankTemplateManifest(
   template: BuiltInBankTemplate,
   bankMissionSettings: BankMissionSettings,

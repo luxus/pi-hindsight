@@ -1,33 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { registerCommands } from "../extensions/tui/commands.js";
-import { maintenanceCommandOperations } from "../extensions/tui/command-maintenance.js";
-import {
-  readSessionMemoryMeta,
-  setSessionMemoryMode,
-} from "../extensions/utils/session-memory-meta.js";
+import { createOperationCatalog } from "../extensions/operations/operation-catalog.js";
+import { createMemoryOperations } from "../extensions/operations/memory-operation-service.js";
+import { readSessionMemoryMeta } from "../extensions/utils/session-memory-meta.js";
 import type { HindsightLikeClient } from "../extensions/types.js";
+import { writeFileSync } from "node:fs";
 
 type RegisteredTestCommand = {
   handler: (args: unknown, ctx: any) => Promise<void>;
   getArgumentCompletions?: (prefix: string) => unknown;
 };
 
-function client(): HindsightLikeClient {
+function client(overrides: Partial<HindsightLikeClient> = {}): HindsightLikeClient {
   return {
     retain: async () => undefined,
     recall: async () => [],
     reflect: async () => ({}),
+    ...overrides,
   };
 }
 
-describe("hindsight commands", () => {
-  it("sets and reports next opt-out session metadata", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    const sessionFile = join(cwd, "session.jsonl");
+describe("hindsight public command surface", () => {
+  it("registers only the /hindsight TUI hub command", () => {
     const commands = new Map<string, RegisteredTestCommand>();
     registerCommands(
       {
@@ -41,742 +39,116 @@ describe("hindsight commands", () => {
         getProjectBankId: () => "bank",
       },
     );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
 
-    await commands.get("hindsight:next-opt-out")?.handler([], ctx);
+    expect([...commands.keys()]).toEqual(["hindsight"]);
+    expect(commands.get("hindsight")?.handler).toBeTypeOf("function");
+  });
 
+  it("catalog command list matches the public TUI-only surface", () => {
+    const catalog = createOperationCatalog({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
+    expect(catalog.commands.map((command) => command.name)).toEqual(["hindsight"]);
+    // Demoted slash commands must not reappear as public registrations.
+    for (const demoted of [
+      "hindsight:init",
+      "hindsight:import",
+      "hindsight:import-current",
+      "hindsight:import-file",
+      "hindsight:import-project-sessions",
+      "hindsight:session",
+      "hindsight:mode",
+      "hindsight:next-opt-out",
+      "hindsight:retain",
+      "hindsight:tag",
+      "hindsight:last-recall",
+      "hindsight:recall-cleanup",
+      "hindsight:queue",
+      "hindsight:flush",
+      "hindsight:doctor",
+      "hindsight:templates",
+      "hindsight:template-apply",
+    ]) {
+      expect(catalog.commands.find((command) => command.name === demoted)).toBeUndefined();
+    }
+  });
+});
+
+describe("session memory ops used by the TUI hub", () => {
+  it("sets session mode and next opt-out through shared operations", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
+    const sessionFile = join(cwd, "session.jsonl");
+    writeFileSync(sessionFile, "");
+    const operations = createMemoryOperations({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
+
+    await operations.setNextRetainOff(cwd, sessionFile);
     expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      "Hindsight will skip automatic retain for the next agent run in this session. nextRetain=off",
-      "info",
-    );
 
-    vi.mocked(ctx.ui.notify).mockClear();
-    await commands.get("hindsight:session")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("nextRetain=off"), "info");
+    const modeResult = await operations.setSessionMode(cwd, sessionFile, "read-only");
+    expect(modeResult.meta.mode).toBe("read-only");
+    expect(modeResult.effective.mode).toBe("read-only");
+    const session = await operations.session(cwd, sessionFile);
+    expect(session.meta.mode).toBe("read-only");
+    expect(session.effective.mode).toBe("read-only");
   });
+});
 
-  it("registers argument completions for fixed command arguments", async () => {
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
+describe("mental model template ops used by the TUI hub", () => {
+  it("lists agent-use templates and dry-run gates apply", async () => {
+    const importBankTemplate = vi.fn(async (_bankId, _manifest, options) => ({
+      config_applied: true,
+      mental_models_created: [],
+      mental_models_updated: [],
+      directives_created: [],
+      directives_updated: [],
+      dry_run: options?.dryRun ?? true,
+    }));
+    const operations = createMemoryOperations({
+      getClient: () => client({ importBankTemplate }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
 
-    const completions = async (name: string, prefix: string) =>
-      Promise.resolve(commands.get(name)?.getArgumentCompletions?.(prefix));
+    const listed = operations.listBankTemplatesForAgentUse();
+    expect(listed.every((template) => template.agentUse === "coding")).toBe(true);
 
-    await expect(completions("hindsight:mode", "re")).resolves.toEqual([
-      { value: "read-only", label: "read-only" },
-    ]);
-    await expect(completions("hindsight:retain", "o")).resolves.toEqual([
-      { value: "on", label: "on" },
-      { value: "off", label: "off" },
-    ]);
-    await expect(completions("hindsight:tag", "a")).resolves.toEqual([
-      { value: "add", label: "add" },
-    ]);
-    await expect(completions("hindsight:import-current", "--d")).resolves.toEqual([
-      { value: "--dry-run", label: "--dry-run" },
-    ]);
-    await expect(completions("hindsight:import-current", "--dry-run --a")).resolves.toEqual([
-      { value: "--dry-run --all-leaves", label: "--all-leaves" },
-    ]);
-    await expect(completions("hindsight:last-recall", "")).resolves.toEqual([
-      { value: "--json", label: "--json" },
-    ]);
-    await expect(completions("hindsight:recall-cleanup", "session.jsonl --p")).resolves.toEqual([
-      { value: "session.jsonl --prune", label: "--prune" },
-    ]);
-  });
-
-  it("reports missing last recall snapshot", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:last-recall")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("No Hindsight recall snapshot"),
-      "warning",
-    );
-  });
-
-  it("warns on malformed last recall snapshot", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
-    writeFileSync(join(cwd, ".pi", "hindsight", "last-recall.json"), "not json");
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:last-recall")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Hindsight last recall snapshot unreadable"),
-      "warning",
-    );
-  });
-
-  it("redacts secrets from unreadable last recall snapshot errors", async () => {
-    const [operation] = maintenanceCommandOperations({
-      lastRecall: async () => {
-        throw new Error("failed to read api_key=supersecret123456");
-      },
-    } as never);
-    const ctx = {
-      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: {},
-    };
-
-    await operation?.spec.handler("", ctx as never);
-
-    const message = ctx.ui.notify.mock.calls[0]?.[0] as string;
-    expect(message).toContain("Hindsight last recall snapshot unreadable");
-    expect(message).toContain("api_key=[REDACTED]");
-    expect(message).not.toContain("supersecret123456");
-  });
-
-  it("reports the doctor diagnostics report with reachable health", async () => {
-    const operation = maintenanceCommandOperations({
-      doctor: async () => JSON.stringify({ health: "reachable", queueLength: 0 }, null, 2),
-    } as never).find((candidate) => candidate.name === "hindsight:doctor");
-    const ctx = {
-      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: {},
-    };
-
-    await operation?.spec.handler("", ctx as never);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      JSON.stringify({ health: "reachable", queueLength: 0 }, null, 2),
-      "info",
-    );
-  });
-
-  it("reports the doctor diagnostics report as a warning when unreachable", async () => {
-    const operation = maintenanceCommandOperations({
-      doctor: async () =>
-        JSON.stringify({ health: "unreachable: connection refused", queueLength: 0 }, null, 2),
-    } as never).find((candidate) => candidate.name === "hindsight:doctor");
-    const ctx = {
-      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: {},
-    };
-
-    await operation?.spec.handler("", ctx as never);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("unreachable"), "warning");
-  });
-
-  it("redacts secrets when the doctor report itself fails", async () => {
-    const operation = maintenanceCommandOperations({
-      doctor: async () => {
-        throw new Error("failed to read api_key=supersecret123456");
-      },
-    } as never).find((candidate) => candidate.name === "hindsight:doctor");
-    const ctx = {
-      cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-commands-")),
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: {},
-    };
-
-    await operation?.spec.handler("", ctx as never);
-
-    const message = ctx.ui.notify.mock.calls[0]?.[0] as string;
-    expect(message).toContain("Hindsight doctor report failed");
-    expect(message).toContain("api_key=[REDACTED]");
-    expect(message).not.toContain("supersecret123456");
-  });
-
-  it("reports last recall snapshot summary", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
-    writeFileSync(
-      join(cwd, ".pi", "hindsight", "last-recall.json"),
-      JSON.stringify({
-        createdAt: "2026-04-27T00:00:00.000Z",
-        query: "user: q",
-        rendered: "<hindsight-memory>m</hindsight-memory>",
-        blocks: [{ bankId: "bank", query: "user: q", rendered: "", memoryCount: 2, results: [] }],
-      }),
-    );
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:last-recall")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      `Hindsight last recall 2026-04-27T00:00:00.000Z; memories=2; banks=bank:2; failed=0; failures=none; query=user: q; path=${join(cwd, ".pi", "hindsight", "last-recall.json")}; visibility-only, not provider cache`,
-      "info",
-    );
-  });
-
-  it("reports last recall snapshot as json when requested", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
-    writeFileSync(
-      join(cwd, ".pi", "hindsight", "last-recall.json"),
-      JSON.stringify({
-        createdAt: "2026-04-27T00:00:00.000Z",
-        query: "user: q",
-        rendered: "<hindsight-memory>m</hindsight-memory>",
-        blocks: [{ bankId: "bank", query: "user: q", rendered: "", memoryCount: 2, results: [] }],
-      }),
-    );
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd, ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:last-recall")?.handler(["--json"], ctx);
-
-    const json = JSON.parse(ctx.ui.notify.mock.calls[0]?.[0]);
-    expect(json.path).toBe(join(cwd, ".pi", "hindsight", "last-recall.json"));
-  });
-
-  it("refuses to prune explicit active session transcript", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    const activeSession = join(cwd, "session.jsonl");
-    const content = `${JSON.stringify({ type: "message", message: { content: "<hindsight-memory>m</hindsight-memory>" } })}\n`;
-    writeFileSync(activeSession, content);
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: { getSessionFile: () => activeSession },
-    };
-
-    await commands.get("hindsight:recall-cleanup")?.handler([activeSession, "--prune"], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Refusing to prune"),
-      "warning",
-    );
-    expect(readFileSync(activeSession, "utf8")).toBe(content);
-  });
-
-  it("reports requested and effective retain state under read-only mode", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".git"));
-    const sessionFile = join(cwd, "session.jsonl");
-    await setSessionMemoryMode(cwd, sessionFile, "read-only");
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
-
-    await commands.get("hindsight:retain")?.handler(["on"], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      "Hindsight session retain requested=on; effective=off; mode=read-only",
-      "info",
-    );
-  });
-
-  it("shows dry-run import details without retaining", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".git"));
-    const sessionFile = join(cwd, "session.jsonl");
-    writeFileSync(
-      sessionFile,
-      [
-        JSON.stringify({ type: "session", id: "session-import", cwd }),
-        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
-      ].join("\n"),
-    );
-    const retain = vi.fn(async () => undefined);
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ retain, recall: async () => [], reflect: async () => ({}) }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
-
-    await commands.get("hindsight:import-current")?.handler(["--dry-run"], ctx);
-
-    expect(retain).not.toHaveBeenCalled();
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      "Starting Hindsight current session preview; branches=current branch; write=no",
-      "info",
-    );
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Import preview: current session; messages=1; documents=1; update=replace; status=pending; mode=curated; projected=1/1 messages; droppedToolResults=0",
-      ),
-      "info",
-    );
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("manifest unchanged="),
-      "info",
-    );
-  });
-
-  it("asks before writing project imports and cancels safely", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".git"));
-    const sessionFile = join(cwd, "session.jsonl");
-    writeFileSync(
-      sessionFile,
-      [
-        JSON.stringify({ type: "session", id: "session-project-import", cwd }),
-        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
-      ].join("\n"),
-    );
-    const retain = vi.fn(async () => undefined);
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ retain, recall: async () => [], reflect: async () => ({}) }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Cancel") },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
-
-    await commands.get("hindsight:import-project-sessions")?.handler([], ctx);
-
-    expect(ctx.ui.select).toHaveBeenCalledWith(expect.stringContaining("Project import preview:"), [
-      "Import",
-      "Cancel",
-    ]);
-    const selectCalls = ctx.ui.select.mock.calls as unknown[][];
-    expect(selectCalls[0]?.[0]).toContain("write=no");
-    expect(retain).not.toHaveBeenCalled();
-    expect(ctx.ui.notify).toHaveBeenCalledWith("Hindsight import cancelled.", "warning");
-  });
-
-  it("writes project imports after confirmation", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".git"));
-    const sessionFile = join(cwd, "session.jsonl");
-    writeFileSync(
-      sessionFile,
-      [
-        JSON.stringify({ type: "session", id: "session-project-import", cwd }),
-        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
-      ].join("\n"),
-    );
-    const retain = vi.fn(async () => undefined);
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ retain, recall: async () => [], reflect: async () => ({}) }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Import") },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
-
-    await commands.get("hindsight:import-project-sessions")?.handler([], ctx);
-
-    expect(ctx.ui.select).toHaveBeenCalled();
-    expect(retain).toHaveBeenCalledTimes(1);
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Imported project sessions:"),
-      "info",
-    );
-  });
-
-  it("shows project import progress before preview result", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-commands-"));
-    mkdirSync(join(cwd, ".git"));
-    const sessionFile = join(cwd, "session.jsonl");
-    writeFileSync(
-      sessionFile,
-      [
-        JSON.stringify({ type: "session", id: "session-project-import", cwd }),
-        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
-      ].join("\n"),
-    );
-    const commands = new Map<string, { handler: (args: unknown, ctx: any) => Promise<void> }>();
-    registerCommands(
-      {
-        registerCommand: (
-          name: string,
-          command: { handler: (args: unknown, ctx: any) => Promise<void> },
-        ) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd,
-      ui: { notify: vi.fn(), setStatus: vi.fn() },
-      sessionManager: { getSessionFile: () => sessionFile },
-    };
-
-    await commands.get("hindsight:import-project-sessions")?.handler(["--dry-run"], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenNthCalledWith(
-      1,
-      "Starting Hindsight project sessions preview; branches=current branch; write=no",
-      "info",
-    );
-    expect(ctx.ui.notify).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining("Hindsight import progress: Scanning project session files"),
-      "info",
-    );
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Hindsight import progress: Previewing document 1/1"),
-      "info",
-    );
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Project import preview:"),
-      "info",
-    );
-  });
-
-  it("registers /hindsight TUI command and doctor, and removes other legacy status/debug commands", async () => {
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-
-    expect(commands.has("hindsight")).toBe(true);
-    expect(commands.has("hindsight:doctor")).toBe(true);
-    expect(commands.has("hindsight:status")).toBe(false);
-    expect(commands.has("hindsight:config")).toBe(false);
-    expect(commands.has("hindsight:debug")).toBe(false);
-    expect(commands.has("hindsight:setup")).toBe(false);
-  });
-
-  it("lists bundled bank templates", async () => {
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd: "/tmp", ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:templates")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringMatching(/pi-coding-project[\s\S]*pi-user-preferences/),
-      "info",
-    );
-  });
-
-  it("shows usage when template-apply is called without an id", async () => {
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = { cwd: "/tmp", ui: { notify: vi.fn(), setStatus: vi.fn() }, sessionManager: {} };
-
-    await commands.get("hindsight:template-apply")?.handler([], ctx);
-
-    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("Usage:"), "warning");
-  });
-
-  it("shows a bank template dry-run preview without asking for confirmation", async () => {
-    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ ...client(), importBankTemplate }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd: "/tmp",
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn() },
-      sessionManager: {},
-    };
-
-    await commands
-      .get("hindsight:template-apply")
-      ?.handler(["pi-coding-project", "--dry-run"], ctx);
-
-    expect(importBankTemplate).toHaveBeenCalledTimes(1);
-    expect(importBankTemplate).toHaveBeenCalledWith("bank", expect.any(Object), { dryRun: true });
-    expect(ctx.ui.select).not.toHaveBeenCalled();
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Bank template preview: pi-coding-project -> bank"),
-      "info",
-    );
-  });
-
-  it("asks before applying a bank template and cancels safely", async () => {
-    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ ...client(), importBankTemplate }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd: "/tmp",
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Cancel") },
-      sessionManager: {},
-    };
-
-    await commands.get("hindsight:template-apply")?.handler(["pi-coding-project"], ctx);
-
-    expect(importBankTemplate).toHaveBeenCalledTimes(1);
-    expect(importBankTemplate).toHaveBeenCalledWith("bank", expect.any(Object), { dryRun: true });
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      "Hindsight bank template apply cancelled.",
-      "warning",
-    );
-  });
-
-  it("applies a bank template after confirmation", async () => {
-    const importBankTemplate = vi.fn(async () => ({ bank_id: "bank", config_applied: true }));
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ ...client(), importBankTemplate }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
-    );
-    const ctx = {
-      cwd: "/tmp",
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn(async () => "Apply") },
-      sessionManager: {},
-    };
-
-    await commands.get("hindsight:template-apply")?.handler(["pi-coding-project"], ctx);
-
-    expect(importBankTemplate).toHaveBeenCalledTimes(2);
-    expect(importBankTemplate).toHaveBeenNthCalledWith(1, "bank", expect.any(Object), {
+    const dryRun = await operations.applyBankTemplate({
+      templateId: "pi-coding-project",
       dryRun: true,
     });
-    expect(importBankTemplate).toHaveBeenNthCalledWith(2, "bank", expect.any(Object), {
+    expect(dryRun.dryRun).toBe(true);
+    expect(importBankTemplate).toHaveBeenCalledWith(
+      "bank",
+      expect.objectContaining({ version: "1" }),
+      { dryRun: true },
+    );
+
+    const applied = await operations.applyBankTemplate({
+      templateId: "pi-coding-project",
       dryRun: false,
     });
-    expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringContaining("Applied bank template: pi-coding-project -> bank"),
-      "info",
+    expect(applied.dryRun).toBe(false);
+    expect(importBankTemplate).toHaveBeenLastCalledWith(
+      "bank",
+      expect.objectContaining({ version: "1" }),
+      { dryRun: false },
     );
   });
 
-  it("redacts secrets when bank template apply fails", async () => {
-    const importBankTemplate = vi.fn(async () => {
-      throw new Error("failed to reach api_key=supersecret123456");
+  it("rejects unknown template ids", async () => {
+    const operations = createMemoryOperations({
+      getClient: () => client({ importBankTemplate: async () => ({}) }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
     });
-    const commands = new Map<string, RegisteredTestCommand>();
-    registerCommands(
-      {
-        registerCommand: (name: string, command: RegisteredTestCommand) => {
-          commands.set(name, command);
-        },
-      } as any,
-      {
-        getClient: () => ({ ...client(), importBankTemplate }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
+    await expect(operations.applyBankTemplate({ templateId: "nope" })).rejects.toThrow(
+      /Unknown bank template id/,
     );
-    const ctx = {
-      cwd: "/tmp",
-      ui: { notify: vi.fn(), setStatus: vi.fn(), select: vi.fn() },
-      sessionManager: {},
-    };
-
-    await commands
-      .get("hindsight:template-apply")
-      ?.handler(["pi-coding-project", "--dry-run"], ctx);
-
-    const message = ctx.ui.notify.mock.calls[0]?.[0] as string;
-    expect(message).toContain("Hindsight bank template apply failed");
-    expect(message).toContain("api_key=[REDACTED]");
-    expect(message).not.toContain("supersecret123456");
   });
 });

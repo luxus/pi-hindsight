@@ -1,5 +1,6 @@
 import {
   getBuiltInBankTemplate,
+  listBankTemplatesForAgentUse,
   listBuiltInBankTemplates,
   resolveBankTemplateManifest,
 } from "../banks/bank-templates.js";
@@ -12,11 +13,15 @@ export function createBankTemplateOperations(deps: MemoryOperationsDeps) {
       return listBuiltInBankTemplates();
     },
 
+    listBankTemplatesForAgentUse() {
+      return listBankTemplatesForAgentUse(deps.getConfig().agentUse);
+    },
+
     async applyBankTemplate(args: { templateId: string; dryRun?: boolean }) {
       const template = getBuiltInBankTemplate(args.templateId);
       if (!template) {
         throw new Error(
-          `Unknown bank template id: ${args.templateId}. Run /hindsight:templates to list ids.`,
+          `Unknown bank template id: ${args.templateId}. Open /hindsight and press t to list sets for the current agent use.`,
         );
       }
       const client = deps.getClient();

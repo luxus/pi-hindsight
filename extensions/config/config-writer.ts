@@ -101,6 +101,8 @@ export interface ProjectConfigPatchInput {
   globalRetainMode?: "explicit-only";
   enableGlobalBank?: boolean;
   memoryProfile?: MemoryProfile;
+  agentUse?: "coding" | "conversation";
+  mentalModelsInject?: boolean;
   recallEnabled?: boolean;
   recallBudget?: "low" | "mid" | "high";
   recallMaxTokens?: number;
@@ -154,6 +156,12 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
       ...(input.apiKeyEnvVar ? { apiKey: { source: "env", name: input.apiKeyEnvVar } } : {}),
       ...(input.directApiKey ? { apiKey: input.directApiKey } : {}),
     };
+  }
+  if (input.agentUse) {
+    patch.agentUse = input.agentUse;
+  }
+  if (input.mentalModelsInject !== undefined) {
+    patch.mentalModels = { inject: input.mentalModelsInject };
   }
   if (input.memoryProfile) {
     const globalBankId = input.globalBankId?.trim();
