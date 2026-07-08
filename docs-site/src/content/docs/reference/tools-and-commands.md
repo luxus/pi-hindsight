@@ -4,15 +4,17 @@ title: "Tools and commands"
 
 For a generated reference of registered tools, commands, and editable config fields, see [Generated surface reference](/pi-hindsight/reference/surface-reference/).
 
-## Public human command
+## Public human commands
 
-Pi Hindsight is **TUI-first**. The only public slash command is:
+Pi Hindsight is **TUI-first**. Public slash commands:
 
 ```text
 /hindsight
+/hindsight:next-opt-out
 ```
 
-Open the memory hub for status, guided setup, session mode, mental models, import, flush, doctor, init, and advanced settings.
+`/hindsight` opens the memory hub for status, guided setup, session mode, mental models, import, flush, doctor, init, and advanced settings.  
+`/hindsight:next-opt-out` skips automatic retain for the next agent run (also hub key `x`).
 
 ### Hub keys
 
@@ -20,6 +22,7 @@ Open the memory hub for status, guided setup, session mode, mental models, impor
 | --- | -------------------------------------------------------------------------------------------- |
 | `g` | Guided setup (profile, agent use, banks, optional mental models + import)                    |
 | `m` | Session mode: `normal` / `read-only` / `ignored`                                             |
+| `x` | Next-opt-out: skip automatic retain for the next agent run                                   |
 | `t` | Apply mental-model set for current **agent use** (coding vs conversation); dry-run + confirm |
 | `i` | Historical import (dry-run first)                                                            |
 | `f` | Flush retain queue                                                                           |

@@ -86,13 +86,25 @@ async function handleSetMode(
   ctx.ui.notify(`Session memory mode: ${result.meta.mode}`, "info");
 }
 
+async function handleNextOptOut(
+  ctx: ExtensionCommandContext,
+  deps: MemoryOperationsDeps,
+): Promise<void> {
+  const sessionFile = getSessionFile(ctx);
+  const result = await createMemoryOperations(deps).setNextRetainOff(ctx.cwd, sessionFile);
+  ctx.ui.notify(
+    `Hindsight will skip automatic retain for the next agent run. nextRetain=${result.meta.nextRetainMode}`,
+    "info",
+  );
+}
+
 async function handleApplyMentalModels(
   ctx: ExtensionCommandContext,
   deps: MemoryOperationsDeps,
 ): Promise<void> {
   const operations = createMemoryOperations(deps);
   const config = deps.getConfig();
-  const templates = listBankTemplatesForAgentUse(config.agentUse);
+  const templates = [...listBankTemplatesForAgentUse(config.agentUse)];
   const labels = templates.map(
     (template) => `${template.id} — ${template.label} (${template.target})`,
   );
@@ -101,15 +113,20 @@ async function handleApplyMentalModels(
     CANCEL,
   ]);
   if (!choice || choice === CANCEL) return;
-  const templateId = choice.split(" — ")[0]!;
-  const dryRun = await operations.applyBankTemplate({ templateId, dryRun: true });
+  const index = labels.indexOf(choice);
+  const template = index >= 0 ? templates[index] : undefined;
+  if (!template) {
+    ctx.ui.notify(`Unknown template selection: ${choice}`, "warning");
+    return;
+  }
+  const dryRun = await operations.applyBankTemplate({ templateId: template.id, dryRun: true });
   const details = renderBankTemplateMentalModelDetails(dryRun.template);
   const confirmed = await ctx.ui.confirm(
-    `Apply ${templateId} to ${dryRun.bankId}?`,
+    `Apply ${template.id} to ${dryRun.bankId}?`,
     `${details ? `${details}\n\n` : ""}${renderBankTemplateApplyResult(dryRun)}\n\nThis writes bank config and creates/updates mental models. Continue?`,
   );
   if (!confirmed) return;
-  const applied = await operations.applyBankTemplate({ templateId, dryRun: false });
+  const applied = await operations.applyBankTemplate({ templateId: template.id, dryRun: false });
   ctx.ui.notify(renderBankTemplateApplyResult(applied), "info");
 }
 
@@ -181,6 +198,7 @@ export async function runHindsightSetupTui(
         const result = await createMemoryOperations(deps).flush(ctx.cwd);
         ctx.ui.notify(formatFlushRetainQueueResult(result), flushRetainQueueNotifyLevel(result));
       } else if (action === "set-mode") await handleSetMode(ctx, deps);
+      else if (action === "next-opt-out") await handleNextOptOut(ctx, deps);
       else if (action === "apply-mental-models") await handleApplyMentalModels(ctx, deps);
       else if (action === "import-sessions") await handleImportSessions(ctx, deps);
       else if (action === "run-doctor") await handleDoctor(ctx, deps);

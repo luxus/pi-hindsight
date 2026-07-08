@@ -6,6 +6,7 @@ export type HubActionId =
   | "guided-setup"
   | "flush-queue"
   | "set-mode"
+  | "next-opt-out"
   | "apply-mental-models"
   | "import-sessions"
   | "run-doctor"
@@ -40,4 +41,4 @@ export const RECEIPT_FACT_LIMIT = 3;
 export const CANCEL = "Cancel";
 
 export const HUB_ACTION_HELP =
-  " g guided · m mode · t mental models · i import · f flush · o doctor · n init · d deployment · a advanced · q close ";
+  " g guided · m mode · x next-opt-out · t mental models · i import · f flush · o doctor · n init · d deployment · a advanced · q close ";

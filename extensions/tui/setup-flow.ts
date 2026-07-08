@@ -13,6 +13,7 @@ export type SetupIntent =
   | { type: "guidedSetup" }
   | { type: "flushQueue" }
   | { type: "setMode" }
+  | { type: "nextOptOut" }
   | { type: "applyMentalModels" }
   | { type: "importSessions" }
   | { type: "runDoctor" }
@@ -106,6 +107,7 @@ export function setupIntentFromInput(data: string): SetupIntent | undefined {
   if (data === "g") return { type: "guidedSetup" };
   if (data === "f") return { type: "flushQueue" };
   if (data === "m") return { type: "setMode" };
+  if (data === "x") return { type: "nextOptOut" };
   if (data === "t") return { type: "applyMentalModels" };
   if (data === "i") return { type: "importSessions" };
   if (data === "o") return { type: "runDoctor" };
@@ -135,6 +137,7 @@ export function applySetupIntent(
   if (intent.type === "guidedSetup") return withAction("guided-setup", normalized);
   if (intent.type === "flushQueue") return withAction("flush-queue", normalized);
   if (intent.type === "setMode") return withAction("set-mode", normalized);
+  if (intent.type === "nextOptOut") return withAction("next-opt-out", normalized);
   if (intent.type === "applyMentalModels") return withAction("apply-mental-models", normalized);
   if (intent.type === "importSessions") return withAction("import-sessions", normalized);
   if (intent.type === "runDoctor") return withAction("run-doctor", normalized);

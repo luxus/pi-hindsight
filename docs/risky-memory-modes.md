@@ -87,8 +87,8 @@ Risks:
 Safe alternative:
 
 - Use explicit commands:
-  - `/hindsight:mode read-only`
-  - `/hindsight:mode ignored`
+  - `/hindsight` hub key `m` → `read-only`
+  - `/hindsight` hub key `m` → `ignored`
   - `/hindsight:retain off`
 - Use `/hindsight:next-opt-out` for command-based one-turn automatic retain opt-out instead of hashtag parsing.
 

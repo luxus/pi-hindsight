@@ -6,6 +6,7 @@ import {
   getBuiltInBankTemplate,
 } from "../extensions/banks/bank-templates.js";
 import {
+  clearMentalModelListCache,
   loadMentalModelsForScopes,
   minMentalModelRenderBudgetChars,
   renderMentalModelsBlock,
@@ -56,7 +57,28 @@ describe("use-profile mental model sets", () => {
 });
 
 describe("mental model injection and retain safety", () => {
+  it("caches listMentalModels within cacheTtlMs", async () => {
+    clearMentalModelListCache();
+    const listMentalModels = vi.fn(async () => ({
+      items: [{ id: "m1", name: "M1", content: "cached content" }],
+    }));
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      listMentalModels,
+    };
+    const config = {
+      ...DEFAULT_CONFIG,
+      mentalModels: { inject: true, maxChars: 12_000, cacheTtlMs: 60_000 },
+    };
+    await loadMentalModelsForScopes({ client, config, bankIds: ["bank"] });
+    await loadMentalModelsForScopes({ client, config, bankIds: ["bank"] });
+    expect(listMentalModels).toHaveBeenCalledTimes(1);
+  });
+
   it("renders a bounded mental-models block from model content", () => {
+    clearMentalModelListCache();
     const rendered = renderMentalModelsBlock(
       [
         {
@@ -73,6 +95,7 @@ describe("mental model injection and retain safety", () => {
   });
 
   it("includes mental model content in automatic context when present", async () => {
+    clearMentalModelListCache();
     const listMentalModels = vi.fn(async () => ({
       items: [
         {
@@ -103,6 +126,7 @@ describe("mental model injection and retain safety", () => {
   });
 
   it("skips mental model injection when inject is disabled", async () => {
+    clearMentalModelListCache();
     const listMentalModels = vi.fn(async () => ({
       items: [{ id: "x", name: "X", content: "should not inject" }],
     }));
@@ -171,6 +195,7 @@ describe("mental model injection and retain safety", () => {
   });
 
   it("keeps multi-bank mental-model injection within maxChars total", async () => {
+    clearMentalModelListCache();
     const minBudget = minMentalModelRenderBudgetChars();
     // Old equal-share code used max(minBudget, floor(max/n)) per bank, so two banks could inject
     // ~2*minBudget when maxChars is only 1.5*minBudget.
@@ -193,7 +218,7 @@ describe("mental model injection and retain safety", () => {
       },
       config: {
         ...DEFAULT_CONFIG,
-        mentalModels: { inject: true, maxChars },
+        mentalModels: { inject: true, maxChars, cacheTtlMs: 0 },
       },
       bankIds: ["project-bank", "user-bank"],
     });

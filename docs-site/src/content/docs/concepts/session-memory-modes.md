@@ -31,7 +31,7 @@ Read-only mode allows Recall but disables automatic Retain.
 Use it when you want memory context but do not want the current session written back automatically.
 
 ```text
-/hindsight:mode read-only
+`/hindsight` hub → m → read-only
 ```
 
 ## Ignored mode
@@ -41,7 +41,7 @@ Ignored mode turns off automatic memory behavior.
 Use it for sensitive work, experiments, or debugging where memory should not affect prompts.
 
 ```text
-/hindsight:mode ignored
+`/hindsight` hub → m → ignored
 ```
 
 ## Next-turn opt-out

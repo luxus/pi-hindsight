@@ -95,9 +95,8 @@ Supported placeholders:
 Per-session governance is stored outside provider-visible messages under `.pi/hindsight/session-meta/`.
 
 ```text
-/hindsight:mode normal
-/hindsight:mode read-only
-/hindsight:mode ignored
+From the `/hindsight` hub, press `m` and choose `normal`, `read-only`, or `ignored`.
+One-turn retain skip: `/hindsight:next-opt-out` or hub key `x`.
 /hindsight:retain on
 /hindsight:retain off
 /hindsight:next-opt-out

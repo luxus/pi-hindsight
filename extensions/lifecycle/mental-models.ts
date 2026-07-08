@@ -106,6 +106,46 @@ function normalizeListResponse(response: unknown): MentalModelSummary[] {
     .filter((item): item is MentalModelSummary => Boolean(item));
 }
 
+interface MentalModelListCacheEntry {
+  models: MentalModelSummary[];
+  expiresAt: number;
+}
+
+const mentalModelListCache = new Map<string, MentalModelListCacheEntry>();
+
+function listCacheKey(baseUrl: string, bankId: string): string {
+  return `${baseUrl.replace(/\/$/, "")}|${bankId}`;
+}
+
+async function listModelsCached(args: {
+  client: HindsightLikeClient;
+  bankId: string;
+  config: ResolvedConfig;
+}): Promise<{ models: MentalModelSummary[]; error?: string }> {
+  if (!args.client.listMentalModels) return { models: [] };
+  const key = listCacheKey(args.config.hindsight.baseUrl, args.bankId);
+  const ttlMs = args.config.mentalModels.cacheTtlMs;
+  const cached = mentalModelListCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return { models: cached.models };
+  try {
+    const response = await args.client.listMentalModels(args.bankId);
+    const models = normalizeListResponse(response).filter(
+      (model) => typeof model.content === "string" && model.content.trim().length > 0,
+    );
+    if (ttlMs > 0) {
+      mentalModelListCache.set(key, { models, expiresAt: Date.now() + ttlMs });
+    }
+    return { models };
+  } catch (error) {
+    return { models: [], error: redactError(error) };
+  }
+}
+
+/** Test helper: drop cached listMentalModels responses. */
+export function clearMentalModelListCache(): void {
+  mentalModelListCache.clear();
+}
+
 export async function loadMentalModelsBlock(args: {
   client: HindsightLikeClient;
   bankId: string;
@@ -117,17 +157,11 @@ export async function loadMentalModelsBlock(args: {
   if (!args.client.listMentalModels) {
     return { rendered: "", modelCount: 0 };
   }
-  try {
-    const response = await args.client.listMentalModels(args.bankId);
-    const models = normalizeListResponse(response).filter(
-      (model) => typeof model.content === "string" && model.content.trim().length > 0,
-    );
-    if (models.length === 0) return { rendered: "", modelCount: 0 };
-    const rendered = renderMentalModelsBlock(models, args.config.mentalModels.maxChars);
-    return { rendered, modelCount: models.length };
-  } catch (error) {
-    return { rendered: "", modelCount: 0, error: redactError(error) };
-  }
+  const listed = await listModelsCached(args);
+  if (listed.error) return { rendered: "", modelCount: 0, error: listed.error };
+  if (listed.models.length === 0) return { rendered: "", modelCount: 0 };
+  const rendered = renderMentalModelsBlock(listed.models, args.config.mentalModels.maxChars);
+  return { rendered, modelCount: listed.models.length };
 }
 
 export async function loadMentalModelsForScopes(args: {

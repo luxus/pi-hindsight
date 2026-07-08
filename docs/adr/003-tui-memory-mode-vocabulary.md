@@ -14,7 +14,7 @@ The design should not add provider recall caching, prompt hashtag controls, auto
 
 ## Decision
 
-The TUI and `/hindsight:mode` command describe session memory behavior with three implemented user-facing modes and one reserved future mode:
+The TUI (and historically `/hindsight:mode`) describe session memory behavior with three implemented user-facing modes and one reserved future mode:
 
 1. `normal`
 2. `read-only`

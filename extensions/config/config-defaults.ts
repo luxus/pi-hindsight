@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   mentalModels: {
     inject: true,
     maxChars: 12_000,
+    cacheTtlMs: 300_000,
   },
   banks: {
     project: { enabled: true, derive: "repo" },

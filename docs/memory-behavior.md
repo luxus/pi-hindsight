@@ -97,15 +97,14 @@ Supported placeholders:
 Per-session governance is stored outside provider-visible messages under `.pi/hindsight/session-meta/`.
 
 ```text
-Session mode is set from the `/hindsight` hub (`m`): normal, read-only, or ignored.
-/hindsight:retain on
-/hindsight:retain off
-/hindsight:next-opt-out
-/hindsight:tag add <tag>
-/hindsight:tag remove <tag>
+/hindsight                 # hub: m = mode, x = next-opt-out
+/hindsight:next-opt-out    # skip automatic retain for the next agent run only
 ```
 
-`read-only` recalls but does not automatically retain. `ignored` disables recall and retain. `next-opt-out` skips automatic retain for the next completed run only. ADR 003 defines the TUI vocabulary and mode matrix for `normal`, `read-only`, `ignored`, and reserved future `tools-only`.
+Session mode is set from the `/hindsight` hub (`m`): `normal`, `read-only`, or `ignored`.  
+`read-only` recalls but does not automatically retain. `ignored` disables recall and retain.  
+`next-opt-out` (slash command or hub `x`) skips automatic retain for the next completed run only.  
+ADR 003 defines the TUI vocabulary and mode matrix for `normal`, `read-only`, `ignored`, and reserved future `tools-only`.
 
 ## Global memory policy
 

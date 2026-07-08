@@ -40,17 +40,21 @@ describe("hindsight public command surface", () => {
       },
     );
 
-    expect([...commands.keys()]).toEqual(["hindsight"]);
+    expect([...commands.keys()].sort()).toEqual(["hindsight", "hindsight:next-opt-out"]);
     expect(commands.get("hindsight")?.handler).toBeTypeOf("function");
+    expect(commands.get("hindsight:next-opt-out")?.handler).toBeTypeOf("function");
   });
 
-  it("catalog command list matches the public TUI-only surface", () => {
+  it("catalog command list matches the public TUI-first surface", () => {
     const catalog = createOperationCatalog({
       getClient: () => client(),
       getConfig: () => DEFAULT_CONFIG,
       getProjectBankId: () => "bank",
     });
-    expect(catalog.commands.map((command) => command.name)).toEqual(["hindsight"]);
+    expect(catalog.commands.map((command) => command.name)).toEqual([
+      "hindsight",
+      "hindsight:next-opt-out",
+    ]);
     // Demoted slash commands must not reappear as public registrations.
     for (const demoted of [
       "hindsight:init",
@@ -60,7 +64,6 @@ describe("hindsight public command surface", () => {
       "hindsight:import-project-sessions",
       "hindsight:session",
       "hindsight:mode",
-      "hindsight:next-opt-out",
       "hindsight:retain",
       "hindsight:tag",
       "hindsight:last-recall",
@@ -73,6 +76,33 @@ describe("hindsight public command surface", () => {
     ]) {
       expect(catalog.commands.find((command) => command.name === demoted)).toBeUndefined();
     }
+  });
+
+  it("sets next opt-out via the public slash command", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-next-opt-"));
+    const sessionFile = join(cwd, "session.jsonl");
+    writeFileSync(sessionFile, "");
+    const commands = new Map<string, RegisteredTestCommand>();
+    registerCommands(
+      {
+        registerCommand: (name: string, command: RegisteredTestCommand) => {
+          commands.set(name, command);
+        },
+      } as any,
+      {
+        getClient: () => client(),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "bank",
+      },
+    );
+    const ctx = {
+      cwd,
+      ui: { notify: vi.fn(), setStatus: vi.fn() },
+      sessionManager: { getSessionFile: () => sessionFile },
+    };
+    await commands.get("hindsight:next-opt-out")?.handler([], ctx);
+    expect((await readSessionMemoryMeta(cwd, sessionFile)).nextRetainMode).toBe("off");
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("nextRetain=off"), "info");
   });
 });
 

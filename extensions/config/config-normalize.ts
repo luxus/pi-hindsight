@@ -197,6 +197,10 @@ export function normalizeConfig(
         (config as { mentalModels?: { maxChars?: unknown } }).mentalModels?.maxChars,
         DEFAULT_CONFIG.mentalModels.maxChars,
       ),
+      cacheTtlMs: positiveInt(
+        (config as { mentalModels?: { cacheTtlMs?: unknown } }).mentalModels?.cacheTtlMs,
+        DEFAULT_CONFIG.mentalModels.cacheTtlMs,
+      ),
     },
     banks: {
       project: {

@@ -13,9 +13,8 @@ description: Exact automatic recall and retain behavior for supported session me
 ## Commands
 
 ```text
-/hindsight:mode read-only
-/hindsight:mode ignored
-/hindsight:mode normal
+Set mode from `/hindsight` hub key `m` (`normal` / `read-only` / `ignored`).
+One-turn retain skip: `/hindsight:next-opt-out` or hub key `x`.
 /hindsight:next-opt-out
 ```
 

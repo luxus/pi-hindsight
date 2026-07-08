@@ -113,9 +113,10 @@ Ask Hindsight to synthesize an answer from memory. Use explicitly, not for defau
 
 ## Commands
 
-| Command      | Description                                                                            |
-| ------------ | -------------------------------------------------------------------------------------- |
-| `/hindsight` | Open Hindsight memory hub (status, mode, mental models, import, flush, doctor, setup). |
+| Command                   | Description                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/hindsight`              | Open Hindsight memory hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup). |
+| `/hindsight:next-opt-out` | Skip automatic retain for the next agent run in this session.                                        |
 
 ## Config fields
 

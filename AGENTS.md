@@ -274,7 +274,8 @@ Required:
 
 Suggested human surface:
 
-- `/hindsight` TUI hub (status, mode, mental models, import, flush, doctor, setup)
+- `/hindsight` TUI hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup)
+- `/hindsight:next-opt-out` (skip automatic retain for the next agent run)
 
 ## Implementation priorities
 

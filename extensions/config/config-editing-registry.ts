@@ -869,7 +869,7 @@ export function buildStatusFacts(
     [
       "Mental models",
       config.mentalModels.inject
-        ? `inject on (budget ${config.mentalModels.maxChars})`
+        ? `inject on (budget ${config.mentalModels.maxChars}; apply with t; cache ${config.mentalModels.cacheTtlMs}ms)`
         : "inject off",
     ],
     ["Active project bank", config.banks.project.enabled ? projectBankId : "disabled"],

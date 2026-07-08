@@ -62,6 +62,8 @@ export interface ResolvedConfig {
     inject: boolean;
     /** Total character budget for injected mental-model blocks. */
     maxChars: number;
+    /** Cache TTL for listMentalModels content used in automatic inject. */
+    cacheTtlMs: number;
   };
   banks: {
     project: BankMissionSettings & {

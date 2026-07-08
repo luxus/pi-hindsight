@@ -42,6 +42,7 @@ describe("setup flow state", () => {
     expect(setupIntentFromInput("g")).toEqual({ type: "guidedSetup" });
     expect(setupIntentFromInput("f")).toEqual({ type: "flushQueue" });
     expect(setupIntentFromInput("m")).toEqual({ type: "setMode" });
+    expect(setupIntentFromInput("x")).toEqual({ type: "nextOptOut" });
     expect(setupIntentFromInput("t")).toEqual({ type: "applyMentalModels" });
     expect(setupIntentFromInput("i")).toEqual({ type: "importSessions" });
     expect(setupIntentFromInput("o")).toEqual({ type: "runDoctor" });
@@ -52,7 +53,7 @@ describe("setup flow state", () => {
     expect(setupIntentFromInput("k")).toEqual({ type: "moveSelection", delta: -1 });
     expect(setupIntentFromInput("a")).toEqual({ type: "toggleAdvanced" });
     expect(setupIntentFromInput("r")).toEqual({ type: "resetSelectedField" });
-    expect(setupIntentFromInput("x")).toBeUndefined();
+    expect(setupIntentFromInput("z")).toBeUndefined();
   });
 
   it("moves tabs and field selection without rendering knowledge", () => {
@@ -87,6 +88,10 @@ describe("setup flow state", () => {
     expect(applySetupIntent(tabs(), state, { type: "setMode" })).toMatchObject({
       kind: "action",
       action: "set-mode",
+    });
+    expect(applySetupIntent(tabs(), state, { type: "nextOptOut" })).toMatchObject({
+      kind: "action",
+      action: "next-opt-out",
     });
     expect(applySetupIntent(tabs(), state, { type: "applyMentalModels" })).toMatchObject({
       kind: "action",

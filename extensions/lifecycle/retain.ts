@@ -75,7 +75,7 @@ export function buildRetainJob(args: {
     config: args.config,
     bankId: args.bankId,
     content,
-    context: contextLabel(args.cwd, args.sessionFile),
+    context: contextLabel(args.cwd, args.sessionFile, args.config.agentUse),
     documentId: liveDocumentId(args.sessionFile, args.cwd),
     updateMode: args.config.retain.updateMode,
     tags: [...new Set([...baseTags(args.cwd, sessionId), ...(args.extraTags ?? [])])],

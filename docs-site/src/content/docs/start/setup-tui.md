@@ -49,6 +49,7 @@ For details, see [Memory profiles](/pi-hindsight/start/memory-profiles/).
 
 - `g`: guided setup
 - `m`: session mode
+- `x`: next-opt-out (skip automatic retain for next run)
 - `t`: mental models (agent-use aware)
 - `i`: import
 - `f`: flush queue
@@ -61,6 +62,8 @@ For details, see [Memory profiles](/pi-hindsight/start/memory-profiles/).
 - `Enter`: edit selected setting
 - `r`: reset selected override
 - `q`: close
+
+Slash alias for next-opt-out: `/hindsight:next-opt-out`.
 
 ## First checks
 

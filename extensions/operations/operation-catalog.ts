@@ -9,6 +9,7 @@ import { createMemoryOperations } from "./memory-operation-service.js";
 import { formatReflectResult } from "./reflect-presenter.js";
 import { runHindsightSetupTui } from "../tui/setup-tui.js";
 import { renderMemoryToolTextResult, retainToolResponse } from "../tui/tool-presenters.js";
+import { getSessionFile } from "../utils/session.js";
 
 export type ToolOperation = Parameters<ExtensionAPI["registerTool"]>[0];
 
@@ -454,16 +455,29 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
     }),
   ];
 
-  // Human surface is TUI-first: only `/hindsight` is registered publicly.
+  // Human surface is TUI-first: `/hindsight` hub plus a few deliberate slash commands.
   // Day-to-day ops (mode, import, mental models, flush, doctor, init) live in the hub.
   const commands: CommandOperation[] = [
     {
       name: "hindsight",
       spec: {
         description:
-          "Open Hindsight memory hub (status, mode, mental models, import, flush, doctor, setup).",
+          "Open Hindsight memory hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup).",
         handler: async (_args, ctx) => {
           await runHindsightSetupTui(ctx, deps);
+        },
+      },
+    },
+    {
+      name: "hindsight:next-opt-out",
+      spec: {
+        description: "Skip automatic retain for the next agent run in this session.",
+        handler: async (_args, ctx) => {
+          const result = await operations.setNextRetainOff(ctx.cwd, getSessionFile(ctx));
+          ctx.ui.notify(
+            `Hindsight will skip automatic retain for the next agent run in this session. nextRetain=${result.meta.nextRetainMode}`,
+            "info",
+          );
         },
       },
     },

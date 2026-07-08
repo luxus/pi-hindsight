@@ -442,7 +442,10 @@ describe("operation catalog", () => {
       "hindsight_reflect",
     ]);
 
-    // Human surface is TUI-first: only the hub command is public.
-    expect(catalog.commands.map((command) => command.name)).toEqual(["hindsight"]);
+    // Human surface is TUI-first: hub + next-opt-out slash command.
+    expect(catalog.commands.map((command) => command.name)).toEqual([
+      "hindsight",
+      "hindsight:next-opt-out",
+    ]);
   });
 });
