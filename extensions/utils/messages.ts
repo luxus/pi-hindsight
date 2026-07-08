@@ -177,13 +177,12 @@ export function isInjectedHindsightMemory(message: unknown): boolean {
     includeThinking: false,
     includeToolCall: true,
   }).trim();
+  // Only prefix matches: substring contains would drop legitimate discussion of these tags.
   return (
     text.startsWith("<hindsight-memory>") ||
     text.startsWith("<hindsight_memories>") ||
     text.startsWith("<hindsight-mental-models>") ||
-    text.startsWith("<mental_models>") ||
-    text.includes("<hindsight-mental-models>") ||
-    text.includes("<mental_models>")
+    text.startsWith("<mental_models>")
   );
 }
 

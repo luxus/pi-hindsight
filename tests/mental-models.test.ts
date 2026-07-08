@@ -7,6 +7,7 @@ import {
 } from "../extensions/banks/bank-templates.js";
 import {
   loadMentalModelsForScopes,
+  minMentalModelRenderBudgetChars,
   renderMentalModelsBlock,
   MENTAL_MODELS_OPEN,
 } from "../extensions/lifecycle/mental-models.js";
@@ -152,5 +153,52 @@ describe("mental model injection and retain safety", () => {
     expect(job?.item.content).toContain("Keep durable decisions only.");
     expect(job?.item.content).not.toContain(MENTAL_MODELS_OPEN);
     expect(job?.item.content).not.toContain("Keep seams.");
+  });
+
+  it("does not treat mid-message discussion of mental-model tags as injected", () => {
+    expect(
+      isInjectedHindsightMemory({
+        role: "user",
+        content: "Please do not put secrets inside <hindsight-mental-models> tags.",
+      }),
+    ).toBe(false);
+    expect(
+      isInjectedHindsightMemory({
+        role: "user",
+        content: "The docs mention <mental_models> as a wrapper.",
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps multi-bank mental-model injection within maxChars total", async () => {
+    const minBudget = minMentalModelRenderBudgetChars();
+    // Old equal-share code used max(minBudget, floor(max/n)) per bank, so two banks could inject
+    // ~2*minBudget when maxChars is only 1.5*minBudget.
+    const maxChars = Math.floor(minBudget * 1.5);
+    const listMentalModels = vi.fn(async (bankId: string) => ({
+      items: [
+        {
+          id: `${bankId}-model`,
+          name: `${bankId} model`,
+          content: "x".repeat(Math.max(800, minBudget)),
+        },
+      ],
+    }));
+    const result = await loadMentalModelsForScopes({
+      client: {
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        listMentalModels,
+      },
+      config: {
+        ...DEFAULT_CONFIG,
+        mentalModels: { inject: true, maxChars },
+      },
+      bankIds: ["project-bank", "user-bank"],
+    });
+
+    expect(result.rendered.length).toBeLessThanOrEqual(maxChars);
+    expect(result.rendered.length).toBeLessThan(minBudget * 2);
   });
 });

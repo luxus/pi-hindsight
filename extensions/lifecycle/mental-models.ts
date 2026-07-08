@@ -138,37 +138,38 @@ export async function loadMentalModelsForScopes(args: {
   if (!args.config.mentalModels.inject || args.bankIds.length === 0) {
     return { rendered: "", modelCount: 0, failures: 0 };
   }
+  const totalBudget = args.config.mentalModels.maxChars;
+  const minBudget = minMentalModelRenderBudgetChars();
+  // Equal split when each bank can still render; never multiply minBudget past totalBudget.
+  const equalShare = Math.floor(totalBudget / args.bankIds.length);
   const blocks: string[] = [];
   let modelCount = 0;
   let failures = 0;
-  // Split budget across banks so dual-bank sessions cannot double-inject.
-  const perBankBudget = Math.max(
-    minMentalModelRenderBudgetChars(),
-    Math.floor(args.config.mentalModels.maxChars / args.bankIds.length),
-  );
+  let remaining = totalBudget;
+
   for (const bankId of args.bankIds) {
+    if (remaining < minBudget) break;
+    const budget = equalShare >= minBudget ? Math.min(equalShare, remaining) : remaining;
     const result = await loadMentalModelsBlock({
       client: args.client,
       bankId,
       config: {
         ...args.config,
-        mentalModels: { ...args.config.mentalModels, maxChars: perBankBudget },
+        mentalModels: { ...args.config.mentalModels, maxChars: budget },
       },
     });
     if (result.error) failures += 1;
-    if (result.rendered) {
-      blocks.push(result.rendered);
-      modelCount += result.modelCount;
-    }
+    if (!result.rendered) continue;
+    const separator = blocks.length > 0 ? 2 : 0; // "\n\n" between blocks
+    if (result.rendered.length + separator > remaining) break;
+    remaining -= result.rendered.length + separator;
+    blocks.push(result.rendered);
+    modelCount += result.modelCount;
   }
   return { rendered: blocks.join("\n\n"), modelCount, failures };
 }
 
 export function isMentalModelsInjectionText(text: string): boolean {
   const trimmed = text.trim();
-  return (
-    trimmed.startsWith(MENTAL_MODELS_OPEN) ||
-    trimmed.startsWith("<mental_models>") ||
-    /<\/?hindsight-mental-models>|<\/?mental_models>/.test(trimmed)
-  );
+  return trimmed.startsWith(MENTAL_MODELS_OPEN) || trimmed.startsWith("<mental_models>");
 }
