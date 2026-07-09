@@ -346,6 +346,24 @@ describe("resolveConfig", () => {
     expect(config.recall.preferObservations).toBe(false);
   });
 
+  it("normalizes recall score floors from config and env overrides", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ recall: { minScores: { semantic: 0.65, reranker: "bad", final: null } } }),
+    );
+
+    const fromConfig = resolveConfig(cwd, {});
+    expect(fromConfig.recall.minScores).toEqual({ semantic: 0.65 });
+
+    const fromEnv = resolveConfig(cwd, {
+      PI_HINDSIGHT_MIN_SEMANTIC: "0.7",
+      PI_HINDSIGHT_MIN_RERANKER: "0.2",
+    });
+    expect(fromEnv.recall.minScores).toEqual({ semantic: 0.7, reranker: 0.2 });
+  });
+
   it("reads JSONC config and release API knobs", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));

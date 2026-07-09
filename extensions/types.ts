@@ -40,6 +40,11 @@ export type ImportQualityProfile = "compatible" | "strict";
 /** Agent use profile selects mental-model seed sets (coding vs conversation/life). */
 export type AgentUseProfile = "coding" | "conversation";
 
+/** Score fields Hindsight may return on recall results; used for optional local floors. */
+export const RECALL_SCORE_FIELDS = ["semantic", "reranker", "final", "keyword"] as const;
+export type RecallScoreField = (typeof RECALL_SCORE_FIELDS)[number];
+export type RecallMinScores = Partial<Record<RecallScoreField, number>>;
+
 export interface BankMissionSettings {
   retainMission?: string;
   reflectMission?: string;
@@ -102,6 +107,8 @@ export interface ResolvedConfig {
     includeFactsInDebug: boolean;
     queryTimestamp?: string;
     preferObservations: boolean;
+    /** Optional local floors for automatic recall injection. Omitted by default. */
+    minScores?: RecallMinScores;
   };
   observations: {
     enabled: boolean;
@@ -181,6 +188,14 @@ export interface RecallResultItem {
   occurred_start?: string | null;
   source_fact_ids?: string[];
   sourceFacts?: string[];
+  scores?: RecallResultScores;
+}
+
+export interface RecallResultScores {
+  semantic?: number | null;
+  reranker?: number | null;
+  final?: number | null;
+  keyword?: number | null;
 }
 
 export interface RecallFailure {

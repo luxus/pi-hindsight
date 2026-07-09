@@ -1,4 +1,9 @@
-import type { HindsightEntityInput, ResolvedConfig } from "../types.js";
+import {
+  RECALL_SCORE_FIELDS,
+  type HindsightEntityInput,
+  type RecallMinScores,
+  type ResolvedConfig,
+} from "../types.js";
 import { DEFAULT_CONFIG } from "./config-defaults.js";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -132,6 +137,18 @@ function toolNameFilter(
   };
 }
 
+function scoreFloors(value: unknown): RecallMinScores | undefined {
+  if (!isRecord(value)) return undefined;
+  const floors: RecallMinScores = {};
+  for (const field of RECALL_SCORE_FIELDS) {
+    const valueForField = value[field];
+    if (typeof valueForField === "number" && Number.isFinite(valueForField)) {
+      floors[field] = valueForField;
+    }
+  }
+  return Object.keys(floors).length ? floors : undefined;
+}
+
 function hasConfiguredRecallField(rawConfig: unknown, field: string): boolean {
   return isRecord(rawConfig) && isRecord(rawConfig.recall) && field in rawConfig.recall;
 }
@@ -175,6 +192,7 @@ export function normalizeConfig(
   const userBankConfig = config.banks?.user ?? config.banks?.global;
   const defaultUserBankConfig = DEFAULT_CONFIG.banks.user;
   const globalBankId = optionalString(userBankConfig?.bankId, defaultUserBankConfig.bankId);
+  const minScores = scoreFloors(config.recall?.minScores);
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
     hindsight: {
@@ -325,6 +343,7 @@ export function normalizeConfig(
         config.recall?.preferObservations,
         DEFAULT_CONFIG.recall.preferObservations,
       ),
+      ...(minScores ? { minScores } : {}),
       ...(optionalString(config.recall?.queryTimestamp, DEFAULT_CONFIG.recall.queryTimestamp)
         ? {
             queryTimestamp: stringValue(
