@@ -31,6 +31,26 @@ describe("recall quality fixtures", () => {
     });
   });
 
+  it("drops recall results below configured score floors and fails open for missing scores", () => {
+    const result = filterRecallQuality(
+      [
+        { text: "Relevant project decision.", scores: { semantic: 0.72, reranker: 0.41 } },
+        { text: "Low semantic candidate.", scores: { semantic: 0.2, reranker: 0.9 } },
+        { text: "Low reranker candidate.", scores: { semantic: 0.9, reranker: 0.03 } },
+        { text: "BM25-only candidate without scores." },
+        { text: "Passthrough reranker candidate.", scores: { semantic: 0.9 } },
+      ],
+      { semantic: 0.65, reranker: 0.2 },
+    );
+
+    expect(result.items.map((item) => item.text)).toEqual([
+      "Relevant project decision.",
+      "BM25-only candidate without scores.",
+      "Passthrough reranker candidate.",
+    ]);
+    expect(result.reasonCounts).toEqual({ "below-score-floor": 2 });
+  });
+
   it("keeps high-signal workflow memories and excludes recalled-memory artifacts in context recall", async () => {
     const client: HindsightLikeClient = {
       retain: async () => undefined,
@@ -62,6 +82,34 @@ describe("recall quality fixtures", () => {
     expect(result.rendered).toContain("Blocker: Hindsight server unavailable");
     expect(result.rendered).not.toContain("last-recall.json");
     expect(result.rendered).not.toContain("previous block");
+  });
+
+  it("applies configured score floors during automatic context recall", async () => {
+    const client: HindsightLikeClient = {
+      retain: async () => undefined,
+      reflect: async () => ({}),
+      recall: async () => [
+        { text: "High confidence decision.", scores: { semantic: 0.9, reranker: 0.8 } },
+        { text: "Junk low rerank hit.", scores: { semantic: 0.9, reranker: 0.01 } },
+        { text: "No scores BM25 hit." },
+      ],
+    };
+
+    const result = await recallForContext({
+      client,
+      config: {
+        ...DEFAULT_CONFIG,
+        recall: { ...DEFAULT_CONFIG.recall, minScores: { reranker: 0.2 } },
+      },
+      scopes: [{ kind: "project", bankId: "project-bank" }],
+      messages: [user("What did we decide?")],
+    });
+
+    expect(result.blocks[0]!.results.map((item) => item.text)).toEqual([
+      "High confidence decision.",
+      "No scores BM25 hit.",
+    ]);
+    expect(result.rendered).not.toContain("Junk low rerank hit.");
   });
 
   it("renders nothing when only low-quality recall artifacts remain", () => {

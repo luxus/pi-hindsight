@@ -260,6 +260,7 @@ export function formatDebugReport(args: DebugReportArgs): string {
         topK: args.config.recall.topK,
         timeoutMs: args.config.recall.timeoutMs,
         injectionPosition: args.config.recall.injectionPosition,
+        minScores: args.config.recall.minScores,
       },
       retain: {
         enabled: args.config.retain.enabled,

@@ -160,5 +160,21 @@ export function resolveConfig(cwd: string, env: NodeJS.ProcessEnv = process.env)
     rawConfig = merge(rawConfig, patch);
     config = merge(config, patch);
   }
+  const minScores: Record<string, number> = {};
+  const semanticFloor =
+    env.PI_HINDSIGHT_MIN_SEMANTIC?.trim() === ""
+      ? Number.NaN
+      : Number(env.PI_HINDSIGHT_MIN_SEMANTIC);
+  if (Number.isFinite(semanticFloor)) minScores.semantic = semanticFloor;
+  const rerankerFloor =
+    env.PI_HINDSIGHT_MIN_RERANKER?.trim() === ""
+      ? Number.NaN
+      : Number(env.PI_HINDSIGHT_MIN_RERANKER);
+  if (Number.isFinite(rerankerFloor)) minScores.reranker = rerankerFloor;
+  if (Object.keys(minScores).length) {
+    const patch = { recall: { minScores } };
+    rawConfig = merge(rawConfig, patch);
+    config = merge(config, patch);
+  }
   return normalizeConfig(config, rawConfig, env);
 }
