@@ -26,6 +26,63 @@ Set `recall.includeSourceFacts: true` (bounded by `recall.maxSourceFactsTokens`)
 
 `recall.queryTimestamp` should normally be omitted. Set it only when recall should be anchored to a specific point in time.
 
+## Recall quality
+
+After Hindsight returns candidates for **automatic** recall, Pi applies a local quality pass before rendering the ephemeral context block. This pass does not change what Hindsight stored; it only decides what gets injected this turn.
+
+### Always-on shape filters
+
+These run for every automatic recall, with no config required:
+
+- **blank-memory** — empty or whitespace-only text
+- **duplicate-memory** — same normalized text already kept in this response
+- **recall-contamination** — payload that looks like a previously injected memory or mental-model block (or related sidecar markers)
+
+### Optional score floors (`recall.minScores`)
+
+You can also drop candidates whose returned per-stage scores fall below configured floors. Supported fields: `semantic`, `reranker`, `final`, `keyword`.
+
+```json
+"recall": {
+  "minScores": {
+    "reranker": 0.2
+  }
+}
+```
+
+Env overrides for the common pair:
+
+- `PI_HINDSIGHT_MIN_RERANKER`
+- `PI_HINDSIGHT_MIN_SEMANTIC`
+
+**Defaults are off.** Score scales depend on embedding model, reranker, budget, bank size, and server version. A floor that separates junk from useful memory on one deploy can over- or under-filter on another. Prefer measuring on your server (see [Last-recall snapshots](#last-recall-snapshots)) before enabling floors.
+
+### Fail-open rules
+
+When floors are set:
+
+| Situation                                       | Result                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------- |
+| Score field is a number **below** its floor     | Drop (`below-score-floor`)                                 |
+| No `scores` object on the result                | **Keep** (BM25-only or older payloads)                     |
+| Floor set for a field that is missing or `null` | **Keep** that field (do not treat as below floor)          |
+| Multiple floors set                             | **AND** — any present field below its floor drops the item |
+
+### Local auto-recall vs tool `minScores`
+
+- Automatic recall floors are a **local** filter after Hindsight returns results.
+- The `hindsight_recall` tool's optional `minScores` argument is a **passthrough to the Hindsight API** on explicit tool calls. The two knobs are independent.
+
+### Suggested starting point
+
+If auto-inject looks noisy and low-rerank junk is obvious, try a soft reranker-only floor first:
+
+```bash
+export PI_HINDSIGHT_MIN_RERANKER=0.2
+```
+
+Exact field names and env wiring: [Configuration](/pi-hindsight/reference/configuration/).
+
 ## Last-recall snapshots
 
 Set `recall.storeLastRecall: true` to write a local visibility snapshot under `.pi/hindsight/` for debugging. Add `recall.storeLastRecallFailures: true` to include failed recall attempts when all recalls fail.

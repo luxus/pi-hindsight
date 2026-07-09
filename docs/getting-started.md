@@ -71,6 +71,8 @@ After setup, `/hindsight` should show:
 - retain queue path
 - import checkpoint/manifest state when imports have run
 
+If automatic recall injects irrelevant noise, see [Recall quality](memory-behavior.md#recall-quality) for always-on filters and optional score floors (off by default).
+
 ## 6. Import old sessions only when useful
 
 Live retain starts after setup. Historical import is optional backfill. Use guided setup's import prompt first when it appears; it previews before writing memory.

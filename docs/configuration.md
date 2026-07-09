@@ -147,12 +147,17 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
 }
 ```
 
-`recall.minScores` is optional and defaults to no floors, preserving current automatic-recall
-behavior. When set, automatic recall drops results whose returned `scores.semantic`,
-`scores.reranker`, `scores.final`, or `scores.keyword` is below the configured floor. Results
-with no `scores` object, or with a missing score field, pass through so BM25-only hits and
-passthrough rerankers are not silently discarded. `PI_HINDSIGHT_MIN_SEMANTIC` and
-`PI_HINDSIGHT_MIN_RERANKER` override the matching config floors when set.
+### `recall.minScores` (optional)
 
-This is independent of the `hindsight_recall` tool's optional `minScores` argument, which is
-passed through to the Hindsight API on explicit tool calls.
+Exact fields for automatic-recall score floors. **Defaults: no floors** (inject quality-filtered
+top-k without score thresholds). When set, drop candidates whose returned `scores.semantic` /
+`scores.reranker` /
+`scores.final` / `scores.keyword` is a number strictly below the matching floor. Missing
+`scores` or missing score fields **fail open** (keep the hit).
+
+- Env overrides: `PI_HINDSIGHT_MIN_SEMANTIC`, `PI_HINDSIGHT_MIN_RERANKER` (merge over config for
+  those fields).
+- Independent of the `hindsight_recall` tool `minScores` argument (API passthrough on explicit
+  tool calls).
+
+Behavior, why defaults stay off, and a suggested starting floor: [Memory behavior → Recall quality](memory-behavior.md#recall-quality).
