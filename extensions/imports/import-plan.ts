@@ -179,7 +179,7 @@ export async function readImportCheckpointSafe(path: string): Promise<ImportChec
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : String(error),
-      action: `Move or repair ${path}, then rerun the import command. The next successful import can recreate the checkpoint.`,
+      action: `Move or repair ${path}, then open /hindsight and press i to re-run import. The next successful import can recreate the checkpoint.`,
     };
   }
 }
@@ -321,7 +321,7 @@ export async function readImportManifestSafe(path: string): Promise<ImportManife
     return {
       manifest: { version: 1, imports: {} },
       error: error instanceof Error ? error.message : String(error),
-      action: `Move or repair ${path}, then rerun the import command. New successful imports will recreate the manifest.`,
+      action: `Move or repair ${path}, then open /hindsight and press i to re-run import. New successful imports will recreate the manifest.`,
     };
   }
 }

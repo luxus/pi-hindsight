@@ -12,6 +12,12 @@ export type SetupIntent =
   | { type: "chooseDeployment" }
   | { type: "guidedSetup" }
   | { type: "flushQueue" }
+  | { type: "setMode" }
+  | { type: "nextOptOut" }
+  | { type: "applyMentalModels" }
+  | { type: "importSessions" }
+  | { type: "runDoctor" }
+  | { type: "initConfig" }
   | { type: "toggleAdvanced" }
   | { type: "moveTab"; delta: number }
   | { type: "moveSelection"; delta: number }
@@ -100,6 +106,12 @@ export function setupIntentFromInput(data: string): SetupIntent | undefined {
   if (data === "d") return { type: "chooseDeployment" };
   if (data === "g") return { type: "guidedSetup" };
   if (data === "f") return { type: "flushQueue" };
+  if (data === "m") return { type: "setMode" };
+  if (data === "x") return { type: "nextOptOut" };
+  if (data === "t") return { type: "applyMentalModels" };
+  if (data === "i") return { type: "importSessions" };
+  if (data === "o") return { type: "runDoctor" };
+  if (data === "n") return { type: "initConfig" };
   if (matchesKey(data, Key.left) || data === "h" || data === "<") {
     return { type: "moveTab", delta: -1 };
   }
@@ -124,6 +136,12 @@ export function applySetupIntent(
   if (intent.type === "chooseDeployment") return withAction("choose-deployment", normalized);
   if (intent.type === "guidedSetup") return withAction("guided-setup", normalized);
   if (intent.type === "flushQueue") return withAction("flush-queue", normalized);
+  if (intent.type === "setMode") return withAction("set-mode", normalized);
+  if (intent.type === "nextOptOut") return withAction("next-opt-out", normalized);
+  if (intent.type === "applyMentalModels") return withAction("apply-mental-models", normalized);
+  if (intent.type === "importSessions") return withAction("import-sessions", normalized);
+  if (intent.type === "runDoctor") return withAction("run-doctor", normalized);
+  if (intent.type === "initConfig") return withAction("init-config", normalized);
   if (intent.type === "toggleAdvanced") return withAction("toggle-advanced", normalized);
   if (intent.type === "finish") return withAction("done", { ...normalized, step: "done" });
   if (intent.type === "startGuidedSetup") return withState({ ...normalized, step: "profile" });

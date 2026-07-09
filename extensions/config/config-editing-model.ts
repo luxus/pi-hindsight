@@ -46,7 +46,10 @@ export function buildConfigEditingTabs(
   options: { showAdvanced?: boolean } = {},
 ): ConfigEditingTab[] {
   const fields = buildConfigEditingFields(config, projectBankId, layers);
-  const ids: TabId[] = ["Status", "Connection", "Banks", "Recall", "Retain", "Import", "UI"];
+  // Default hub is Status only; advanced unlocks full settings tabs.
+  const ids: TabId[] = options.showAdvanced
+    ? ["Status", "Connection", "Banks", "Recall", "Retain", "Import", "UI"]
+    : ["Status"];
   return ids.map((id) => ({
     id,
     fields:

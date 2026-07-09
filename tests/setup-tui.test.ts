@@ -42,17 +42,36 @@ describe("setup TUI receipt facts", () => {
       [],
       { showAdvanced: true },
     );
+    // Banks field order: memoryProfile, agentUse, mentalModelsInject, projectBankId, globalBankEnabled, ...
     const component = createSetupComponent(
       tabs,
       theme,
-      { tabIndex: 2, selectedByTab: { Banks: 2 }, showAdvanced: true },
+      { tabIndex: 2, selectedByTab: { Banks: 4 }, showAdvanced: true },
       () => undefined,
     );
 
     const rendered = component.render(100).join("\n");
     expect(rendered).toContain("Docs: https://luxus.github.io/pi-hindsight/concepts/memory-banks/");
     expect(rendered).toContain("Allows cross-project recall");
-    expect(rendered).toContain("f flush");
-    expect(rendered).toContain("m models read-only");
+    expect(rendered).toContain("g guided");
+    expect(rendered).toContain("m mode");
+    expect(rendered).toContain("t mental models");
+  });
+
+  it("default hub shows Status only until advanced is enabled", () => {
+    const basic = buildConfigEditingTabs(DEFAULT_CONFIG, "bank", {
+      project: {},
+      global: {},
+      env: {},
+    });
+    expect(basic.map((tab) => tab.id)).toEqual(["Status"]);
+    const advanced = buildConfigEditingTabs(
+      DEFAULT_CONFIG,
+      "bank",
+      { project: {}, global: {}, env: {} },
+      [],
+      { showAdvanced: true },
+    );
+    expect(advanced.map((tab) => tab.id)).toContain("Banks");
   });
 });

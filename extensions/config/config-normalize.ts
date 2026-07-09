@@ -183,6 +183,25 @@ export function normalizeConfig(
       ...(apiKeyRef ? { apiKeyRef } : {}),
       timeoutMs: positiveInt(config.hindsight?.timeoutMs, DEFAULT_CONFIG.hindsight.timeoutMs),
     },
+    agentUse: enumValue(
+      (config as { agentUse?: unknown }).agentUse,
+      ["coding", "conversation"],
+      DEFAULT_CONFIG.agentUse,
+    ),
+    mentalModels: {
+      inject: bool(
+        (config as { mentalModels?: { inject?: unknown } }).mentalModels?.inject,
+        DEFAULT_CONFIG.mentalModels.inject,
+      ),
+      maxChars: positiveInt(
+        (config as { mentalModels?: { maxChars?: unknown } }).mentalModels?.maxChars,
+        DEFAULT_CONFIG.mentalModels.maxChars,
+      ),
+      cacheTtlMs: positiveInt(
+        (config as { mentalModels?: { cacheTtlMs?: unknown } }).mentalModels?.cacheTtlMs,
+        DEFAULT_CONFIG.mentalModels.cacheTtlMs,
+      ),
+    },
     banks: {
       project: {
         enabled: bool(config.banks?.project?.enabled, DEFAULT_CONFIG.banks.project.enabled),

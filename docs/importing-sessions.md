@@ -34,9 +34,7 @@ Pi session imports and chat transcript imports are separate paths. They do not s
 Command shortcuts are useful after setup, for repeat imports, or for explicit files:
 
 ```text
-/hindsight:import-current --dry-run
-/hindsight:import-file /path/to/session.jsonl --dry-run
-/hindsight:import-project-sessions --dry-run
+Open `/hindsight` and press `i` (import always dry-runs before write). Guided setup can also offer import after profile selection.
 ```
 
 If the preview looks right, rerun without `--dry-run`. Non-dry-run imports announce the start and require confirmation because they write memory plus local checkpoint/manifest files.
@@ -45,7 +43,7 @@ Use `--all-leaves` only when you intentionally want every fork leaf from a sessi
 
 ## Use commands for script workflows
 
-Imports run through the `/hindsight:import*` commands; there are no import tools. `/hindsight:import` and `/hindsight:import-file` target Pi session JSONL. Chat transcript import is available through guided setup and defaults to the configured User Bank.
+Imports run through the `/hindsight` TUI hub and guided setup; there are no import tools. Project imports target Pi session JSONL. Chat transcript import is available through guided setup / hub import and defaults to the configured User Bank.
 
 ## Preview output
 

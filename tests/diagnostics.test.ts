@@ -237,7 +237,9 @@ describe("diagnostics", () => {
       deadLetterMalformedLines: 1,
     });
     expect(report.queue.action).toContain("Inspect queue files");
-    expect(report.queue.action).toContain("/hindsight:flush");
+    expect(report.queue.action).toContain("/hindsight");
+    expect(report.queue.action).toContain("press f");
+    expect(report.queue.action).not.toContain("/hindsight:flush");
   });
 
   it("formats queue remediation when queue files cannot be read", () => {

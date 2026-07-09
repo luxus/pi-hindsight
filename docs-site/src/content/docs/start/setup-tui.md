@@ -2,41 +2,39 @@
 title: "Setup TUI"
 ---
 
-`/hindsight` is the main control center. Use it before command shortcuts.
+`/hindsight` is the main control center for day-to-day memory ops. There are no separate public slash commands for mode, import, templates, flush, or doctor — use the hub keys.
 
 ```text
 /hindsight
 ```
 
-The TUI shows status first, then lets you edit settings, rerun guided setup, flush queued Retain Jobs, inspect imports, and open mental model details.
+The hub shows status first (profile, agent use, banks, queue, receipts). Press `a` for advanced settings tabs.
 
 ## What to use it for
 
 - first setup and profile selection
+- agent use (coding vs conversation / real-life) for mental-model sets
 - server/base URL checks
 - Project Bank and User Bank confirmation
-- Retain Queue state and flushes
-- import manifest/checkpoint status
-- recent Retain receipts
-- local config overrides
-- read-only mental model inventory
-
-Each selected setting detail includes a section-level docs link. Use that link when a field needs more context than the TUI can show.
+- provision starter mental models (`t`)
+- Retain Queue flushes (`f`)
+- historical import (`i`)
+- doctor diagnostics (`o`)
+- session memory mode (`m`)
 
 ## Guided setup
 
-If no project config exists, `/hindsight` starts guided setup before the advanced TUI. You can rerun guided setup later with `g`.
+If no project config exists, `/hindsight` offers guided setup. Rerun later with `g`.
 
 Guided setup handles:
 
-1. Hindsight server URL
-2. memory profile
+1. memory profile
+2. **agent use** (coding vs conversation)
 3. project and/or user bank target
-4. optional dry-run-first historical import
+4. optional starter mental models (dry-run + confirm)
+5. optional dry-run-first historical import
 
 Setup also prints docs links for the current area, such as [memory profiles](/pi-hindsight/start/memory-profiles/) and [imports](/pi-hindsight/guides/importing-sessions/).
-
-Bank templates, mental models, and directives are managed in the Hindsight control-plane web UI, not in Pi setup.
 
 ## Profiles in one line
 
@@ -49,31 +47,37 @@ For details, see [Memory profiles](/pi-hindsight/start/memory-profiles/).
 
 ## Keyboard controls
 
-- `h`/`l` or `<`/`>`: switch tabs
-- `j`/`k`: move between settings
-- `Enter`: edit selected setting
-- `r`: remove selected setting's active override
-- `f`: flush queued Retain Jobs
-- `a`: toggle advanced fields
+- `g`: guided setup
+- `m`: session mode
+- `x`: next-opt-out (skip automatic retain for next run)
+- `t`: mental models (agent-use aware)
+- `i`: import
+- `f`: flush queue
+- `o`: doctor
+- `n`: init project config
 - `d`: deployment setup
-- `g`: rerun guided setup
+- `a`: toggle advanced settings tabs
+- `h`/`l` or `<`/`>`: switch tabs (advanced)
+- `j`/`k`: move between settings (advanced)
+- `Enter`: edit selected setting
+- `r`: reset selected override
 - `q`: close
+
+Slash alias for next-opt-out: `/hindsight:next-opt-out`.
 
 ## First checks
 
 After setup, confirm:
 
 - server is reachable
-- expected profile is active
+- expected profile and agent use are active
 - Project Bank appears only when project memory is intended
 - User Bank appears only when user memory is intended
+- mental models inject is on if you want them in context
 - Retain Queue path is visible and writable
-- import state is empty, previewed, imported, queued, or failed as expected
 
 For status interpretation, see [Use `/hindsight` status](/pi-hindsight/guides/use-hindsight-status/).
 
-## Import from the TUI first
+## Import from the TUI
 
-Guided setup can offer historical import after config setup. That path previews first, shows progress, then asks before writing memory. Prefer it for first-time backfill.
-
-Use command shortcuts later when you already know which session set you want to import. See [Importing sessions](/pi-hindsight/guides/importing-sessions/).
+Guided setup and hub key `i` preview first, then ask before writing memory. Prefer that for first-time backfill. See [Importing sessions](/pi-hindsight/guides/importing-sessions/).

@@ -240,6 +240,13 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
         (signal) => importBankTemplate(lowLevel, bankId, manifest, options, signal),
         options?.signal,
       ),
+    listMentalModels: (bankId, options) =>
+      withTimeout(
+        "hindsight listMentalModels",
+        timeoutMs,
+        (signal) => raw.listMentalModels(bankId, { ...options, signal }),
+        options?.signal,
+      ),
     health: () =>
       withTimeout("hindsight health", timeoutMs, (signal) =>
         withRetry("health", async () => {

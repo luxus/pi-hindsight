@@ -12,6 +12,7 @@ import {
   setupIntentFromInput,
 } from "./setup-flow.js";
 import {
+  HUB_ACTION_HELP,
   RECEIPT_FACT_LIMIT,
   type SetupActionId,
   type SetupUiState,
@@ -214,7 +215,9 @@ export function createSetupComponent(
         boxed(
           theme.fg(
             "dim",
-            ` h/l or </> tabs · j/k move · enter edit · r reset · f flush · m models read-only · a advanced ${state.showAdvanced ? "on" : "off"} · d deployment · g guided · q close `,
+            state.showAdvanced
+              ? ` advanced · h/l tabs · j/k · enter edit · r reset ·${HUB_ACTION_HELP}`
+              : ` hub ·${HUB_ACTION_HELP}`,
           ),
           width,
           theme,

@@ -442,25 +442,10 @@ describe("operation catalog", () => {
       "hindsight_reflect",
     ]);
 
+    // Human surface is TUI-first: hub + next-opt-out slash command.
     expect(catalog.commands.map((command) => command.name)).toEqual([
       "hindsight",
-      "hindsight:init",
-      "hindsight:import",
-      "hindsight:import-current",
-      "hindsight:import-file",
-      "hindsight:import-project-sessions",
-      "hindsight:session",
-      "hindsight:mode",
       "hindsight:next-opt-out",
-      "hindsight:retain",
-      "hindsight:tag",
-      "hindsight:last-recall",
-      "hindsight:recall-cleanup",
-      "hindsight:queue",
-      "hindsight:flush",
-      "hindsight:doctor",
-      "hindsight:templates",
-      "hindsight:template-apply",
     ]);
   });
 });

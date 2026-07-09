@@ -182,7 +182,7 @@ export function formatDebugReport(args: DebugReportArgs): string {
           (args.queueMalformedLines ?? 0) > 0 ||
           (args.deadLetterMalformedLines ?? 0) > 0 ||
           (args.deadLetterLength ?? 0) > 0
-            ? "Inspect queue files, fix malformed JSONL offline if needed, then run /hindsight:flush after Hindsight is reachable."
+            ? "Inspect queue files, fix malformed JSONL offline if needed, then open /hindsight and press f to flush after Hindsight is reachable."
             : null,
       },
       serverRequirements: {
@@ -196,7 +196,7 @@ export function formatDebugReport(args: DebugReportArgs): string {
         error: args.importManifestError ?? null,
         action: args.importManifestError
           ? (args.importManifestAction ??
-            "Move or repair the import manifest, then rerun the import command.")
+            "Move or repair the import manifest, then open /hindsight and press i to re-run import.")
           : null,
         count: args.importCount ?? 0,
         latest: args.latestImport

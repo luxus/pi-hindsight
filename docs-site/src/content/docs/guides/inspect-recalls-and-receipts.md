@@ -7,11 +7,7 @@ Pi Hindsight keeps recall inspection opt-in so normal transcript history does no
 
 ## Inspect the last recall
 
-Use:
-
-```text
-/hindsight:last-recall
-```
+Enable `recall.storeLastRecall: true` and read the sidecar at the configured `recall.lastRecallPath` (default `.pi/hindsight/last-recall.json`). There is no public slash command for last-recall.
 
 Use this when you need to answer:
 

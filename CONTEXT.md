@@ -30,11 +30,15 @@ A stable name that resolves to a real bank ID. `project` means the selected Proj
 
 ### Bank Template
 
-A Hindsight manifest (bank config overrides, mental models, directives) that provisions a bank in one call. `pi-hindsight` bundles a small, fixed set of built-in templates (`/hindsight:templates`, `/hindsight:template-apply`) targeted at its own Project Bank and User Bank missions; browsing, editing, and exporting arbitrary templates remains a Hindsight control-plane responsibility.
+A Hindsight manifest (bank config overrides, mental models, directives) that provisions a bank in one call. `pi-hindsight` bundles use-profile-aware built-in templates (coding vs conversation) applied from the `/hindsight` hub (`t`) or guided setup, targeted at Project Bank and User Bank missions; browsing, editing, and exporting arbitrary templates remains a Hindsight control-plane responsibility.
+
+### Agent Use
+
+Config `agentUse`: `coding` (default) or `conversation`. Selects which starter mental-model sets apply so coding agents and conversation/real-life agents do not share the same seed queries.
 
 ### Mental Model
 
-A Hindsight-synthesized, reusable answer to a recurring question over stored memory, refreshed via Reflect rather than recalled raw. `pi-hindsight` does not expose ad hoc mental model creation, editing, or refresh; the Hindsight control-plane web UI owns that lifecycle. The bundled Bank Templates are the one explicit, dry-run-gated exception: applying one creates or updates its fixed set of starter mental models.
+A Hindsight-synthesized, reusable answer to a recurring question over stored memory, refreshed via Reflect rather than recalled raw. Ad hoc mental model creation, editing, or refresh stays in the Hindsight control-plane web UI. Bundled bank templates are the dry-run-gated path to seed starter models. When models have content and `mentalModels.inject` is enabled, their content is injected ephemerally into automatic context alongside recall (not retained).
 
 ### Retain
 

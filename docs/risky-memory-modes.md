@@ -34,9 +34,8 @@ Risks:
 Safe alternative:
 
 - Keep recall ephemeral by default.
-- Use `recall.storeLastRecall` to write the latest recall snapshot to a local sidecar file.
-- Use `/hindsight:last-recall` to inspect the latest snapshot.
-- Use `/hindsight:recall-cleanup` only for accidental persisted recall blocks.
+- Use `recall.storeLastRecall` to write the latest recall snapshot to a local sidecar file under `.pi/hindsight/`.
+- Inspect that sidecar on disk when debugging; there is no public last-recall slash command.
 
 Design rule:
 
@@ -88,8 +87,8 @@ Risks:
 Safe alternative:
 
 - Use explicit commands:
-  - `/hindsight:mode read-only`
-  - `/hindsight:mode ignored`
+  - `/hindsight` hub key `m` → `read-only`
+  - `/hindsight` hub key `m` → `ignored`
   - `/hindsight:retain off`
 - Use `/hindsight:next-opt-out` for command-based one-turn automatic retain opt-out instead of hashtag parsing.
 

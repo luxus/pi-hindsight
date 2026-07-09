@@ -164,13 +164,26 @@ export function projectMessageText(
 
 export function isInjectedHindsightMemory(message: unknown): boolean {
   const record = message as { content?: unknown; customType?: unknown; type?: unknown };
-  if (record.customType === "hindsight-recall" || record.type === "hindsight-recall") return true;
+  if (
+    record.customType === "hindsight-recall" ||
+    record.type === "hindsight-recall" ||
+    record.customType === "hindsight-mental-models" ||
+    record.type === "hindsight-mental-models"
+  ) {
+    return true;
+  }
   const text = textFromContent(record.content, {
     includeText: true,
     includeThinking: false,
     includeToolCall: true,
   }).trim();
-  return text.startsWith("<hindsight-memory>") || text.startsWith("<hindsight_memories>");
+  // Only prefix matches: substring contains would drop legitimate discussion of these tags.
+  return (
+    text.startsWith("<hindsight-memory>") ||
+    text.startsWith("<hindsight_memories>") ||
+    text.startsWith("<hindsight-mental-models>") ||
+    text.startsWith("<mental_models>")
+  );
 }
 
 function toolResultContent(

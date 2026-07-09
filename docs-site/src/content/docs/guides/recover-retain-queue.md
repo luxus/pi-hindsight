@@ -22,11 +22,7 @@ Confirm:
 
 ## Flush queued jobs
 
-Use either the TUI flush action or:
-
-```text
-/hindsight:flush
-```
+Open `/hindsight` and press `f`.
 
 If the flush succeeds, pending jobs should fall and recent receipts should update.
 
@@ -35,7 +31,7 @@ If the flush succeeds, pending jobs should fall and recent receipts should updat
 1. Confirm the Hindsight server is running.
 2. Confirm `HINDSIGHT_BASE_URL` or config points at the expected server.
 3. Leave the queue files in place.
-4. Restart Pi or run `/hindsight:flush` after the server returns.
+4. Restart Pi or open `/hindsight` and press `f` after the server returns.
 
 Do not delete queue files unless you intentionally want to discard pending retain jobs.
 

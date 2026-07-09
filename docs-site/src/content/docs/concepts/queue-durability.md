@@ -33,7 +33,7 @@ Each active filesystem queue lock records an owner token and updates a heartbeat
 Flush queued jobs with:
 
 ```text
-/hindsight:flush
+Open `/hindsight` and press `f`.
 ```
 
 Retain attempts and shutdown also try to flush pending jobs. Periodic flushing can be enabled with `retain.flushIntervalMs` and bounded by periodic/shutdown limits.

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
+import type { AgentUseProfile } from "../types.js";
 
 const EPHEMERAL_PROCESS_SESSION_ID = randomUUID();
 
@@ -30,8 +31,15 @@ export function explicitMemoryDocumentId(args: {
   return `pi-explicit:${stableSessionId(args.sessionFile, args.cwd)}:${digest}`;
 }
 
-export function contextLabel(cwd: string, sessionFile: string | undefined): string {
+export function contextLabel(
+  cwd: string,
+  sessionFile: string | undefined,
+  agentUse: AgentUseProfile = "coding",
+): string {
   const suffix = sessionFile ? `, session ${basename(sessionFile)}` : ", ephemeral session";
+  if (agentUse === "conversation") {
+    return `Pi conversation/task session for "${basename(cwd)}"${suffix}`;
+  }
   return `Pi coding session for repo "${basename(cwd)}"${suffix}`;
 }
 

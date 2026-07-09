@@ -28,24 +28,9 @@ Set `recall.includeSourceFacts: true` (bounded by `recall.maxSourceFactsTokens`)
 
 ## Last-recall snapshots
 
-Set `recall.storeLastRecall: true` to write a local visibility snapshot for `/hindsight:last-recall`. Add `recall.storeLastRecallFailures: true` to include failed recall attempts when all recalls fail.
+Set `recall.storeLastRecall: true` to write a local visibility snapshot under `.pi/hindsight/` for debugging. Add `recall.storeLastRecallFailures: true` to include failed recall attempts when all recalls fail.
 
-Snapshots can contain recalled memory and query excerpts. Enable them only when local disk visibility is acceptable. Snapshots are not inserted into provider context or automatic retain.
-
-Use:
-
-```text
-/hindsight:last-recall
-/hindsight:last-recall --json
-```
-
-`/hindsight:recall-cleanup` scans the current Pi session transcript for accidentally persisted `<hindsight-memory>` blocks. Pruning requires an explicit offline file path:
-
-```text
-/hindsight:recall-cleanup <session.jsonl> --prune
-```
-
-A unique backup is written next to the session file before pruning.
+Snapshots can contain recalled memory and query excerpts. Enable them only when local disk visibility is acceptable. Snapshots are not inserted into provider context or automatic retain. There is no public slash command for last-recall; inspect the sidecar file on disk.
 
 ## Retain
 
@@ -75,13 +60,7 @@ Queue behavior:
 - exhausted jobs moved to `<queue>.dead.jsonl`
 - diagnostics summarize queue state without printing raw retained content
 
-Flush routes:
-
-```text
-/hindsight:flush
-```
-
-Retain also flushes on new retain attempts and shutdown. Set `retain.flushIntervalMs` to a positive interval to flush periodically while Pi is running. Periodic background flushes are bounded separately by `retain.periodicFlushMaxJobs` and `retain.periodicFlushTimeoutMs`.
+Flush from the hub: open `/hindsight` and press `f`. Retain also flushes on new retain attempts and shutdown. Set `retain.flushIntervalMs` to a positive interval to flush periodically while Pi is running. Periodic background flushes are bounded separately by `retain.periodicFlushMaxJobs` and `retain.periodicFlushTimeoutMs`.
 
 Shutdown flushing is bounded by `retain.shutdownFlushMaxJobs` and `retain.shutdownFlushTimeoutMs`. If jobs remain after shutdown, they stay on disk and are visible through `/hindsight`.
 
@@ -116,9 +95,8 @@ Supported placeholders:
 Per-session governance is stored outside provider-visible messages under `.pi/hindsight/session-meta/`.
 
 ```text
-/hindsight:mode normal
-/hindsight:mode read-only
-/hindsight:mode ignored
+From the `/hindsight` hub, press `m` and choose `normal`, `read-only`, or `ignored`.
+One-turn retain skip: `/hindsight:next-opt-out` or hub key `x`.
 /hindsight:retain on
 /hindsight:retain off
 /hindsight:next-opt-out

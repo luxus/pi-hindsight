@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
@@ -2006,6 +2006,8 @@ describe("Pi session import", () => {
       ].join("\n"),
     );
     writeFileSync(join(sessionsDir, "note.txt"), "ignore");
+    // Directory with a .jsonl name must be skipped by isFile (not counted as scanned).
+    mkdirSync(join(sessionsDir, "not-a-file.jsonl"));
 
     const result = await discoverProjectSessionFiles({ cwd: project, currentSessionFile: current });
 
@@ -2602,5 +2604,107 @@ describe("Pi session import", () => {
       { leafId: "a", messages: ["root", "a"] },
       { leafId: "b", messages: ["root", "b"] },
     ]);
+  });
+
+  // Coverage for import paths previously exercised only via demoted slash commands.
+  it("dry-runs a single Pi session import without retaining", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-import-session-"));
+    mkdirSync(join(cwd, ".git"));
+    const sessionFile = join(cwd, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-import", cwd }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
+      ].join("\n"),
+    );
+    const retain = vi.fn(async () => undefined);
+    const progress: string[] = [];
+
+    const result = await importPiSession({
+      sessionFile,
+      cwd,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      dryRun: true,
+      client: { retain, recall: async () => [], reflect: async () => ({}) },
+      onProgress: (event) => progress.push(event.message),
+    });
+
+    expect(retain).not.toHaveBeenCalled();
+    expect(result.dryRun).toBe(true);
+    expect(result.messageCount).toBe(1);
+    expect(result.documents).toHaveLength(1);
+    expect(progress.some((message) => /Reading session file|Planning import/.test(message))).toBe(
+      true,
+    );
+  });
+
+  it("imports project sessions with dry-run progress then writes after a real run", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-import-project-"));
+    mkdirSync(join(cwd, ".git"));
+    const sessionFile = join(cwd, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-project-import", cwd }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "hi" } }),
+      ].join("\n"),
+    );
+    const retain = vi.fn(async () => undefined);
+    const progress: string[] = [];
+
+    const dryRun = await importProjectSessions({
+      cwd,
+      currentSessionFile: sessionFile,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      dryRun: true,
+      client: { retain, recall: async () => [], reflect: async () => ({}) },
+      onProgress: (event) => progress.push(event.message),
+    });
+    expect(dryRun.dryRun).toBe(true);
+    expect(retain).not.toHaveBeenCalled();
+    expect(
+      progress.some((message) => /Scanning project session files|Previewing/.test(message)),
+    ).toBe(true);
+
+    const written = await importProjectSessions({
+      cwd,
+      currentSessionFile: sessionFile,
+      bankId: "bank",
+      config: DEFAULT_CONFIG,
+      dryRun: false,
+      client: { retain, recall: async () => [], reflect: async () => ({}) },
+    });
+    expect(written.dryRun).toBe(false);
+    expect(retain).toHaveBeenCalled();
+    expect(written.documentCount).toBeGreaterThan(0);
+  });
+
+  it("skips broken .jsonl symlinks while discovering project sessions", async () => {
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    const sessionsDir = mkdtempSync(join(tmpdir(), "pi-hindsight-sessions-"));
+    const current = join(sessionsDir, "current.jsonl");
+    writeFileSync(
+      current,
+      [
+        JSON.stringify({ type: "session", id: "current", cwd: project }),
+        JSON.stringify({ type: "message", id: "1", message: { role: "user", content: "c" } }),
+      ].join("\n"),
+    );
+    try {
+      symlinkSync(join(sessionsDir, "missing-target.jsonl"), join(sessionsDir, "broken.jsonl"));
+    } catch {
+      // Symlink may be unavailable on some environments; skip the broken-link branch then.
+      return;
+    }
+
+    const result = await discoverProjectSessionFiles({
+      cwd: project,
+      currentSessionFile: current,
+    });
+    expect(result.sessionFiles).toEqual([current]);
+    expect(result.scanned).toBe(1);
   });
 });

@@ -272,12 +272,10 @@ Required:
 - `hindsight_retain`
 - `hindsight_reflect`
 
-Suggested commands:
+Suggested human surface:
 
-- `/hindsight:status`
-- `/hindsight:doctor`
-- `/hindsight:config`
-- `/hindsight:import`
+- `/hindsight` TUI hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup)
+- `/hindsight:next-opt-out` (skip automatic retain for the next agent run)
 
 ## Implementation priorities
 

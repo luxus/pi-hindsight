@@ -122,8 +122,16 @@ describe("guided setup", () => {
       ui: {
         notify,
         input: vi.fn().mockResolvedValueOnce("project-bank"),
-        select: vi.fn().mockResolvedValueOnce("Project Only"),
-        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+        select: vi
+          .fn()
+          .mockResolvedValueOnce("Project Only")
+          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+        // Write config yes; skip mental models; skip import.
+        confirm: vi
+          .fn()
+          .mockResolvedValueOnce(true)
+          .mockResolvedValueOnce(false)
+          .mockResolvedValueOnce(false),
       },
     } as never;
 
