@@ -43,9 +43,11 @@ These run for every automatic recall, with no config required:
 You can also drop candidates whose returned per-stage scores fall below configured floors. Supported fields: `semantic`, `reranker`, `final`, `keyword`.
 
 ```json
-"recall": {
-  "minScores": {
-    "reranker": 0.2
+{
+  "recall": {
+    "minScores": {
+      "reranker": 0.2
+    }
   }
 }
 ```
