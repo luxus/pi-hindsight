@@ -3,7 +3,86 @@ import { resolveOperationBank } from "../banks/bank-selection.js";
 import { buildStatusFields } from "../utils/status-fields.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 import { isMemorySetupComplete, setupRequiredMessage } from "../config/setup-gate.js";
-import type { HindsightLikeClient } from "../types.js";
+import { configureMemory, type ProjectConfigPatchInput } from "../config/config-writer.js";
+import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
+
+/** Keys agents may read/patch via hindsight_config (no raw secrets). */
+export const AGENT_CONFIG_ALLOWLIST = [
+  "setupComplete",
+  "scopeMode",
+  "projectId",
+  "projectIdStrategy",
+  "includeSharedObservations",
+  "projectBankId",
+  "enableGlobalBank",
+  "globalBankId",
+  "agentUse",
+  "mentalModelsInject",
+  "memoryProfile",
+  "recallEnabled",
+  "recallBudget",
+  "recallMaxTokens",
+  "retainEnabled",
+  "baseUrl",
+  "apiKeyEnvVar",
+  "timeoutMs",
+] as const;
+
+export type AgentConfigKey = (typeof AGENT_CONFIG_ALLOWLIST)[number];
+
+const ALLOWLIST_SET = new Set<string>(AGENT_CONFIG_ALLOWLIST);
+
+export function agentConfigView(config: ResolvedConfig): Record<AgentConfigKey, unknown> {
+  let memoryProfile: string = "project-only";
+  if (config.recall.enabled && !config.retain.enabled) memoryProfile = "recall-only";
+  else if (!config.banks.project.enabled && config.banks.user.enabled)
+    memoryProfile = "global-only";
+  else if (config.banks.project.enabled && config.banks.user.enabled)
+    memoryProfile = "project+global";
+
+  return {
+    setupComplete: config.setupComplete,
+    scopeMode: config.scope.mode,
+    projectId: config.scope.projectId,
+    projectIdStrategy: config.scope.projectIdStrategy,
+    includeSharedObservations: config.scope.includeSharedObservations,
+    projectBankId: config.banks.project.bankId,
+    enableGlobalBank: config.banks.user.enabled,
+    globalBankId: config.banks.user.bankId,
+    agentUse: config.agentUse,
+    mentalModelsInject: config.mentalModels.inject,
+    memoryProfile,
+    recallEnabled: config.recall.enabled,
+    recallBudget: config.recall.budget,
+    recallMaxTokens: config.recall.maxTokens,
+    retainEnabled: config.retain.enabled,
+    baseUrl: config.hindsight.baseUrl,
+    apiKeyEnvVar: config.hindsight.apiKeyRef?.startsWith("env:")
+      ? config.hindsight.apiKeyRef.slice(4)
+      : undefined,
+    timeoutMs: config.hindsight.timeoutMs,
+  };
+}
+
+/** Keep only allowlisted keys from a tool patch object. Rejects unknown keys. */
+export function pickAgentConfigPatch(
+  raw: Record<string, unknown>,
+): Partial<Record<AgentConfigKey, unknown>> {
+  const unknown = Object.keys(raw).filter((k) => !ALLOWLIST_SET.has(k));
+  if (unknown.length) {
+    throw new Error(
+      `Config keys not allowlisted for agent patch: ${unknown.join(", ")}. Allowed: ${AGENT_CONFIG_ALLOWLIST.join(", ")}`,
+    );
+  }
+  const out: Partial<Record<AgentConfigKey, unknown>> = {};
+  for (const key of AGENT_CONFIG_ALLOWLIST) {
+    if (raw[key] !== undefined) out[key] = raw[key];
+  }
+  if (Object.keys(out).length === 0) {
+    throw new Error("Provide at least one allowlisted config field to patch.");
+  }
+  return out;
+}
 
 function clientMethod<K extends keyof HindsightLikeClient>(
   deps: MemoryOperationsDeps,
@@ -187,6 +266,53 @@ export function createControlOperations(deps: MemoryOperationsDeps) {
         default:
           throw new Error(`Unknown mental model action: ${String(args.action)}`);
       }
+    },
+
+    /**
+     * Agent allowlisted config get/patch. Writes project (or optional global) config files.
+     * Never accepts direct API keys — use apiKeyEnvVar only.
+     */
+    async config(args: {
+      action: "get" | "patch";
+      cwd: string;
+      patch?: Record<string, unknown>;
+      scope?: "project" | "global";
+      dryRun?: boolean;
+    }) {
+      const config = deps.getConfig();
+      if (args.action === "get") {
+        return {
+          allowlist: [...AGENT_CONFIG_ALLOWLIST],
+          scope: args.scope ?? "project",
+          values: agentConfigView(config),
+          note: "Secrets are never returned. Patch only allowlisted keys; dryRun defaults true for patch.",
+        };
+      }
+      if (!args.patch || typeof args.patch !== "object") {
+        throw new Error("patch object is required for action=patch");
+      }
+      const picked = pickAgentConfigPatch(args.patch);
+      const input: ProjectConfigPatchInput = {
+        ...(picked as ProjectConfigPatchInput),
+        scope: args.scope ?? "project",
+      };
+      if (args.dryRun ?? true) {
+        return {
+          dryRun: true,
+          scope: input.scope,
+          wouldPatch: picked,
+          allowlist: [...AGENT_CONFIG_ALLOWLIST],
+        };
+      }
+      const result = await configureMemory(args.cwd, input, deps);
+      return {
+        dryRun: false,
+        scope: input.scope,
+        patched: picked,
+        path: result.path,
+        projectBankId: result.projectBankId,
+        values: agentConfigView(deps.getConfig()),
+      };
     },
   };
 }

@@ -32,7 +32,7 @@ Pi Hindsight is **TUI-first**. Public slash commands:
 | `a` | Toggle advanced settings (prefer agent tools for day-to-day edits)    |
 | `q` | Close                                                                 |
 
-Day-to-day mission, mental-model, and config edits: prefer agent control-plane tools (ADR-005); the advanced TUI farm is an escape hatch, not the primary surface.
+Day-to-day mission, mental-model, and config edits: prefer agent control-plane tools (`hindsight_status`, `hindsight_config`, `hindsight_bank`, `hindsight_mental_model`); the advanced TUI farm is an escape hatch, not the primary surface.
 
 ### Agent use and mental models
 
@@ -47,7 +47,7 @@ When mental models exist on active banks and `mentalModels.inject` is true (defa
 
 ## Explicit tools
 
-Pi exposes exactly four memory tools:
+Pi exposes memory tools plus an agent control plane for selected banks:
 
 - `hindsight_recall`
 - `hindsight_retain`
@@ -55,10 +55,12 @@ Pi exposes exactly four memory tools:
 - `hindsight_reflect`
 - `hindsight_status`
 - `hindsight_scope`
+- `hindsight_config` (allowlisted get/patch; dry-run default on patch; no raw secrets)
 - `hindsight_bank`
 - `hindsight_mental_model`
+- `hindsight_scope_migrate`
 
-Everything else — bank config/profile administration, document/entity/graph/tag browsing, memory inspection, consolidation control, and operation management — lives in the Hindsight control-plane web UI, except for the bundled mental-model templates applied from the hub (`t`).
+Platform-wide bank list/delete and full control-plane browsing stay in the Hindsight web UI. Bundled mental-model templates remain available from the hub (`t`).
 
 Tool notes:
 

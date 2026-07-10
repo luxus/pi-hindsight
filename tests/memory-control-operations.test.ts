@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
@@ -98,5 +98,87 @@ describe("memory control operations", () => {
     });
     await ops.mentalModel({ action: "delete", cwd, id: "mm1" });
     expect(deleteMentalModel).toHaveBeenCalledWith("coding", "mm1", { dryRun: true });
+  });
+
+  it("config get returns allowlisted view without secrets", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-cfg-get-"));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        setupComplete: true,
+        hindsight: {
+          ...DEFAULT_CONFIG.hindsight,
+          apiKey: "sk-secret",
+          apiKeyRef: "env:HINDSIGHT_API_KEY",
+        },
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "kai-coding", derive: "manual" as const },
+        },
+      }),
+      getProjectBankId: () => "kai-coding",
+    });
+    const got = await ops.config({ action: "get", cwd });
+    expect(got.allowlist).toContain("projectBankId");
+    expect((got as { values: { projectBankId?: string } }).values.projectBankId).toBe("kai-coding");
+    expect(JSON.stringify(got)).not.toContain("sk-secret");
+    expect((got as { values: { apiKeyEnvVar?: string } }).values.apiKeyEnvVar).toBe(
+      "HINDSIGHT_API_KEY",
+    );
+  });
+
+  it("config patch rejects unknown keys and dry-runs by default", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-cfg-patch-"));
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
+    let reloads = 0;
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "coding",
+      reloadConfig: () => {
+        reloads += 1;
+      },
+    });
+
+    await expect(ops.config({ action: "patch", cwd, patch: { notAKey: true } })).rejects.toThrow(
+      /not allowlisted/i,
+    );
+
+    const dry = await ops.config({
+      action: "patch",
+      cwd,
+      patch: { projectBankId: "kai-coding", includeSharedObservations: true },
+    });
+    expect(dry).toMatchObject({ dryRun: true });
+    expect((dry as { wouldPatch: Record<string, unknown> }).wouldPatch).toEqual({
+      projectBankId: "kai-coding",
+      includeSharedObservations: true,
+    });
+    expect(reloads).toBe(0);
+
+    const written = await ops.config({
+      action: "patch",
+      cwd,
+      patch: { projectBankId: "kai-coding", setupComplete: true },
+      dryRun: false,
+    });
+    expect(written).toMatchObject({ dryRun: false, path: expect.stringContaining("hindsight") });
+    expect(reloads).toBe(1);
+    const disk = JSON.parse(readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")) as {
+      setupComplete?: boolean;
+      banks?: { project?: { bankId?: string } };
+    };
+    expect(disk.setupComplete).toBe(true);
+    expect(disk.banks?.project?.bankId).toBe("kai-coding");
   });
 });

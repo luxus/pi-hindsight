@@ -443,6 +443,7 @@ describe("operation catalog", () => {
       "hindsight_reflect",
       "hindsight_status",
       "hindsight_scope",
+      "hindsight_config",
       "hindsight_bank",
       "hindsight_mental_model",
       "hindsight_scope_migrate",

@@ -506,6 +506,46 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       renderResult: renderMemoryToolTextResult,
     }),
     defineCatalogTool({
+      name: "hindsight_config",
+      label: "Hindsight Config",
+      description:
+        "Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Never pass raw API keys — use apiKeyEnvVar. Prefer this over the TUI advanced settings farm for day-to-day edits.",
+      parameters: Type.Object({
+        action: Type.Union([Type.Literal("get"), Type.Literal("patch")]),
+        patch: Type.Optional(
+          Type.Record(Type.String(), Type.Unknown(), {
+            description: "Allowlisted key/value map for action=patch.",
+          }),
+        ),
+        scope: Type.Optional(
+          Type.Union([Type.Literal("project"), Type.Literal("global")], {
+            description: "Which config file to write (default project .pi/hindsight.json).",
+          }),
+        ),
+        dryRun: Type.Optional(
+          Type.Boolean({
+            description: "When true (default for patch), preview only; set false to write.",
+          }),
+        ),
+      }),
+      async execute(_id, params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (signal?.aborted) throw new Error("Aborted");
+        const result = await operations.config({
+          action: params.action,
+          cwd: ctx.cwd,
+          ...(params.patch ? { patch: params.patch as Record<string, unknown> } : {}),
+          ...(params.scope ? { scope: params.scope } : {}),
+          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
+    defineCatalogTool({
       name: "hindsight_bank",
       label: "Hindsight Bank",
       description:

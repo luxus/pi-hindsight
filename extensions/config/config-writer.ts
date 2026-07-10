@@ -90,6 +90,8 @@ export interface ProjectConfigPatchInput {
   scopeMode?: "domain-tagged" | "isolated-bank";
   projectId?: string;
   projectIdStrategy?: "remote" | "basename";
+  /** Opt-in shared/untagged observation recall (ADR-005 / #492). */
+  includeSharedObservations?: boolean;
   baseUrl?: string;
   timeoutMs?: number;
   apiKeyEnvVar?: string;
@@ -149,13 +151,17 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   if (
     input.scopeMode !== undefined ||
     input.projectId !== undefined ||
-    input.projectIdStrategy !== undefined
+    input.projectIdStrategy !== undefined ||
+    input.includeSharedObservations !== undefined
   ) {
     patch.scope = {
       ...(input.scopeMode !== undefined ? { mode: input.scopeMode } : {}),
       ...(input.projectId !== undefined ? { projectId: input.projectId } : {}),
       ...(input.projectIdStrategy !== undefined
         ? { projectIdStrategy: input.projectIdStrategy }
+        : {}),
+      ...(input.includeSharedObservations !== undefined
+        ? { includeSharedObservations: input.includeSharedObservations }
         : {}),
     };
   }

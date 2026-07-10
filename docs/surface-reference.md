@@ -14,6 +14,7 @@ Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi w
 | `hindsight_reflect`       | core 1.0             |
 | `hindsight_status`        | supported 1.0        |
 | `hindsight_scope`         | supported 1.0        |
+| `hindsight_config`        | supported 1.0        |
 | `hindsight_bank`          | supported 1.0        |
 | `hindsight_mental_model`  | capability-gated 1.0 |
 | `hindsight_scope_migrate` | supported 1.0        |
@@ -127,6 +128,17 @@ Show active project identity: project:<id> tag, derivation (pin/remote/basename)
 
 | Parameter | Type | Required | Description |
 | --------- | ---- | -------- | ----------- |
+
+### `hindsight_config`
+
+Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Never pass raw API keys — use apiKeyEnvVar. Prefer this over the TUI advanced settings farm for day-to-day edits.
+
+| Parameter | Type              | Required | Description                                                      |
+| --------- | ----------------- | -------- | ---------------------------------------------------------------- |
+| `action`  | get \| patch      | yes      |                                                                  |
+| `patch`   | object/map        | no       | Allowlisted key/value map for action=patch.                      |
+| `scope`   | project \| global | no       | Which config file to write (default project .pi/hindsight.json). |
+| `dryRun`  | boolean           | no       | When true (default for patch), preview only; set false to write. |
 
 ### `hindsight_bank`
 

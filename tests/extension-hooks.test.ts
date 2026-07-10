@@ -514,6 +514,7 @@ describe("extension hooks", () => {
 
     expect(Object.keys(tools).sort()).toEqual([
       "hindsight_bank",
+      "hindsight_config",
       "hindsight_mental_model",
       "hindsight_recall",
       "hindsight_reflect",

@@ -275,7 +275,7 @@ Required:
 
 Agent control plane (selected banks only; ADR-005):
 
-- `hindsight_status`, `hindsight_scope`, `hindsight_bank`, `hindsight_mental_model`
+- `hindsight_status`, `hindsight_scope`, `hindsight_config` (allowlisted get/patch; no raw secrets), `hindsight_bank`, `hindsight_mental_model`
 - `hindsight_scope_migrate` (dry-run dual-tag / legacy guidance + local receipt; never silent rewrite)
 
 Human surface (thin TUI):
