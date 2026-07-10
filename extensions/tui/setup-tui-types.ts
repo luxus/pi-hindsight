@@ -45,5 +45,6 @@ export type ThemeLike = {
 export const RECEIPT_FACT_LIMIT = 3;
 export const CANCEL = "Cancel";
 
+/** Hub footer: status/setup/emergency first; import/templates/advanced demoted (agent tools own day-to-day edits). */
 export const HUB_ACTION_HELP =
-  " g guided · m mode · x next-opt-out · t mental models · i import · f flush · o doctor · n init · d deployment · a advanced · q close ";
+  " g guided · m mode · x next-opt-out · f flush · o doctor · n init · d deployment · i import · t templates · a advanced · q close ";

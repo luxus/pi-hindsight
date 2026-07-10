@@ -5,6 +5,7 @@ import {
   buildRetainReceiptStatusFacts,
   createSetupComponent,
 } from "../extensions/tui/setup-tui.js";
+import { HUB_ACTION_HELP } from "../extensions/tui/setup-tui-types.js";
 
 const theme = {
   fg: (_name: string, text: string) => text,
@@ -53,9 +54,14 @@ describe("setup TUI receipt facts", () => {
     const rendered = component.render(100).join("\n");
     expect(rendered).toContain("Docs: https://luxus.github.io/pi-hindsight/concepts/memory-banks/");
     expect(rendered).toContain("Allows cross-project recall");
+    // Footer is width-truncated; assert the full hub help string and visible prefix.
+    expect(HUB_ACTION_HELP).toContain("f flush");
+    expect(HUB_ACTION_HELP).toContain("t templates");
+    expect(HUB_ACTION_HELP).toContain("a advanced");
+    expect(HUB_ACTION_HELP.indexOf("f flush")).toBeLessThan(HUB_ACTION_HELP.indexOf("t templates"));
     expect(rendered).toContain("g guided");
     expect(rendered).toContain("m mode");
-    expect(rendered).toContain("t mental models");
+    expect(rendered).toContain("x next-opt-out");
   });
 
   it("default hub shows Status only until advanced is enabled", () => {

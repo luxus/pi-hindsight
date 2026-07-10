@@ -13,24 +13,26 @@ Pi Hindsight is **TUI-first**. Public slash commands:
 /hindsight:next-opt-out
 ```
 
-`/hindsight` opens the memory hub for status, guided setup, session mode, mental models, import, flush, doctor, init, and advanced settings.  
+`/hindsight` opens a **thin** memory hub: status, short guided setup, and emergency actions (mode, next-opt-out, flush, doctor). Day-to-day mission/mental-model/config edits belong to agent tools, not a TUI field farm.  
 `/hindsight:next-opt-out` skips automatic retain for the next agent run (also hub key `x`).
 
 ### Hub keys
 
-| Key | Action                                                                                       |
-| --- | -------------------------------------------------------------------------------------------- |
-| `g` | Guided setup (profile, agent use, banks, optional mental models + import)                    |
-| `m` | Session mode: `normal` / `read-only` / `ignored`                                             |
-| `x` | Next-opt-out: skip automatic retain for the next agent run                                   |
-| `t` | Apply mental-model set for current **agent use** (coding vs conversation); dry-run + confirm |
-| `i` | Historical import (dry-run first)                                                            |
-| `f` | Flush retain queue                                                                           |
-| `o` | Doctor diagnostics report                                                                    |
-| `n` | Write `.pi/hindsight.json` with the selected project bank                                    |
-| `d` | Deployment / connection helpers                                                              |
-| `a` | Toggle advanced settings tabs                                                                |
-| `q` | Close                                                                                        |
+| Key | Action                                                                |
+| --- | --------------------------------------------------------------------- |
+| `g` | Guided setup (profile, agent use, banks, optional templates + import) |
+| `m` | Session mode: `normal` / `read-only` / `ignored`                      |
+| `x` | Next-opt-out: skip automatic retain for the next agent run            |
+| `f` | Flush retain queue                                                    |
+| `o` | Doctor diagnostics report (includes status tones)                     |
+| `n` | Write `.pi/hindsight.json` with the selected project bank             |
+| `d` | Deployment / connection helpers                                       |
+| `i` | Historical import (dry-run first)                                     |
+| `t` | Apply starter bank template / mental-model set (dry-run first)        |
+| `a` | Toggle advanced settings (prefer agent tools for day-to-day edits)    |
+| `q` | Close                                                                 |
+
+Day-to-day mission, mental-model, and config edits: prefer agent control-plane tools (ADR-005); the advanced TUI farm is an escape hatch, not the primary surface.
 
 ### Agent use and mental models
 
