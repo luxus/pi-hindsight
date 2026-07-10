@@ -146,10 +146,33 @@ export function clearMentalModelListCache(): void {
   mentalModelListCache.clear();
 }
 
+/**
+ * Inject filter for multi-project domain banks (ADR-005).
+ * - User/life bank: all models with content.
+ * - Project/coding bank: bank-global models (no project:* tags) plus models tagged project:<activeId>.
+ */
+export function filterMentalModelsForInject(
+  models: MentalModelSummary[],
+  args: { bankKind: "project" | "user"; projectId?: string },
+): MentalModelSummary[] {
+  if (args.bankKind === "user") return models;
+  const projectId = args.projectId?.trim();
+  const projectTag = projectId ? `project:${projectId}` : undefined;
+  return models.filter((model) => {
+    const tags = model.tags ?? [];
+    const projectTags = tags.filter((t) => t.startsWith("project:"));
+    if (projectTags.length === 0) return true; // bank-global
+    if (!projectTag) return false;
+    return projectTags.includes(projectTag);
+  });
+}
+
 export async function loadMentalModelsBlock(args: {
   client: HindsightLikeClient;
   bankId: string;
   config: ResolvedConfig;
+  bankKind?: "project" | "user";
+  projectId?: string;
 }): Promise<{ rendered: string; modelCount: number; error?: string }> {
   if (!args.config.mentalModels.inject) {
     return { rendered: "", modelCount: 0 };
@@ -160,14 +183,22 @@ export async function loadMentalModelsBlock(args: {
   const listed = await listModelsCached(args);
   if (listed.error) return { rendered: "", modelCount: 0, error: listed.error };
   if (listed.models.length === 0) return { rendered: "", modelCount: 0 };
-  const rendered = renderMentalModelsBlock(listed.models, args.config.mentalModels.maxChars);
-  return { rendered, modelCount: listed.models.length };
+  const filtered = filterMentalModelsForInject(listed.models, {
+    bankKind: args.bankKind ?? "project",
+    ...(args.projectId ? { projectId: args.projectId } : {}),
+  });
+  if (filtered.length === 0) return { rendered: "", modelCount: 0 };
+  const rendered = renderMentalModelsBlock(filtered, args.config.mentalModels.maxChars);
+  return { rendered, modelCount: filtered.length };
 }
 
 export async function loadMentalModelsForScopes(args: {
   client: HindsightLikeClient;
   config: ResolvedConfig;
   bankIds: string[];
+  /** Parallel to bankIds when known; defaults to project for every bank. */
+  bankKinds?: Array<"project" | "user">;
+  projectId?: string;
 }): Promise<{ rendered: string; modelCount: number; failures: number }> {
   if (!args.config.mentalModels.inject || args.bankIds.length === 0) {
     return { rendered: "", modelCount: 0, failures: 0 };
@@ -181,12 +212,16 @@ export async function loadMentalModelsForScopes(args: {
   let failures = 0;
   let remaining = totalBudget;
 
-  for (const bankId of args.bankIds) {
+  for (let i = 0; i < args.bankIds.length; i++) {
+    const bankId = args.bankIds[i]!;
     if (remaining < minBudget) break;
     const budget = equalShare >= minBudget ? Math.min(equalShare, remaining) : remaining;
+    const bankKind = args.bankKinds?.[i] ?? "project";
     const result = await loadMentalModelsBlock({
       client: args.client,
       bankId,
+      bankKind,
+      ...(args.projectId ? { projectId: args.projectId } : {}),
       config: {
         ...args.config,
         mentalModels: { ...args.config.mentalModels, maxChars: budget },

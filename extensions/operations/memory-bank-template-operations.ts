@@ -4,6 +4,7 @@ import {
   listBuiltInBankTemplates,
   resolveBankTemplateManifest,
 } from "../banks/bank-templates.js";
+import { resolveProjectIdentity } from "../banks/banking.js";
 import { resolveOperationBank } from "../banks/bank-selection.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
 
@@ -38,7 +39,12 @@ export function createBankTemplateOperations(deps: MemoryOperationsDeps) {
       });
       const bankMissionSettings =
         template.target === "user" ? config.banks.user : config.banks.project;
-      const manifest = resolveBankTemplateManifest(template, bankMissionSettings);
+      const cwd = (deps as { getCwd?: () => string }).getCwd?.() ?? process.cwd();
+      const resolvedProjectId =
+        template.target === "project" ? resolveProjectIdentity(cwd, config).projectId : undefined;
+      const manifest = resolveBankTemplateManifest(template, bankMissionSettings, {
+        ...(resolvedProjectId ? { projectId: resolvedProjectId } : {}),
+      });
       const dryRun = args.dryRun ?? true;
       const result = await client.importBankTemplate(bankId, manifest, { dryRun });
       return { bankId, template, dryRun, result };

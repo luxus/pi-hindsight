@@ -236,10 +236,14 @@ export async function recallForContext(args: {
     }
   }
   const recallRendered = renderRecallBlocks(blocks, args.config.recall.topK);
+  const cwd = args.cwd ?? process.cwd();
+  const identity = createMemoryIdentity(cwd, args.config);
   const mental = await loadMentalModelsForScopes({
     client: args.client,
     config: args.config,
     bankIds: args.scopes.map((scope) => scope.bankId),
+    bankKinds: args.scopes.map((scope) => (scope.kind === "global" ? "user" : "project")),
+    projectId: identity.projectId,
   });
   const rendered = [mental.rendered, recallRendered].filter(Boolean).join("\n\n");
   return {

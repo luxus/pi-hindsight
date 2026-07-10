@@ -44,7 +44,7 @@ describe("use-profile mental model sets", () => {
     expect(getBuiltInBankTemplate("pi-user-preferences")?.id).toBe("pi-coding-user");
   });
 
-  it("uses retain-compatible source:pi tags on seeds", () => {
+  it("uses retain-compatible source:pi tags on seed definitions", () => {
     for (const template of [
       ...listBankTemplatesForAgentUse("coding"),
       ...listBankTemplatesForAgentUse("conversation"),
@@ -53,6 +53,46 @@ describe("use-profile mental model sets", () => {
         expect(model.tags).toEqual(["source:pi"]);
       }
     }
+  });
+
+  it("stamps project tags and id suffixes when resolving project templates", async () => {
+    const { resolveBankTemplateManifest } = await import("../extensions/banks/bank-templates.js");
+    const template = getBuiltInBankTemplate("pi-coding-project");
+    expect(template).toBeTruthy();
+    const manifest = resolveBankTemplateManifest(template!, {}, { projectId: "finalform" });
+    const models = manifest.mental_models ?? [];
+    expect(models.length).toBeGreaterThan(0);
+    for (const model of models) {
+      expect(model.id).toContain("--finalform");
+      expect(model.tags).toEqual(expect.arrayContaining(["source:pi", "project:finalform"]));
+    }
+  });
+});
+
+describe("mental model inject filter", () => {
+  it("keeps bank-global and matching project models only", async () => {
+    const { filterMentalModelsForInject } =
+      await import("../extensions/lifecycle/mental-models.js");
+    const models = [
+      { id: "g", name: "Global prefs", content: "prefs", tags: ["source:pi"] },
+      {
+        id: "a",
+        name: "Arch A",
+        content: "arch a",
+        tags: ["source:pi", "project:alpha"],
+      },
+      {
+        id: "b",
+        name: "Arch B",
+        content: "arch b",
+        tags: ["source:pi", "project:beta"],
+      },
+    ];
+    const filtered = filterMentalModelsForInject(models, {
+      bankKind: "project",
+      projectId: "alpha",
+    });
+    expect(filtered.map((m) => m.id).sort()).toEqual(["a", "g"]);
   });
 });
 

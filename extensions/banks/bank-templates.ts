@@ -40,8 +40,8 @@ function bankConfigFromMissions(missions: BankMissionDefaults): BankTemplateConf
   };
 }
 
-// Tags must be a subset of tags written at retain time (source:pi, repo:*, session:*)
-// so Hindsight mental-model refresh does not match empty with all_strict.
+// Tags must be a subset of tags written at retain time (source:pi, project:*, session:*, repo:*).
+// Project-tier models get project:<id> stamped at apply time (resolveBankTemplateManifest).
 const RETAIN_COMPAT_TAGS = ["source:pi"] as const;
 
 // Coding project models — durable engineering knowledge (oh-my-pi-shaped core + a few extras).
@@ -240,16 +240,44 @@ function defaultMissionsForTarget(target: BankTemplateTarget): BankMissionDefaul
   return target === "user" ? defaultGlobalBankMissions() : defaultProjectBankMissions();
 }
 
+function slugProjectId(projectId: string): string {
+  return (
+    projectId
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48) || "project"
+  );
+}
+
+/**
+ * Resolve template manifest for import. For project-target templates with a projectId,
+ * stamp project-tier mental models with project:<id> tags and id suffixes so multi-project
+ * domain banks do not share one architecture model (ADR-005).
+ */
 export function resolveBankTemplateManifest(
   template: BuiltInBankTemplate,
   bankMissionSettings: BankMissionSettings,
+  options?: { projectId?: string },
 ): BankTemplateManifest {
   const missions = resolveBankMissions(
     bankMissionSettings,
     defaultMissionsForTarget(template.target),
   );
+  const projectId = options?.projectId?.trim();
+  let mental_models = template.manifest.mental_models;
+  if (template.target === "project" && projectId && mental_models?.length) {
+    const suffix = slugProjectId(projectId);
+    const projectTag = `project:${projectId}`;
+    mental_models = mental_models.map((model) => ({
+      ...model,
+      id: `${model.id}--${suffix}`,
+      tags: [...new Set([...(model.tags ?? []), "source:pi", projectTag])],
+    }));
+  }
   return {
     ...template.manifest,
+    ...(mental_models ? { mental_models } : {}),
     bank: bankConfigFromMissions(missions),
   };
 }
