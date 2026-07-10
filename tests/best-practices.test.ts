@@ -205,6 +205,74 @@ describe("Hindsight best-practice invariants", () => {
     });
   });
 
+  it("opts into shared/untagged observations via tag_groups OR exact empty", () => {
+    expect(
+      composeScopedTagFilter(["project:pi-hindsight", "repo:legacy"], {
+        includeSharedObservations: true,
+      }),
+    ).toEqual({
+      tagGroups: [
+        {
+          or: [
+            { tags: ["project:pi-hindsight", "repo:legacy"], match: "any_strict" },
+            { tags: [], match: "exact" },
+          ],
+        },
+      ],
+    });
+
+    // Shared OR also applies when exact-folding caller tags.
+    expect(
+      composeScopedTagFilter(["project:a"], {
+        tags: ["topic:auth"],
+        tagsMatch: "exact",
+        includeSharedObservations: true,
+      }),
+    ).toEqual({
+      tagGroups: [
+        {
+          or: [
+            { tags: ["project:a", "topic:auth"], match: "exact" },
+            { tags: [], match: "exact" },
+          ],
+        },
+      ],
+    });
+
+    // Default remains strict project isolation.
+    expect(composeScopedTagFilter(["project:a"])).toEqual({
+      tagGroups: [{ tags: ["project:a"], match: "any_strict" }],
+    });
+  });
+
+  it("selectMemoryScopes ORs shared observations only on the project bank when configured", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-shared-obs-"));
+    mkdirSync(join(cwd, ".git"));
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      scope: { ...DEFAULT_CONFIG.scope, includeSharedObservations: true },
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "pi-global" } },
+    };
+
+    const scopes = selectMemoryScopes(cwd, config);
+    const project = scopes.find((s) => s.kind === "project");
+    const global = scopes.find((s) => s.kind === "global");
+
+    expect(project?.tagGroups).toEqual([
+      {
+        or: [
+          {
+            tags: [expect.stringMatching(/^project:/), expect.stringMatching(/^repo:/)],
+            match: "any_strict",
+          },
+          { tags: [], match: "exact" },
+        ],
+      },
+    ]);
+    // Life/user bank does not inherit the coding-bank shared opt-in.
+    expect(global?.tagGroups).toEqual([{ tags: ["source:pi"], match: "any_strict" }]);
+  });
+
   it("uses deterministic replace documents for historical imports", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-best-practices-"));
     mkdirSync(join(cwd, ".git"));

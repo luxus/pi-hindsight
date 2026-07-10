@@ -72,4 +72,20 @@ describe("status fields tones", () => {
     expect(text).toContain("* B: custom");
     expect(text).toContain("! C: bad");
   });
+
+  it("marks includeSharedObservations as custom when enabled", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-status-shared-"));
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
+    const fields = buildStatusFields(
+      config({
+        setupComplete: true,
+        scope: { ...DEFAULT_CONFIG.scope, includeSharedObservations: true },
+      }),
+      { cwd, projectBankId: "kai-coding" },
+    );
+    const shared = fields.find((f) => f.key === "sharedObservations");
+    expect(shared?.value).toContain("include");
+    expect(shared?.tone).toBe("custom");
+  });
 });

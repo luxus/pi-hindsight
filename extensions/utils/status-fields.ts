@@ -76,6 +76,13 @@ export function buildStatusFields(config: ResolvedConfig, ctx: StatusFieldContex
   });
 
   fields.push({
+    key: "sharedObservations",
+    label: "Shared observations",
+    value: config.scope.includeSharedObservations ? "include (opt-in)" : "strict project only",
+    tone: config.scope.includeSharedObservations ? "custom" : "default",
+  });
+
+  fields.push({
     key: "projectScope",
     label: "Project scope",
     value: formatProjectIdentityForStatus(project),

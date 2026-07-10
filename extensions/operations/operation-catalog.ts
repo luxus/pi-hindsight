@@ -23,7 +23,7 @@ const tagMatchSchema = Type.Union(
   ],
   {
     description:
-      "How to match tags. Always enforced together with the automatic Pi project/user scope tag filter. 'exact' folds the automatic scope tags into the exact-match set (memory tags must equal scope tags plus these tags, no more, no less) instead of AND-ing a separate scope group, since scope tags must still be present. Note: 'exact' with empty/omitted tags -- Hindsight's pattern for recalling shared/untagged observations -- is incompatible with scope isolation and will not surface those observations here; see issue #450.",
+      "How to match tags. Always enforced together with the automatic Pi project/user scope tag filter. 'exact' folds the automatic scope tags into the exact-match set (memory tags must equal scope tags plus these tags, no more, no less) instead of AND-ing a separate scope group, since scope tags must still be present. To also include Hindsight shared/untagged observations (exact empty tags), set includeSharedObservations=true or config.scope.includeSharedObservations.",
   },
 );
 
@@ -241,6 +241,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         tagGroups: tagGroupsSchema(
           "Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.",
         ),
+        includeSharedObservations: Type.Optional(
+          Type.Boolean({
+            description:
+              "When true, also match exact-empty (shared/untagged) observations inside the bank via tag_groups OR. Defaults to config.scope.includeSharedObservations (false). Not cross-bank.",
+          }),
+        ),
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
@@ -277,6 +283,9 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
             ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
             ...(params.tagGroups
               ? { tagGroups: params.tagGroups as import("../types.js").HindsightTagGroup[] }
+              : {}),
+            ...(params.includeSharedObservations !== undefined
+              ? { includeSharedObservations: params.includeSharedObservations }
               : {}),
             ...(signal ? { signal } : {}),
           },
@@ -412,6 +421,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         tagGroups: tagGroupsSchema(
           "Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.",
         ),
+        includeSharedObservations: Type.Optional(
+          Type.Boolean({
+            description:
+              "When true, also match exact-empty (shared/untagged) observations inside the bank via tag_groups OR. Defaults to config.scope.includeSharedObservations (false). Not cross-bank.",
+          }),
+        ),
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
@@ -442,6 +457,9 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
             ...(params.tagsMatch ? { tagsMatch: params.tagsMatch } : {}),
             ...(params.tagGroups
               ? { tagGroups: params.tagGroups as import("../types.js").HindsightTagGroup[] }
+              : {}),
+            ...(params.includeSharedObservations !== undefined
+              ? { includeSharedObservations: params.includeSharedObservations }
               : {}),
             ...(signal ? { signal } : {}),
           },

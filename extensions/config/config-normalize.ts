@@ -215,7 +215,12 @@ export function normalizeConfig(
   const minScores = scoreFloors(config.recall?.minScores);
   const scopeRaw = (
     config as {
-      scope?: { mode?: unknown; projectId?: unknown; projectIdStrategy?: unknown };
+      scope?: {
+        mode?: unknown;
+        projectId?: unknown;
+        projectIdStrategy?: unknown;
+        includeSharedObservations?: unknown;
+      };
     }
   ).scope;
   const projectIdPin = optionalString(scopeRaw?.projectId, DEFAULT_CONFIG.scope.projectId);
@@ -236,6 +241,10 @@ export function normalizeConfig(
         scopeRaw?.projectIdStrategy,
         ["remote", "basename"] as const,
         DEFAULT_CONFIG.scope.projectIdStrategy,
+      ),
+      includeSharedObservations: bool(
+        scopeRaw?.includeSharedObservations,
+        DEFAULT_CONFIG.scope.includeSharedObservations,
       ),
     },
     hindsight: {

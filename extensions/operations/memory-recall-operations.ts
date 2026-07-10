@@ -30,6 +30,8 @@ interface ExplicitRecallFilters {
   tags?: string[];
   tagsMatch?: TagsMatch;
   tagGroups?: HindsightTagGroup[];
+  /** Override config.scope.includeSharedObservations for this call when set. */
+  includeSharedObservations?: boolean;
   signal?: AbortSignal;
 }
 
@@ -61,6 +63,8 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         projectBankId: deps.getProjectBankId(),
       });
       const scopeTags = scopeTagsForBank(cwd, config, bankId);
+      const includeShared =
+        filters.includeSharedObservations ?? config.scope.includeSharedObservations;
       const result = await deps.getClient().recall(bankId, query, {
         budget: filters.budget ?? config.recall.budget,
         maxTokens: filters.maxTokens ?? config.recall.maxTokens,
@@ -88,7 +92,10 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         ...(filters.maxSourceFactsTokens !== undefined
           ? { maxSourceFactsTokens: filters.maxSourceFactsTokens }
           : {}),
-        ...composeScopedTagFilter(scopeTags, filters),
+        ...composeScopedTagFilter(scopeTags, {
+          ...filters,
+          includeSharedObservations: includeShared,
+        }),
         ...(filters.signal ? { signal: filters.signal } : {}),
       });
       return { bankId, result };
@@ -109,6 +116,8 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         projectBankId: deps.getProjectBankId(),
       });
       const scopeTags = scopeTagsForBank(cwd, config, bankId);
+      const includeShared =
+        filters.includeSharedObservations ?? config.scope.includeSharedObservations;
       const result = await deps.getClient().reflect(bankId, query, {
         ...(context ? { context } : {}),
         budget: filters.budget ?? config.recall.budget,
@@ -128,7 +137,10 @@ export function createRecallOperations(deps: MemoryOperationsDeps) {
         ...(filters.excludeMentalModelIds
           ? { excludeMentalModelIds: filters.excludeMentalModelIds }
           : {}),
-        ...composeScopedTagFilter(scopeTags, filters),
+        ...composeScopedTagFilter(scopeTags, {
+          ...filters,
+          includeSharedObservations: includeShared,
+        }),
         ...(filters.signal ? { signal: filters.signal } : {}),
       });
       return { bankId, result };

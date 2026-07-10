@@ -6,6 +6,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   scope: {
     mode: "domain-tagged",
     projectIdStrategy: "remote",
+    includeSharedObservations: false,
   },
   hindsight: { baseUrl: "http://localhost:8888", timeoutMs: 30_000 },
   agentUse: "coding",

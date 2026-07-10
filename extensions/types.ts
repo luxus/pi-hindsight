@@ -72,6 +72,12 @@ export interface ScopeConfig {
    * remote = git origin URL (default); basename = git root folder name.
    */
   projectIdStrategy: "remote" | "basename";
+  /**
+   * When true, project recall ORs exact untagged (shared) observations with the
+   * project tag filter. Default false — strict project isolation.
+   * Not cross-bank; only untagged observations inside the same coding bank.
+   */
+  includeSharedObservations: boolean;
 }
 
 export interface ResolvedConfig {

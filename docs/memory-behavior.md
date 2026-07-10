@@ -20,6 +20,28 @@ Set `recall.types` to include `world` or `experience`, or to an empty list, only
 
 Each recall scope is enforced with a strict Hindsight `tag_groups` filter (`any_strict`), so project and user memory stay isolated. The `hindsight_recall` and `hindsight_reflect` tools accept an optional `tagGroups` filter that is AND-ed with the automatic scope.
 
+### Shared / untagged observations (opt-in)
+
+Hindsight can consolidate **shared** observations under the empty tag set inside a bank (`observation_scopes: "shared"`). Those memories have **no** `project:` tag, so default strict project recall excludes them.
+
+To include them **without** disabling project isolation:
+
+- set `scope.includeSharedObservations: true` in config, or
+- pass `includeSharedObservations: true` on `hindsight_recall` / `hindsight_reflect`
+
+Pi composes a Hindsight `tag_groups` **OR**:
+
+```json
+{
+  "or": [
+    { "tags": ["project:<id>", "repo:<legacy>"], "match": "any_strict" },
+    { "tags": [], "match": "exact" }
+  ]
+}
+```
+
+This is **not** cross-bank sharing and **not** multi-tenant. Additional caller tag filters still AND and may exclude untagged shared hits. Life/user bank recall does not inherit this flag.
+
 Set `recall.includeSourceFacts: true` (bounded by `recall.maxSourceFactsTokens`) to attach supporting evidence lines to recalled observations. It is off by default to keep recall conservative.
 
 `recall.queryTimestamp` should normally be omitted. Set it only when recall should be anchored to a specific point in time.
