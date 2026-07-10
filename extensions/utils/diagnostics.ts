@@ -23,6 +23,7 @@ import {
   formatHindsightStatus,
   type HindsightActivity,
 } from "./status.js";
+import { buildStatusFields } from "./status-fields.js";
 
 export interface DebugReportArgs {
   cwd: string;
@@ -147,6 +148,18 @@ export function formatDebugReport(args: DebugReportArgs): string {
       repoRoot: findRepoRoot(args.cwd),
       sessionFile: args.sessionFile ?? null,
       sessionId,
+      statusFields: buildStatusFields(args.config, {
+        cwd: args.cwd,
+        projectBankId: args.projectBankId,
+        queueLength: args.queueLength,
+        ...(args.deadLetterLength !== undefined ? { deadLetterLength: args.deadLetterLength } : {}),
+        ...(args.health
+          ? {
+              healthOk: args.health.ok,
+              ...(args.health.error ? { healthError: args.health.error } : {}),
+            }
+          : {}),
+      }),
       projectScope: {
         projectId: projectIdentity.projectId,
         basis: projectIdentity.basis,
