@@ -14,19 +14,43 @@ The external memory service that stores banks, extracts observations, recalls re
 
 ### Memory Bank
 
-An isolated Hindsight namespace. Banks are the primary boundary between unrelated memory. `pi-hindsight` normally uses one Project Bank per repository and optionally one explicitly configured User Bank.
+An isolated Hindsight namespace. Banks are the primary boundary between unrelated memory. They own missions, dispositions, and mental-model catalogs. Prefer **few domain banks** (coding, life) rather than one bank per folder path. See ADR-005.
+
+### Domain Bank
+
+A bank chosen by **role** (coding or life), not by absolute path. Many repositories can share the coding domain bank and separate their memories with project tags.
+
+### Coding Bank
+
+The domain bank role for engineering memory (architecture, decisions, bugs, conventions). Config slot stays `coding` (or legacy `project`) even when the concrete `bankId` string changes (e.g. `kai-coding` → `kai-coding-v2`).
+
+### Life Bank
+
+The domain bank role for durable personal/assistant memory (preferences, workflows, cross-surface chat). Evolves the **User Bank** concept. Automatic retain never writes here; writes are always explicit. Legacy aliases: `user`, `global`.
 
 ### Project Bank
 
-The bank selected for the current repository. It stores repo-specific architecture, decisions, bugs, tasks, import history, and operational context. Project recall is scoped with repository tags so memory from other repositories does not leak in.
+**Legacy / transition term** for “the bank selected for this repository.” Under ADR-005 **domain-tagged** mode this is usually the **Coding Bank** plus a `project:` tag, not a unique bank per path. Under **isolated-bank** mode it is a dedicated hard-wall bank for one repo.
 
 ### User Bank
 
-An optional shared bank for durable user-level preferences, recurring workflows, and cross-project habits. It is disabled unless explicitly configured. Automatic retain never writes to the User Bank; User Bank writes are always explicit, through a tool or command. Legacy config/tool aliases may still call this bank `global`.
+Legacy name for the **Life Bank**. Still used in older docs and config. Prefer **Life Bank** in new user-facing docs. Automatic retain never writes to the User/Life Bank; writes are always explicit. Legacy config/tool aliases may still say `global`.
 
-### Bank Alias
+### Bank Alias / Role
 
-A stable name that resolves to a real bank ID. `project` means the selected Project Bank. `global` is the legacy/internal alias for the configured User Bank. Prefer **User Bank** in user-facing docs when the exact bank ID is not important.
+A stable Pi name that resolves to a real Hindsight `bankId`. Roles: `coding` (and legacy `project`), `life` (and legacy `user` / `global`). Changing `bankId` does not rename the role.
+
+### Scope Mode
+
+How project isolation is achieved. **`domain-tagged`**: one coding domain bank + strict `project:<id>` tags. **`isolated-bank`**: dedicated bank for this repo (hard privacy).
+
+### Project ID / Project Tag
+
+Stable project identity used as tag `project:<id>`. Resolution order: config pin → git remote → basename. Not absolute-path hash. Status must show the active tag and how it was derived.
+
+### Shared Observation
+
+An observation consolidated in the **untagged / shared scope inside one bank** (Hindsight observation scopes), so cross-project beliefs in that bank can form without a project tag. Not cross-bank and not multi-tenant sharing. Default project recall stays strict; including shared observations is **opt-in** (#450 / ADR-005).
 
 ### Bank Template
 
@@ -38,7 +62,7 @@ Config `agentUse`: `coding` (default) or `conversation`. Selects which starter m
 
 ### Mental Model
 
-A Hindsight-synthesized, reusable answer to a recurring question over stored memory, refreshed via Reflect rather than recalled raw. Ad hoc mental model creation, editing, or refresh stays in the Hindsight control-plane web UI. Bundled bank templates are the dry-run-gated path to seed starter models. When models have content and `mentalModels.inject` is enabled, their content is injected ephemerally into automatic context alongside recall (not retained).
+A Hindsight-synthesized, reusable answer to a recurring question over stored memory, refreshed via Reflect rather than recalled raw. Two altitudes under domain banks: **bank-global** (no project tag; e.g. coding preferences) and **project-tagged** (this repo’s architecture/conventions). Tags on a model gate refresh inputs and visibility. **Agent tools** for list/create/update/refresh on selected banks are core (ADR-005); full control-plane browsing stays web UI. Bundled templates may seed starters. When inject is enabled, content is ephemeral in context (not retained).
 
 ### Retain
 
@@ -106,7 +130,7 @@ A Hindsight-extracted fact, event, entity, relationship, or pattern derived from
 
 ### Observation Scope
 
-A configured scope passed with retain jobs so Hindsight observations are isolated by harness, repository, and other policy boundaries. Scopes must be expanded before queueing so retries preserve the policy active when the job was created.
+A configured scope passed with retain jobs so Hindsight observations are isolated by harness, repository, and other policy boundaries. Scopes must be expanded before queueing so retries preserve the policy active when the job was created. Prefer stable scopes such as `project:<id>`; do not put volatile `session:` tags into observation project scopes. Optional **shared** scope builds untagged bank-level observations (see Shared Observation).
 
 ### Import
 
@@ -160,15 +184,27 @@ The single catalog that registers public tools and commands. It maps Pi-facing s
 
 The safety layer that removes or masks secrets before retain, diagnostics, or debug sidecars. Tokens, API keys, cookies, bearer headers, private URLs, and known secret-like values must not be logged or retained in normal mode.
 
+### Setup Gate
+
+Memory network I/O (ensure bank, auto-recall, auto-retain) runs only after setup is satisfied: explicit bank ids / completed onboarding, or **upgrade migration** that recognizes an existing install. First run must not silently create a path-derived bank.
+
+### Agent-First Surface
+
+Day-to-day memory control (missions, mental models, config patches, scope inspect) is done by **model-facing tools**. The TUI stays thin: status, onboarding, emergencies. Config files remain the durable source of truth the agent writes.
+
 ## Naming rules
 
-- Use **Project Bank** and **User Bank** when talking about bank policy. Use `global` only for exact legacy config/tool aliases.
+- Prefer **Coding Bank** / **Life Bank** and roles `coding` / `life` in new docs. **Project Bank** / **User Bank** / `global` remain valid transition and legacy terms.
+- Use **domain-tagged** and **isolated-bank** for scope mode; do not say “one bank per folder” as the default goal.
+- Use **project tag** / **project id**, not opaque path hashes, when describing new identity.
+- Use **Shared Observation** only for untagged-within-bank consolidation; say so explicitly.
 - Use **Retain**, **Recall**, and **Reflect** for the three Hindsight operations; do not collapse them into a generic “memory call.”
 - Use **Retain Queue**, **Retain Job**, **Queue Lock**, and **Dead Letter Queue** for durability behavior.
 - Use **Import Manifest** and **Import Checkpoint** for historical import state.
 - Use **Last-Recall Snapshot** for local recall debugging sidecars; do not call it cache.
 - Use **Recall Block** for ephemeral injected context; do not call it transcript memory.
 - Use **Memory Operation Service** for shared intent logic; use **Operation Catalog** for registration.
+- Use **Setup Gate** and **Agent-First Surface** when discussing onboarding and tools vs TUI.
 
 ## Architectural boundaries
 
@@ -186,7 +222,9 @@ The safety layer that removes or masks secrets before retain, diagnostics, or de
 - Retain writes raw rich content, not summaries.
 - Live session retains use stable document IDs and `append` mode.
 - Historical imports use deterministic document IDs and `replace` mode where reimport idempotency requires it.
-- Project memory is the default; User Bank memory requires explicit configuration, and automatic retain never writes to the User Bank. User Bank writes are always explicit (tool or command).
+- Project/coding memory is the default automatic path; Life/User Bank requires explicit configuration, and automatic retain never writes there. Life/User writes are always explicit (tool or command).
 - Tags define scope and visibility; metadata records provenance and links back to source records.
+- Setup gate: no silent bank ensure before configuration (with upgrade migration for existing installs).
+- Agent-first: control-plane changes prefer tools over TUI field farms (ADR-005).
 - Queue-first durability applies to automatic retain, explicit retain, and imports.
 - Debug visibility must be opt-in and must redact secrets before persistence.

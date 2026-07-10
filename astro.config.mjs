@@ -120,6 +120,10 @@ export default defineConfig({
                   label: "ADR 004: lifeOS dual-bank design",
                   slug: "architecture/adr/004-lifeos-dual-bank-design",
                 },
+                {
+                  label: "ADR 005: Domain banks and agent-first surface",
+                  slug: "architecture/adr/005-domain-banks-and-agent-first-surface",
+                },
               ],
             },
           ],

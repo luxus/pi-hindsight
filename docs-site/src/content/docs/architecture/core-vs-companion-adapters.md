@@ -68,7 +68,9 @@ If most answers are yes, it can be core. If any answer depends on a non-Pi frame
 
 | Request                                                                   | Location        | Reason                                                              |
 | ------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------- |
-| Add bank template or mental-model admin CRUD inside Pi                    | Web UI          | Hindsight's control plane already owns admin/browsing workflows.    |
+| Selected-bank mental-model list/create/update/refresh (agent tools)       | Core            | Agent-first control plane for banks Pi already uses (ADR-005).      |
+| Selected-bank mission inspect/edit (agent tools)                          | Core            | Missions are bank-scoped; agent maintains them without TUI farms.   |
+| Platform-wide bank list/delete, arbitrary template catalog, audit admin   | Web UI          | Full Hindsight control-plane browsing stays upstream.               |
 | Import Markdown, text, or JSON seed files into a selected bank            | Core if generic | Simple content import helps Pi projects without framework coupling. |
 | Add LiteLLM middleware that injects recalled memory into chat completions | Companion       | Middleware shape belongs to LiteLLM, not Pi.                        |
 | Add Vercel AI SDK route handler example                                   | Example         | Useful pattern, but framework-specific runtime and deployment.      |
