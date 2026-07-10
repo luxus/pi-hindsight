@@ -21,8 +21,16 @@ export interface ScopeMigratePlan {
   projectIdBasis: "pin" | "remote" | "basename";
   projectIdSource: string;
   dualTagWindow: true;
-  /** True when current path-hash legacy tag would not match another machine's path for same basename. */
-  pathHashFragile: boolean;
+  /**
+   * True while retain still stamps legacy repo:<slug>-<path-hash>.
+   * That legacy tag always depends on absolute path; dual-tag project: is the stable recovery path.
+   */
+  legacyPathHashTag: true;
+  /**
+   * True when project id itself is weak (basename only). Remote/pin identities are stable;
+   * do not conflate them with path-hash legacy tags.
+   */
+  identityBasisWeak: boolean;
   findings: string[];
   guidance: string[];
   /** Optional remote tag sample counts when listTags results were provided. */
@@ -37,17 +45,6 @@ export interface ScopeMigratePlan {
 
 export interface ScopeMigrateReceipt extends ScopeMigratePlan {
   receiptPath: string;
-}
-
-function basenameFragility(legacyRepoKey: string, projectId: string): boolean {
-  // legacy key is typically `<slug>-<12hex>`; path moves change the hash.
-  const dash = legacyRepoKey.lastIndexOf("-");
-  if (dash <= 0) return true;
-  const slug = legacyRepoKey.slice(0, dash);
-  const hash = legacyRepoKey.slice(dash + 1);
-  if (!/^[a-f0-9]{8,}$/i.test(hash)) return true;
-  // Fragile when identity is path-sensitive (basename) or slug only loosely matches project id.
-  return projectId === slug || !projectId.includes("/");
 }
 
 /**
@@ -66,7 +63,7 @@ export function buildScopeMigratePlan(args: {
   const pathDerivedBank = !args.config.banks.project.bankId;
   const projectTag = projectScopeTag(identity.projectId);
   const legacyRepoTag = legacyRepoScopeTag(identity.legacyRepoKey);
-  const pathHashFragile = basenameFragility(identity.legacyRepoKey, identity.projectId);
+  const identityBasisWeak = identity.basis === "basename";
 
   const findings: string[] = [];
   const guidance: string[] = [];
@@ -75,31 +72,29 @@ export function buildScopeMigratePlan(args: {
     `Active dual-tag window: retain writes ${projectTag} and ${legacyRepoTag}; recall any_strict matches either.`,
   );
   findings.push(`Project id basis=${identity.basis} source=${identity.source} → ${projectTag}.`);
+  findings.push(
+    `Legacy tag ${legacyRepoTag} is path-hash based (machine/path moves change the hash). Stable project: tag is the recovery path for new writes.`,
+  );
 
   if (pathDerivedBank) {
     findings.push(
-      `Coding bank is path-derived (${bankId}); domain-tagged mode should set banks.project.bankId to a shared coding bank.`,
+      `Coding bank is path-derived (${bankId}); domain-tagged mode requires banks.project.bankId for a shared coding bank.`,
     );
     guidance.push(
       "Set banks.project.bankId (and setupComplete) so repos share one coding bank; do not rely on path-hash bank ids.",
     );
   }
 
-  if (identity.basis === "basename") {
+  if (identityBasisWeak) {
     findings.push(
       "Project id is basename-derived; remotes or pins are more stable across clones and renames.",
     );
     guidance.push(
       'Prefer scope.projectId pin or projectIdStrategy "remote" when a git origin exists.',
     );
-  }
-
-  if (pathHashFragile) {
+  } else {
     findings.push(
-      "Legacy repo:<slug>-<path-hash> tags break when the absolute path changes (e.g. Mac↔Linux). Dual-tag project: recovers new writes; older repo-only memories may miss.",
-    );
-    guidance.push(
-      "Keep dual-tag until reimport/rebuild. Prefer Hindsight document export/import when available; otherwise reimport Pi transcripts with replace into the coding bank.",
+      `Project id basis is ${identity.basis} (stable across absolute path moves when dual-tag project: is present).`,
     );
   }
 
@@ -157,7 +152,8 @@ export function buildScopeMigratePlan(args: {
     projectIdBasis: identity.basis,
     projectIdSource: identity.source,
     dualTagWindow: true,
-    pathHashFragile,
+    legacyPathHashTag: true,
+    identityBasisWeak,
     findings,
     guidance,
     ...(remoteTagCounts ? { remoteTagCounts } : {}),

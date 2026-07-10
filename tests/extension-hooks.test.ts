@@ -46,7 +46,13 @@ function writeSetupCompleteConfig(cwd: string, extra: Record<string, unknown> = 
   mkdirSync(join(cwd, ".pi"), { recursive: true });
   writeFileSync(
     join(cwd, ".pi", "hindsight.json"),
-    JSON.stringify({ setupComplete: true, hindsight: { baseUrl: "http://unused.test" }, ...extra }),
+    JSON.stringify({
+      setupComplete: true,
+      hindsight: { baseUrl: "http://unused.test" },
+      // Domain-tagged auto memory requires an explicit coding bank id.
+      banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      ...extra,
+    }),
   );
 }
 
@@ -115,7 +121,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     const { createMemoryLifecycle } = await import("../extensions/lifecycle/memory-lifecycle.js");
     const ctx = {
@@ -140,7 +150,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     mocked.ensureProjectBank.mockRejectedValueOnce(new Error("bank ensure exploded"));
     const { createMemoryLifecycle } = await import("../extensions/lifecycle/memory-lifecycle.js");
@@ -202,7 +216,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     const { createMemoryLifecycle } = await import("../extensions/lifecycle/memory-lifecycle.js");
     const ctx = {
@@ -229,7 +247,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     const sessionFile = join(cwd, "session.jsonl");
 
@@ -299,7 +321,9 @@ describe("extension hooks", () => {
       writeFileSync(
         join(cwd, ".pi", "hindsight.json"),
         JSON.stringify({
+          setupComplete: true,
           hindsight: { baseUrl: "http://unused.test" },
+          banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
           retain: { flushIntervalMs: 1_000, periodicFlushMaxJobs: 1, shutdownFlushMaxJobs: 10 },
         }),
       );
@@ -532,7 +556,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ recall: { storeLastRecall: true } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        recall: { storeLastRecall: true },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -570,7 +598,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ recall: { storeLastRecall: true, lastRecallPath: "." } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        recall: { storeLastRecall: true, lastRecallPath: "." },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -608,7 +640,12 @@ describe("extension hooks", () => {
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
-        banks: { global: { enabled: false } },
+        setupComplete: true,
+        banks: {
+          project: { enabled: true, bankId: "test-coding", derive: "manual" },
+          global: { enabled: false },
+          user: { enabled: false },
+        },
         recall: { storeLastRecall: true, storeLastRecallFailures: true },
       }),
     );
@@ -640,7 +677,7 @@ describe("extension hooks", () => {
     expect(existsSync(snapshotPath)).toBe(true);
     const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8")) as Record<string, any>;
     expect(snapshot.failed).toBe(1);
-    expect(snapshot.failures[0].bankId).toMatch(/^pi-project-/);
+    expect(snapshot.failures[0].bankId).toMatch(/^test-coding/);
     expect(snapshot.failures[0].query).toContain("Why no memory?");
     expect(snapshot.failures[0].error).not.toContain("secret-token");
   });
@@ -652,7 +689,12 @@ describe("extension hooks", () => {
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
-        banks: { global: { enabled: false } },
+        setupComplete: true,
+        banks: {
+          project: { enabled: true, bankId: "test-coding", derive: "manual" },
+          global: { enabled: false },
+          user: { enabled: false },
+        },
         recall: { storeLastRecall: true },
       }),
     );
@@ -718,7 +760,14 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ banks: { global: { enabled: true, bankId: "global-bank" } } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: {
+          project: { enabled: true, bankId: "test-coding", derive: "manual" },
+          global: { enabled: true, bankId: "global-bank" },
+          user: { enabled: true, bankId: "global-bank" },
+        },
+      }),
     );
     mocked.client.recall.mockImplementation(async (...args: unknown[]) => ({
       results: [{ text: `${String(args[0])} memory` }],
@@ -751,7 +800,7 @@ describe("extension hooks", () => {
     expect(contextResult.messages[0].content).toContain("global-bank memory");
     expect(contextResult.messages.at(-1).content).toBe("What do I know?");
     expect(mocked.client.recall).toHaveBeenCalledTimes(2);
-    expect(mocked.client.recall.mock.calls[0]?.[0]).toMatch(/^pi-project-/);
+    expect(mocked.client.recall.mock.calls[0]?.[0]).toMatch(/^test-coding/);
     expect(mocked.client.recall.mock.calls[0]?.[1]).toContain(
       "Project memory lookup for current repo architecture",
     );
@@ -790,7 +839,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ recall: { injectionPosition: "prepend" } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        recall: { injectionPosition: "prepend" },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -823,7 +876,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ recall: { injectionPosition: "append" } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        recall: { injectionPosition: "append" },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -931,7 +988,14 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ banks: { global: { enabled: true, bankId: "global-bank" } } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: {
+          project: { enabled: true, bankId: "test-coding", derive: "manual" },
+          global: { enabled: true, bankId: "global-bank" },
+          user: { enabled: true, bankId: "global-bank" },
+        },
+      }),
     );
     mocked.ensureGlobalBank.mockRejectedValueOnce(new Error("global down"));
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
@@ -1094,6 +1158,7 @@ describe("extension hooks", () => {
   it("keeps next opt-out pending when skipped-message cursor update fails", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
+    writeSetupCompleteConfig(cwd);
     mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
     writeFileSync(join(cwd, ".pi", "hindsight", "retain-cursors.json"), "not json");
     const sessionFile = join(cwd, "session.jsonl");
@@ -1364,7 +1429,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ retain: { enabled: false } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        retain: { enabled: false },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -1400,7 +1469,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -1444,7 +1517,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ hindsight: { baseUrl: "http://unused.test" } }),
+      JSON.stringify({
+        setupComplete: true,
+        hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+      }),
     );
     const sessionFile = join(cwd, "session.jsonl");
     const u1 = { role: "user", content: "u1", timestamp: 1 };
@@ -1486,7 +1563,9 @@ describe("extension hooks", () => {
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
+        setupComplete: true,
         hindsight: { baseUrl: "http://unused.test" },
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
         notifications: { startup: false },
       }),
     );
@@ -1516,7 +1595,7 @@ describe("extension hooks", () => {
     const queued = await readRetainQueue(resolveQueuePath(cwd, ".pi/hindsight/retain-queue.jsonl"));
     expect(queued).toHaveLength(1);
     expect(queued[0]).toMatchObject({
-      bankId: expect.stringMatching(/^pi-project-/),
+      bankId: expect.stringMatching(/^test-coding/),
       documentId: liveDocumentId(sessionFile, cwd),
       updateMode: "append",
       retries: 1,
@@ -1555,6 +1634,9 @@ describe("extension hooks", () => {
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+
         retain: { shutdownFlushMaxJobs: 2, shutdownFlushTimeoutMs: 1_000 },
         notifications: { startup: false },
       }),
@@ -1596,7 +1678,12 @@ describe("extension hooks", () => {
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({
-        banks: { global: { enabled: false } },
+        setupComplete: true,
+        banks: {
+          project: { enabled: true, bankId: "test-coding", derive: "manual" },
+          global: { enabled: false },
+          user: { enabled: false },
+        },
         notifications: { startup: false, recall: true, retain: true },
       }),
     );
@@ -1627,11 +1714,11 @@ describe("extension hooks", () => {
     );
 
     expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringMatching(/^Hindsight recalled 1 memory item from pi-project-/),
+      expect.stringMatching(/^Hindsight recalled 1 memory item from test-coding/),
       "info",
     );
     expect(ctx.ui.notify).toHaveBeenCalledWith(
-      expect.stringMatching(/^Hindsight retained 1 new message to pi-project-/),
+      expect.stringMatching(/^Hindsight retained 1 new message to test-coding/),
       "info",
     );
   });
@@ -1642,7 +1729,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ retain: { postRetainReflect: true } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        retain: { postRetainReflect: true },
+      }),
     );
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
@@ -1667,7 +1758,7 @@ describe("extension hooks", () => {
     );
 
     expect(mocked.client.reflect).toHaveBeenCalledWith(
-      expect.stringMatching(/^pi-project-/),
+      expect.stringMatching(/^test-coding/),
       "Reflect on the recently retained session to extract insights",
       { context: "Post-retain reflection" },
     );
@@ -1679,7 +1770,11 @@ describe("extension hooks", () => {
     mkdirSync(join(cwd, ".pi"));
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),
-      JSON.stringify({ retain: { postRetainReflect: true } }),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        retain: { postRetainReflect: true },
+      }),
     );
     mocked.client.reflect.mockRejectedValueOnce(new Error("reflect unavailable"));
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};

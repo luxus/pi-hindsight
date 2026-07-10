@@ -509,13 +509,51 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_config",
       label: "Hindsight Config",
       description:
-        "Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Never pass raw API keys — use apiKeyEnvVar. Prefer this over the TUI advanced settings farm for day-to-day edits.",
+        "Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only typed allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Domain-tagged setupComplete requires projectBankId. Never pass raw API keys — use apiKeyEnvVar.",
       parameters: Type.Object({
         action: Type.Union([Type.Literal("get"), Type.Literal("patch")]),
         patch: Type.Optional(
-          Type.Record(Type.String(), Type.Unknown(), {
-            description: "Allowlisted key/value map for action=patch.",
-          }),
+          Type.Object(
+            {
+              setupComplete: Type.Optional(Type.Boolean()),
+              scopeMode: Type.Optional(
+                Type.Union([Type.Literal("domain-tagged"), Type.Literal("isolated-bank")]),
+              ),
+              projectId: Type.Optional(Type.String({ minLength: 1 })),
+              projectIdStrategy: Type.Optional(
+                Type.Union([Type.Literal("remote"), Type.Literal("basename")]),
+              ),
+              includeSharedObservations: Type.Optional(Type.Boolean()),
+              projectBankId: Type.Optional(Type.String({ minLength: 1 })),
+              enableGlobalBank: Type.Optional(Type.Boolean()),
+              globalBankId: Type.Optional(Type.String({ minLength: 1 })),
+              agentUse: Type.Optional(
+                Type.Union([Type.Literal("coding"), Type.Literal("conversation")]),
+              ),
+              mentalModelsInject: Type.Optional(Type.Boolean()),
+              memoryProfile: Type.Optional(
+                Type.Union([
+                  Type.Literal("project-only"),
+                  Type.Literal("project+global"),
+                  Type.Literal("global-only"),
+                  Type.Literal("recall-only"),
+                ]),
+              ),
+              recallEnabled: Type.Optional(Type.Boolean()),
+              recallBudget: Type.Optional(
+                Type.Union([Type.Literal("low"), Type.Literal("mid"), Type.Literal("high")]),
+              ),
+              recallMaxTokens: Type.Optional(Type.Number({ minimum: 0 })),
+              retainEnabled: Type.Optional(Type.Boolean()),
+              baseUrl: Type.Optional(Type.String({ minLength: 1 })),
+              apiKeyEnvVar: Type.Optional(Type.String({ minLength: 1 })),
+              timeoutMs: Type.Optional(Type.Number({ minimum: 0 })),
+            },
+            {
+              additionalProperties: false,
+              description: "Typed allowlisted config fields only (no free-form keys).",
+            },
+          ),
         ),
         scope: Type.Optional(
           Type.Union([Type.Literal("project"), Type.Literal("global")], {
@@ -596,7 +634,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_mental_model",
       label: "Hindsight Mental Model",
       description:
-        "Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. delete defaults dryRun=true.",
+        "Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. Mutating actions (create/update/refresh/delete) default dryRun=true; set dryRun=false to apply.",
       parameters: Type.Object({
         action: Type.Union([
           Type.Literal("list"),
@@ -614,11 +652,20 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         sourceQuery: Type.Optional(Type.String()),
         tags: Type.Optional(Type.Array(Type.String())),
         maxTokens: Type.Optional(Type.Integer({ minimum: 1 })),
-        dryRun: Type.Optional(Type.Boolean()),
+        dryRun: Type.Optional(
+          Type.Boolean({
+            description: "Mutating actions default true (preview). Set false to apply.",
+          }),
+        ),
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const mutating =
+          params.action === "create" ||
+          params.action === "update" ||
+          params.action === "refresh" ||
+          params.action === "delete";
         const result = await operations.mentalModel({
           action: params.action,
           cwd: ctx.cwd,
@@ -628,7 +675,11 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           ...(params.sourceQuery ? { sourceQuery: params.sourceQuery } : {}),
           ...(params.tags ? { tags: params.tags } : {}),
           ...(params.maxTokens !== undefined ? { maxTokens: params.maxTokens } : {}),
-          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+          ...(mutating
+            ? { dryRun: params.dryRun ?? true }
+            : params.dryRun !== undefined
+              ? { dryRun: params.dryRun }
+              : {}),
         });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

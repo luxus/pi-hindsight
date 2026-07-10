@@ -3,11 +3,25 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
-import { isMemorySetupComplete, setupRequiredMessage } from "../extensions/config/setup-gate.js";
+import {
+  isMemorySetupComplete,
+  requiresExplicitCodingBankId,
+  setupRequiredMessage,
+} from "../extensions/config/setup-gate.js";
 import type { ResolvedConfig } from "../extensions/types.js";
 
 function config(patch: Partial<ResolvedConfig> = {}): ResolvedConfig {
-  return { ...DEFAULT_CONFIG, ...patch };
+  return {
+    ...DEFAULT_CONFIG,
+    ...patch,
+    scope: { ...DEFAULT_CONFIG.scope, ...(patch as { scope?: object }).scope },
+    banks: {
+      ...DEFAULT_CONFIG.banks,
+      ...(patch.banks ?? {}),
+      project: { ...DEFAULT_CONFIG.banks.project, ...(patch.banks?.project ?? {}) },
+      user: { ...DEFAULT_CONFIG.banks.user, ...(patch.banks?.user ?? {}) },
+    },
+  } as ResolvedConfig;
 }
 
 describe("setup gate", () => {
@@ -17,9 +31,26 @@ describe("setup gate", () => {
     expect(setupRequiredMessage()).toMatch(/setup required/i);
   });
 
-  it("accepts explicit setupComplete flag", () => {
+  it("rejects setupComplete alone under domain-tagged without coding bankId", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-flag-"));
-    expect(isMemorySetupComplete(config({ setupComplete: true }), cwd)).toBe(true);
+    expect(isMemorySetupComplete(config({ setupComplete: true }), cwd)).toBe(false);
+    expect(requiresExplicitCodingBankId(config())).toBe(true);
+  });
+
+  it("accepts setupComplete with explicit project bankId", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-flag-bank-"));
+    expect(
+      isMemorySetupComplete(
+        config({
+          setupComplete: true,
+          banks: {
+            ...DEFAULT_CONFIG.banks,
+            project: { enabled: true, bankId: "my-bank", derive: "manual" },
+          },
+        }),
+        cwd,
+      ),
+    ).toBe(true);
   });
 
   it("accepts explicit project bankId", () => {
@@ -37,7 +68,7 @@ describe("setup gate", () => {
     ).toBe(true);
   });
 
-  it("accepts user bankId as configured", () => {
+  it("accepts user bankId as configured when project bank disabled", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-user-"));
     expect(
       isMemorySetupComplete(
@@ -54,17 +85,32 @@ describe("setup gate", () => {
     ).toBe(true);
   });
 
-  it("migrates upgrades that already have project config files", () => {
+  it("does not unlock domain-tagged auto memory from empty project config alone", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-cfg-"));
     mkdirSync(join(cwd, ".pi"), { recursive: true });
     writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
-    expect(isMemorySetupComplete(config(), cwd)).toBe(true);
+    // Soft signal present, but domain-tagged still needs banks.project.bankId.
+    expect(isMemorySetupComplete(config(), cwd)).toBe(false);
   });
 
-  it("migrates upgrades that have retain runtime state", () => {
+  it("does not unlock domain-tagged auto memory from runtime state alone", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-runtime-"));
     mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
     writeFileSync(join(cwd, ".pi", "hindsight", "retain-cursors.json"), "{}\n");
-    expect(isMemorySetupComplete(config(), cwd)).toBe(true);
+    expect(isMemorySetupComplete(config(), cwd)).toBe(false);
+  });
+
+  it("allows isolated-bank path-derived setup via config file or runtime state", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-isolated-"));
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
+    expect(
+      isMemorySetupComplete(
+        config({
+          scope: { ...DEFAULT_CONFIG.scope, mode: "isolated-bank" },
+        }),
+        cwd,
+      ),
+    ).toBe(true);
   });
 });

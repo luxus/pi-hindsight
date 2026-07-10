@@ -58,6 +58,7 @@ describe("memory control operations", () => {
     );
     expect(createMentalModel).not.toHaveBeenCalled();
 
+    // Create defaults dry-run; must opt in to write.
     await ops.mentalModel({
       action: "create",
       cwd,
@@ -154,6 +155,18 @@ describe("memory control operations", () => {
       /not allowlisted/i,
     );
 
+    await expect(
+      ops.config({
+        action: "patch",
+        cwd,
+        patch: { includeSharedObservations: "yes" as unknown as boolean },
+      }),
+    ).rejects.toThrow(/must be a boolean/i);
+
+    await expect(
+      ops.config({ action: "patch", cwd, patch: { setupComplete: true } }),
+    ).rejects.toThrow(/projectBankId/i);
+
     const dry = await ops.config({
       action: "patch",
       cwd,
@@ -180,5 +193,42 @@ describe("memory control operations", () => {
     };
     expect(disk.setupComplete).toBe(true);
     expect(disk.banks?.project?.bankId).toBe("kai-coding");
+  });
+
+  it("bank mission and mm create default to dry-run at the op layer", async () => {
+    const updateBankConfig = vi.fn(async () => ({ ok: true }));
+    const createMentalModel = vi.fn(async () => ({ id: "mm1" }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        updateBankConfig,
+        createMentalModel,
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        setupComplete: true,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "coding", derive: "manual" as const },
+        },
+      }),
+      getProjectBankId: () => "coding",
+    });
+
+    const mission = await ops.bankUpdateMission({ retainMission: "code" });
+    expect(mission).toMatchObject({ dryRun: true });
+    expect(updateBankConfig).not.toHaveBeenCalled();
+
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-mm-dry-"));
+    const created = await ops.mentalModel({
+      action: "create",
+      cwd,
+      name: "X",
+      sourceQuery: "q",
+    });
+    expect(created).toMatchObject({ dryRun: true });
+    expect(createMentalModel).not.toHaveBeenCalled();
   });
 });

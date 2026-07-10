@@ -131,12 +131,12 @@ Show active project identity: project:<id> tag, derivation (pin/remote/basename)
 
 ### `hindsight_config`
 
-Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Never pass raw API keys — use apiKeyEnvVar. Prefer this over the TUI advanced settings farm for day-to-day edits.
+Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only typed allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Domain-tagged setupComplete requires projectBankId. Never pass raw API keys — use apiKeyEnvVar.
 
 | Parameter | Type              | Required | Description                                                      |
 | --------- | ----------------- | -------- | ---------------------------------------------------------------- |
 | `action`  | get \| patch      | yes      |                                                                  |
-| `patch`   | object/map        | no       | Allowlisted key/value map for action=patch.                      |
+| `patch`   | object            | no       | Typed allowlisted config fields only (no free-form keys).        |
 | `scope`   | project \| global | no       | Which config file to write (default project .pi/hindsight.json). |
 | `dryRun`  | boolean           | no       | When true (default for patch), preview only; set false to write. |
 
@@ -155,18 +155,18 @@ Inspect or update the selected coding/life bank. action=get returns profile/stat
 
 ### `hindsight_mental_model`
 
-Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. delete defaults dryRun=true.
+Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. Mutating actions (create/update/refresh/delete) default dryRun=true; set dryRun=false to apply.
 
-| Parameter     | Type                                                 | Required | Description                                    |
-| ------------- | ---------------------------------------------------- | -------- | ---------------------------------------------- |
-| `action`      | list \| get \| create \| update \| refresh \| delete | yes      |                                                |
-| `bank`        | string                                               | no       | Bank id or alias project\|global\|user.        |
-| `id`          | string                                               | no       | Mental model id for get/update/refresh/delete. |
-| `name`        | string                                               | no       |                                                |
-| `sourceQuery` | string                                               | no       |                                                |
-| `tags`        | array<string>                                        | no       |                                                |
-| `maxTokens`   | integer                                              | no       |                                                |
-| `dryRun`      | boolean                                              | no       |                                                |
+| Parameter     | Type                                                 | Required | Description                                                  |
+| ------------- | ---------------------------------------------------- | -------- | ------------------------------------------------------------ |
+| `action`      | list \| get \| create \| update \| refresh \| delete | yes      |                                                              |
+| `bank`        | string                                               | no       | Bank id or alias project\|global\|user.                      |
+| `id`          | string                                               | no       | Mental model id for get/update/refresh/delete.               |
+| `name`        | string                                               | no       |                                                              |
+| `sourceQuery` | string                                               | no       |                                                              |
+| `tags`        | array<string>                                        | no       |                                                              |
+| `maxTokens`   | integer                                              | no       |                                                              |
+| `dryRun`      | boolean                                              | no       | Mutating actions default true (preview). Set false to apply. |
 
 ### `hindsight_scope_migrate`
 

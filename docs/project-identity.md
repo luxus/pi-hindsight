@@ -25,7 +25,7 @@ Doctor/status (`/hindsight` doctor, debug report) shows:
 - active `project:` tag
 - derivation basis (`pin` / `remote` / `basename`) and source
 - legacy `repo:` tag
-- `scopeMigrate` dry-run findings (path-derived bank, path-hash fragility, guidance)
+- `scopeMigrate` dry-run findings (path-derived bank, legacy path-hash tag, weak basename identity, guidance)
 
 ## Scope migrate dry-run (no silent rewrite)
 

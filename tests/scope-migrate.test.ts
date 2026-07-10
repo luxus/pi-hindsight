@@ -39,8 +39,31 @@ describe("scope migrate dry-run", () => {
     expect(plan.projectTag).toMatch(/^project:/);
     expect(plan.legacyRepoTag).toMatch(/^repo:/);
     expect(plan.pathDerivedBank).toBe(true);
+    expect(plan.legacyPathHashTag).toBe(true);
     expect(plan.findings.some((f) => f.includes("path-derived"))).toBe(true);
     expect(plan.guidance.some((g) => /no silent rewrite/i.test(g))).toBe(true);
+  });
+
+  it("does not mark remote/pin project ids as identity-weak", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-migrate-stable-"));
+    mkdirSync(join(cwd, ".git"));
+    // Pin identity is stable; legacy path-hash still noted separately.
+    const plan = buildScopeMigratePlan({
+      cwd,
+      config: cfg({
+        scope: { ...DEFAULT_CONFIG.scope, projectId: "finalform", projectIdStrategy: "remote" },
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "kai-coding", derive: "manual" },
+        },
+      }),
+      projectBankId: "kai-coding",
+    });
+    expect(plan.projectIdBasis).toBe("pin");
+    expect(plan.identityBasisWeak).toBe(false);
+    expect(plan.legacyPathHashTag).toBe(true);
+    expect(plan.findings.some((f) => /stable across absolute path moves/i.test(f))).toBe(true);
+    expect(plan.findings.some((f) => /basename-derived/i.test(f))).toBe(false);
   });
 
   it("counts remote tag sample and detects other path-hash repo tags", () => {

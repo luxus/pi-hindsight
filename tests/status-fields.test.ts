@@ -53,12 +53,21 @@ describe("status fields tones", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-status-dl-"));
     mkdirSync(join(cwd, ".pi"), { recursive: true });
     writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
-    const fields = buildStatusFields(config({ setupComplete: true }), {
-      cwd,
-      projectBankId: "b",
-      queueLength: 1,
-      deadLetterLength: 2,
-    });
+    const fields = buildStatusFields(
+      config({
+        setupComplete: true,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "b", derive: "manual" },
+        },
+      }),
+      {
+        cwd,
+        projectBankId: "b",
+        queueLength: 1,
+        deadLetterLength: 2,
+      },
+    );
     expect(fields.find((f) => f.key === "queue")?.tone).toBe("warn");
   });
 
@@ -81,6 +90,10 @@ describe("status fields tones", () => {
       config({
         setupComplete: true,
         scope: { ...DEFAULT_CONFIG.scope, includeSharedObservations: true },
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "kai-coding", derive: "manual" },
+        },
       }),
       { cwd, projectBankId: "kai-coding" },
     );
