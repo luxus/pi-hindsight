@@ -31,6 +31,16 @@ describe("setup gate", () => {
     expect(setupRequiredMessage()).toMatch(/setup required/i);
   });
 
+  it("points setup-required copy at upgrade guide, dual-tag docs, and changelog", () => {
+    const message = setupRequiredMessage();
+    expect(message).toMatch(/setup required/i);
+    expect(message).toContain(
+      "https://luxus.github.io/pi-hindsight/guides/upgrading-to-domain-banks/",
+    );
+    expect(message).toContain("https://luxus.github.io/pi-hindsight/concepts/project-identity/");
+    expect(message).toContain("https://github.com/luxus/pi-hindsight/blob/main/CHANGELOG.md");
+  });
+
   it("rejects setupComplete alone under domain-tagged without coding bankId", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-flag-"));
     expect(isMemorySetupComplete(config({ setupComplete: true }), cwd)).toBe(false);

@@ -2,6 +2,8 @@
 
 Pi Hindsight tags project memories so recall stays scoped to the current repository. Identity is **stable across absolute path moves** when possible (ADR-005).
 
+Upgrading from older path-bank installs: see [Upgrading to domain banks](upgrading-to-domain-banks.md) (soft dual-tag vs shared coding bank vs isolated-bank).
+
 ## Resolution order
 
 1. **Pin** — `scope.projectId` in `.pi/hindsight.json` or global config

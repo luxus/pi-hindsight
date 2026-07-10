@@ -37,11 +37,12 @@ npm run check:release
 1. Merge feature and fix PRs into `main` with Conventional Commit subjects.
 2. The `Release Please` workflow opens or updates a release PR.
 3. Review the release PR changelog, version bump, and manifest update.
-4. Confirm release/package verification passes. Use the `ci:package` or `ci:full` labels if additional gates are needed.
-5. Merge the release PR.
-6. Release-please creates the `v*.*.*` tag and GitHub release.
-7. Release Please dispatches the trusted `Release` workflow at the release tag. It verifies the tagged release commit, and publishes to npm through trusted publishing only if the dispatch's `publish` input is `true` (currently held at `false`; see above).
-8. If publish was held, a maintainer runs `gh workflow run release.yml --ref vX.Y.Z -f publish=true` to publish once ready.
+4. For user-visible topology or setup-gate changes (domain banks, dual-tag, bankId requirements), add a short **Migration** note on the release PR / GitHub Release body linking [Upgrading to domain banks](https://luxus.github.io/pi-hindsight/guides/upgrading-to-domain-banks/) and the dual-tag section of [project identity](https://luxus.github.io/pi-hindsight/concepts/project-identity/). Do not hand-edit generated `CHANGELOG.md` entries as source of truth; put narrative migration guidance in the guide and the release body.
+5. Confirm release/package verification passes. Use the `ci:package` or `ci:full` labels if additional gates are needed.
+6. Merge the release PR.
+7. Release-please creates the `v*.*.*` tag and GitHub release.
+8. Release Please dispatches the trusted `Release` workflow at the release tag. It verifies the tagged release commit, and publishes to npm through trusted publishing only if the dispatch's `publish` input is `true` (currently held at `false`; see above).
+9. If publish was held, a maintainer runs `gh workflow run release.yml --ref vX.Y.Z -f publish=true` to publish once ready.
 
 Manual `Release Please` workflow dispatch can refresh the release PR if needed.
 

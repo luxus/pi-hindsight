@@ -44,7 +44,7 @@ For local checkout installs, see [Development](#development).
 4. Choose the narrowest memory profile that fits the repo: **Project + User**, **Project Only**, **User Only**, or **Recall Only**.
 5. Start coding. Recall happens before provider calls; retain happens after completed agent runs when the selected profile allows automatic retain.
 
-See the [getting started guide](https://luxus.github.io/pi-hindsight/start/getting-started/) for setup details.
+See the [getting started guide](https://luxus.github.io/pi-hindsight/start/getting-started/) for setup details. Upgrading from older path-bank installs: [Upgrading to domain banks](https://luxus.github.io/pi-hindsight/guides/upgrading-to-domain-banks/).
 
 ## Safety defaults
 
@@ -60,7 +60,7 @@ See [memory behavior](https://luxus.github.io/pi-hindsight/concepts/memory-behav
 
 - [Start](https://luxus.github.io/pi-hindsight/start/) — install and first setup
 - [Concepts](https://luxus.github.io/pi-hindsight/concepts/) — memory model, banks, queue, imports, safety
-- [Guides](https://luxus.github.io/pi-hindsight/guides/) — task workflows for setup, diagnostics, imports, and recovery
+- [Guides](https://luxus.github.io/pi-hindsight/guides/) — task workflows for setup, diagnostics, imports, recovery, and [domain-bank upgrades](https://luxus.github.io/pi-hindsight/guides/upgrading-to-domain-banks/)
 - [Reference](https://luxus.github.io/pi-hindsight/reference/) — tools, commands, config, hooks, generated surface
 - [Development](https://luxus.github.io/pi-hindsight/development/) — contributor setup, checks, release, docs workflow
 

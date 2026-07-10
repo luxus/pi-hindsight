@@ -44,7 +44,7 @@ Open Pi in your repository and run:
 
 If no project config exists, guided setup starts automatically. You can rerun it later from the TUI with `g`.
 
-**Setup gate:** until a bank is chosen (guided setup, `banks.project.bankId` / `PI_HINDSIGHT_PROJECT_BANK_ID`, or an existing install with prior config/runtime state), automatic bank ensure, recall, and retain stay off. Status warns that setup is required. Existing upgrades with config files or queue/cursor state continue to work without re-onboarding.
+**Setup gate:** automatic bank ensure, recall, and retain stay off until setup is satisfied. For default **domain-tagged** mode with project memory on, that means an explicit coding bank id (`banks.project.bankId` / `PI_HINDSIGHT_PROJECT_BANK_ID`, usually via guided setup). Soft signals alone (empty project config, queue/cursor files, or `setupComplete` without a bank id) do **not** unlock domain-tagged auto memory. **Isolated-bank** may keep path-derived banks after config/runtime signals or guided setup. Status warns when setup is required. Upgrading from path banks: [Upgrading to domain banks](upgrading-to-domain-banks.md).
 
 Guided setup handles:
 

@@ -75,6 +75,7 @@ export default defineConfig({
             { label: "Recover Retain Queue", slug: "guides/recover-retain-queue" },
             { label: "Run local smoke test", slug: "guides/run-local-smoke-test" },
             { label: "MCP multi-client bank wiring", slug: "guides/mcp-multi-client" },
+            { label: "Upgrading to domain banks", slug: "guides/upgrading-to-domain-banks" },
           ],
         },
         {

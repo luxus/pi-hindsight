@@ -38,12 +38,18 @@ export function requiresExplicitCodingBankId(config: ResolvedConfig): boolean {
   return config.scope.mode === "domain-tagged" && config.banks.project.enabled;
 }
 
+const DOCS_BASE_URL = "https://luxus.github.io/pi-hindsight";
+const CHANGELOG_URL = "https://github.com/luxus/pi-hindsight/blob/main/CHANGELOG.md";
+
 export function setupRequiredMessage(): string {
-  return (
-    "Hindsight setup required: run /hindsight guided setup, or set banks.project.bankId " +
-    "(or PI_HINDSIGHT_PROJECT_BANK_ID). Domain-tagged mode needs an explicit coding bank id " +
-    "before automatic memory network I/O. Isolated-bank may path-derive."
-  );
+  return [
+    "Hindsight setup required: run /hindsight guided setup, or set banks.project.bankId",
+    "(or PI_HINDSIGHT_PROJECT_BANK_ID). Domain-tagged mode needs an explicit coding bank id",
+    "before automatic memory network I/O. Isolated-bank may path-derive.",
+    `Upgrade paths (soft dual-tag vs shared coding bank vs isolated): ${DOCS_BASE_URL}/guides/upgrading-to-domain-banks/`,
+    `Dual-tag (project: + legacy repo:): ${DOCS_BASE_URL}/concepts/project-identity/`,
+    `Changelog: ${CHANGELOG_URL}`,
+  ].join(" ");
 }
 
 function hasProjectConfigFile(cwd: string): boolean {
