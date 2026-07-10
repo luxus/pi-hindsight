@@ -47,6 +47,7 @@ export function buildGuidedSetupPatch(args: {
   const memoryProfile = setupProfileChoiceToMemoryProfile(args.profile);
   return {
     memoryProfile,
+    setupComplete: true,
     ...(profileUsesProject(args.profile) && args.projectBankId?.trim()
       ? { projectBankId: args.projectBankId.trim() }
       : {}),

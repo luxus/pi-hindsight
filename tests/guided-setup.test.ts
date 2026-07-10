@@ -56,7 +56,11 @@ describe("guided setup", () => {
         projectBankId: "project-bank",
         config: DEFAULT_CONFIG,
       }),
-    ).toEqual({ memoryProfile: "project-only", projectBankId: "project-bank" });
+    ).toEqual({
+      memoryProfile: "project-only",
+      setupComplete: true,
+      projectBankId: "project-bank",
+    });
 
     expect(
       buildGuidedSetupPatch({
@@ -67,6 +71,7 @@ describe("guided setup", () => {
       }),
     ).toEqual({
       memoryProfile: "project+global",
+      setupComplete: true,
       projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });
@@ -78,7 +83,11 @@ describe("guided setup", () => {
         globalBankId: "global-luxus",
         config: DEFAULT_CONFIG,
       }),
-    ).toEqual({ memoryProfile: "global-only", resetDefaults: ["banks.global.bankId"] });
+    ).toEqual({
+      memoryProfile: "global-only",
+      setupComplete: true,
+      resetDefaults: ["banks.global.bankId"],
+    });
 
     expect(
       buildGuidedSetupPatch({
@@ -87,7 +96,11 @@ describe("guided setup", () => {
         globalBankId: "ignored-user",
         config: DEFAULT_CONFIG,
       }),
-    ).toEqual({ memoryProfile: "recall-only", projectBankId: "project-bank" });
+    ).toEqual({
+      memoryProfile: "recall-only",
+      setupComplete: true,
+      projectBankId: "project-bank",
+    });
   });
 
   it("builds global config patches for user memory profiles", () => {
@@ -270,6 +283,7 @@ describe("guided setup", () => {
       }),
     ).toEqual({
       memoryProfile: "project+global",
+      setupComplete: true,
       projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });

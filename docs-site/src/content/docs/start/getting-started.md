@@ -46,6 +46,8 @@ Open Pi in your repository and run:
 
 If no project config exists, guided setup starts automatically. You can rerun it later from the TUI with `g`.
 
+**Setup gate:** until a bank is chosen (guided setup, `banks.project.bankId` / `PI_HINDSIGHT_PROJECT_BANK_ID`, or an existing install with prior config/runtime state), automatic bank ensure, recall, and retain stay off. Status warns that setup is required. Existing upgrades with config files or queue/cursor state continue to work without re-onboarding.
+
 Guided setup handles:
 
 1. Hindsight server URL

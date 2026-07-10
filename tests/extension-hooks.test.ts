@@ -41,6 +41,15 @@ const mocked = vi.hoisted(() => ({
   checkHindsight: vi.fn(async () => ({ ok: true })),
 }));
 
+/** Minimal project config so setup-gate treats the fixture as configured (ADR-005). */
+function writeSetupCompleteConfig(cwd: string, extra: Record<string, unknown> = {}): void {
+  mkdirSync(join(cwd, ".pi"), { recursive: true });
+  writeFileSync(
+    join(cwd, ".pi", "hindsight.json"),
+    JSON.stringify({ setupComplete: true, hindsight: { baseUrl: "http://unused.test" }, ...extra }),
+  );
+}
+
 vi.mock("../extensions/client/client.js", () => ({
   createHindsightClient: () => mocked.client,
   checkHindsight: mocked.checkHindsight,
@@ -76,6 +85,28 @@ describe("extension hooks", () => {
     } else {
       process.env.HOME = originalHome;
     }
+  });
+
+  it("skips bank ensure and recall when setup is incomplete", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    // no .pi/hindsight.json and no runtime state → setup gate closed
+    const { createMemoryLifecycle } = await import("../extensions/lifecycle/memory-lifecycle.js");
+    const ctx = {
+      cwd,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+    const lifecycle = createMemoryLifecycle(cwd);
+    await lifecycle.initialize(ctx);
+    expect(mocked.ensureProjectBank).not.toHaveBeenCalled();
+    expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringMatching(/setup required/i), "warning");
+    const recall = await lifecycle.recall(
+      { messages: [{ role: "user", content: "q", timestamp: 1 }] } as any,
+      ctx,
+    );
+    expect(recall).toBeUndefined();
+    expect(mocked.client.recall).not.toHaveBeenCalled();
   });
 
   it("marks startup status connected after bank ensure succeeds", async () => {
@@ -340,7 +371,7 @@ describe("extension hooks", () => {
   it("skips automatic retain once for next opt-out and advances retain cursor", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
-    mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setNextSessionRetainMode(cwd, sessionFile, "off");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
@@ -397,7 +428,7 @@ describe("extension hooks", () => {
   it("still recalls while next opt-out is pending", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
-    mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setNextSessionRetainMode(cwd, sessionFile, "off");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
@@ -649,6 +680,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
       on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
@@ -811,6 +843,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
     const pi = {
       on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
@@ -1001,7 +1034,7 @@ describe("extension hooks", () => {
   it("honors session read-only mode and manual tags", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
-    mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setNextSessionRetainMode(cwd, sessionFile, "off");
     await addSessionMemoryTag(cwd, sessionFile, "domain:test");
@@ -1092,6 +1125,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setSessionMemoryMode(cwd, sessionFile, "read-only");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
@@ -1132,6 +1166,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setSessionMemoryMode(cwd, sessionFile, "read-only");
     await setNextSessionRetainMode(cwd, sessionFile, "off");
@@ -1167,6 +1202,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setSessionMemoryMode(cwd, sessionFile, "ignored");
     const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
@@ -1203,6 +1239,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setSessionMemoryMode(cwd, sessionFile, "ignored");
     await setNextSessionRetainMode(cwd, sessionFile, "off");
@@ -1242,6 +1279,7 @@ describe("extension hooks", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));
     mkdirSync(join(cwd, ".pi"));
+    writeSetupCompleteConfig(cwd);
     const sessionFile = join(cwd, "session.jsonl");
     await setSessionRetainEnabled(cwd, sessionFile, false);
     await setNextSessionRetainMode(cwd, sessionFile, "off");

@@ -59,6 +59,11 @@ export interface HindsightEntityInput {
 
 export interface ResolvedConfig {
   enabled: boolean;
+  /**
+   * When true, automatic memory network I/O is allowed.
+   * Also treated as complete when bank ids, project config files, or legacy runtime state exist (ADR-005).
+   */
+  setupComplete: boolean;
   hindsight: { baseUrl: string; apiKey?: string; apiKeyRef?: string; timeoutMs: number };
   /** Selects default mental-model sets (coding vs conversation/real-life). */
   agentUse: AgentUseProfile;

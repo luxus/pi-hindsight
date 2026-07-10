@@ -195,6 +195,10 @@ export function normalizeConfig(
   const minScores = scoreFloors(config.recall?.minScores);
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
+    setupComplete: bool(
+      (config as { setupComplete?: unknown }).setupComplete,
+      DEFAULT_CONFIG.setupComplete,
+    ),
     hindsight: {
       baseUrl: stringValue(config.hindsight?.baseUrl, DEFAULT_CONFIG.hindsight.baseUrl),
       ...(apiKey ? { apiKey } : {}),

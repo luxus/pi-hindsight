@@ -1,5 +1,6 @@
 export type FieldId =
   | "enabled"
+  | "setupComplete"
   | "baseUrl"
   | "apiKeyEnv"
   | "apiKeyDirect"
@@ -46,6 +47,7 @@ export type FieldId =
 
 export const CONFIG_FIELD_PATHS: Record<FieldId, string[]> = {
   enabled: ["enabled"],
+  setupComplete: ["setupComplete"],
   baseUrl: ["hindsight", "baseUrl"],
   apiKeyEnv: ["hindsight", "apiKey"],
   apiKeyDirect: ["hindsight", "apiKey"],
@@ -183,12 +185,14 @@ export const CONFIG_RESET_PATHS = {
   "notifications.startup": [["notifications", "startup"]],
   "notifications.recall": [["notifications", "recall"]],
   "notifications.retain": [["notifications", "retain"]],
+  setupComplete: [["setupComplete"]],
 } as const satisfies Record<string, readonly (readonly string[])[]>;
 
 export type ConfigResetKey = keyof typeof CONFIG_RESET_PATHS;
 
 export const CONFIG_FIELD_RESET_KEYS: Record<FieldId, ConfigResetKey> = {
   enabled: "enabled",
+  setupComplete: "setupComplete",
   baseUrl: "hindsight.baseUrl",
   apiKeyEnv: "hindsight.apiKey",
   apiKeyDirect: "hindsight.apiKey",

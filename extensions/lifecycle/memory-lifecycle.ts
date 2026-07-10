@@ -1,6 +1,7 @@
 import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import { resolveConfig } from "../config/config.js";
 import { consumeLastConfigMigrationResults } from "../config/config.js";
+import { isMemorySetupComplete, setupRequiredMessage } from "../config/setup-gate.js";
 import { deriveProjectBankId } from "../banks/banking.js";
 import { createHindsightClient } from "../client/client.js";
 import { ensureGlobalBank, ensureProjectBank } from "../banks/bank-operations.js";
@@ -74,6 +75,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
   const startPeriodicFlush = (runtime: RuntimeSnapshot) => {
     stopPeriodicFlush();
     if (!config.enabled || !config.retain.enabled || config.retain.flushIntervalMs <= 0) return;
+    if (!isMemorySetupComplete(config, runtime.cwd)) return;
     const queuePath = retainQueuePath(runtime.cwd, config);
     periodicFlush = setInterval(() => {
       if (periodicFlushActive) return;
@@ -157,6 +159,12 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         );
       }
       if (!config.enabled) return;
+      if (!isMemorySetupComplete(config, runtime.cwd)) {
+        initHealth = { checkedAt: new Date().toISOString(), failures: [] };
+        setMemoryStatus(runtime, "idle");
+        if (config.notifications.startup) notify(runtime, setupRequiredMessage(), "warning");
+        return;
+      }
       const failures: InitHealthFailure[] = [];
       let ensureSucceeded = false;
       if (config.banks.project.enabled) {
@@ -199,6 +207,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       if (!config.enabled || !config.recall.enabled) return undefined;
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return undefined;
+      if (!isMemorySetupComplete(config, runtime.cwd)) return undefined;
       return recallPolicy.recall(event, runtime);
     },
 
@@ -212,6 +221,8 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
         return { queued: false, sent: 0, remaining: 0 };
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return { queued: false, sent: 0, remaining: 0 };
+      if (!isMemorySetupComplete(config, runtime.cwd))
+        return { queued: false, sent: 0, remaining: 0 };
       return retainPolicy.retain(event, runtime);
     },
 
@@ -220,6 +231,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
       if (!config.enabled || !config.retain.enabled) return;
       const runtime = snapshotRuntime(ctx);
       if (!runtime) return;
+      if (!isMemorySetupComplete(config, runtime.cwd)) return;
       try {
         const result = await flushRetainQueue(retainQueuePath(runtime.cwd, config), client, {
           maxJobs: config.retain.shutdownFlushMaxJobs,
