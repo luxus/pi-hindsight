@@ -597,6 +597,37 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
       renderResult: renderMemoryToolTextResult,
     }),
+    defineCatalogTool({
+      name: "hindsight_scope_migrate",
+      label: "Hindsight Scope Migrate Dry-Run",
+      description:
+        "Dry-run only: plan dual-tag / legacy repo:<path-hash> → project:<id> migration. Writes a local receipt under .pi/hindsight/. Never rewrites Hindsight tags or documents. Prefer Hindsight export/import or Pi transcript reimport for actual rebuilds.",
+      parameters: Type.Object({
+        bankTags: Type.Optional(
+          Type.Array(Type.String(), {
+            description:
+              "Optional tag inventory sample from the coding bank (e.g. listTags). Used only for counts in the plan.",
+          }),
+        ),
+        writeReceipt: Type.Optional(
+          Type.Boolean({
+            description: "Write .pi/hindsight/scope-migrate-receipt.json (default true).",
+          }),
+        ),
+      }),
+      async execute(_id, params, _signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        const result = await operations.scopeMigrateDryRun(ctx.cwd, {
+          ...(params.bankTags ? { bankTags: params.bankTags } : {}),
+          ...(params.writeReceipt !== undefined ? { writeReceipt: params.writeReceipt } : {}),
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: { dryRun: true, rewrite: "none" },
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
   ];
 
   // Human surface is TUI-first: `/hindsight` hub plus a few deliberate slash commands.

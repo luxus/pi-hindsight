@@ -520,6 +520,7 @@ describe("extension hooks", () => {
       "hindsight_retain",
       "hindsight_retain_global",
       "hindsight_scope",
+      "hindsight_scope_migrate",
       "hindsight_status",
     ]);
   });

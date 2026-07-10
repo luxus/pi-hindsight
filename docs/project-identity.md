@@ -25,6 +25,25 @@ Doctor/status (`/hindsight` doctor, debug report) shows:
 - active `project:` tag
 - derivation basis (`pin` / `remote` / `basename`) and source
 - legacy `repo:` tag
+- `scopeMigrate` dry-run findings (path-derived bank, path-hash fragility, guidance)
+
+## Scope migrate dry-run (no silent rewrite)
+
+Use the agent tool `hindsight_scope_migrate` (or doctor report) for a **dry-run only** migration plan:
+
+- Confirms dual-tag is active
+- Flags path-derived coding banks under domain-tagged mode
+- Explains when legacy `repo:*` path-hashes miss after path moves
+- Optionally accepts a bank tag sample for hit counts
+- Writes a receipt to `.pi/hindsight/scope-migrate-receipt.json`
+
+It **never** rewrites Hindsight tags or documents. For rebuilds:
+
+1. Prefer Hindsight document/bank export-import when available
+2. Otherwise reimport Pi transcripts with `replace` into the shared coding bank
+3. Keep dual-tag until project-tagged coverage is good enough
+
+When dual-tag can end: every active project memory you care about carries `project:<id>` (or you completed a full export/import rebuild).
 
 ## Scope mode (bank topology)
 

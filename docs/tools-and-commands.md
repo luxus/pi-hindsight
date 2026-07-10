@@ -53,5 +53,6 @@ Available for the agent (control plane is agent-first; TUI is thin):
 - `hindsight_scope` — project id derivation
 - `hindsight_bank` — get bank or update missions (dry-run default)
 - `hindsight_mental_model` — list/get/create/update/refresh/delete (delete dry-run default)
+- `hindsight_scope_migrate` — dry-run dual-tag / legacy `repo:` migration plan + local receipt (never rewrites)
 
 See the generated [surface reference](surface-reference.md) for parameter schemas.

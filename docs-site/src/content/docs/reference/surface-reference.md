@@ -20,6 +20,7 @@ Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi w
 | `hindsight_scope`         | supported 1.0        |
 | `hindsight_bank`          | supported 1.0        |
 | `hindsight_mental_model`  | capability-gated 1.0 |
+| `hindsight_scope_migrate` | supported 1.0        |
 
 ## Deferred or non-goal upstream surfaces
 
@@ -158,6 +159,15 @@ Agent control plane for mental models on the selected bank. Actions: list|get|cr
 | `tags`        | array<string>                                        | no       |                                                |
 | `maxTokens`   | integer                                              | no       |                                                |
 | `dryRun`      | boolean                                              | no       |                                                |
+
+### `hindsight_scope_migrate`
+
+Dry-run only: plan dual-tag / legacy repo:<path-hash> → project:<id> migration. Writes a local receipt under .pi/hindsight/. Never rewrites Hindsight tags or documents. Prefer Hindsight export/import or Pi transcript reimport for actual rebuilds.
+
+| Parameter      | Type          | Required | Description                                                                                           |
+| -------------- | ------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| `bankTags`     | array<string> | no       | Optional tag inventory sample from the coding bank (e.g. listTags). Used only for counts in the plan. |
+| `writeReceipt` | boolean       | no       | Write .pi/hindsight/scope-migrate-receipt.json (default true).                                        |
 
 ## Commands
 

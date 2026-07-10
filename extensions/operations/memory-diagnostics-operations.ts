@@ -7,6 +7,11 @@ import {
   resolveImportManifestPath,
 } from "../imports/import-plan.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
+import {
+  buildScopeMigratePlan,
+  writeScopeMigrateReceipt,
+  type ScopeMigratePlan,
+} from "./scope-migrate.js";
 
 export function createDiagnosticsOperations(deps: MemoryOperationsDeps) {
   return {
@@ -20,6 +25,7 @@ export function createDiagnosticsOperations(deps: MemoryOperationsDeps) {
         readImportManifestSafe(manifestPath),
       ]);
       const imports = importManifestSummary(manifestResult.manifest);
+      const scopeMigrate = buildScopeMigratePlan({ cwd, config, projectBankId });
       return formatDebugReport({
         cwd,
         ...(sessionFile ? { sessionFile } : {}),
@@ -39,7 +45,27 @@ export function createDiagnosticsOperations(deps: MemoryOperationsDeps) {
         importCount: imports.count,
         ...(imports.latest ? { latestImport: imports.latest } : {}),
         health,
+        scopeMigrate,
       });
+    },
+
+    /**
+     * Dry-run only: plan dual-tag / legacy repo-tag migration guidance and write a local receipt.
+     * Never rewrites Hindsight tags or documents.
+     */
+    async scopeMigrateDryRun(
+      cwd: string,
+      options: { bankTags?: string[]; writeReceipt?: boolean } = {},
+    ): Promise<ScopeMigratePlan | import("./scope-migrate.js").ScopeMigrateReceipt> {
+      const config = deps.getConfig();
+      const plan = buildScopeMigratePlan({
+        cwd,
+        config,
+        projectBankId: deps.getProjectBankId(),
+        ...(options.bankTags ? { bankTags: options.bankTags } : {}),
+      });
+      if (options.writeReceipt === false) return plan;
+      return writeScopeMigrateReceipt(cwd, plan);
     },
   };
 }

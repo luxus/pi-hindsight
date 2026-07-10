@@ -24,6 +24,7 @@ import {
   type HindsightActivity,
 } from "./status.js";
 import { buildStatusFields } from "./status-fields.js";
+import type { ScopeMigratePlan } from "../operations/scope-migrate.js";
 
 export interface DebugReportArgs {
   cwd: string;
@@ -47,6 +48,7 @@ export interface DebugReportArgs {
   activity?: HindsightActivity;
   memoryCount?: number;
   queueRemaining?: number;
+  scopeMigrate?: ScopeMigratePlan;
 }
 
 export function bankSelectionMessage(projectBankId: string, config: ResolvedConfig): string {
@@ -170,6 +172,7 @@ export function formatDebugReport(args: DebugReportArgs): string {
         dualTagWindow:
           "Retain and recall dual-tag project:<id> and legacy repo:<path-hash> so path moves and older banks stay recoverable.",
       },
+      scopeMigrate: args.scopeMigrate ?? null,
       memoryProfile: memoryProfile(args.config),
       projectBankId: args.projectBankId,
       projectBankSelection: args.config.banks.project.bankId

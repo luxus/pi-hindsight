@@ -445,6 +445,7 @@ describe("operation catalog", () => {
       "hindsight_scope",
       "hindsight_bank",
       "hindsight_mental_model",
+      "hindsight_scope_migrate",
     ]);
 
     // Human surface is TUI-first: hub + next-opt-out slash command.
