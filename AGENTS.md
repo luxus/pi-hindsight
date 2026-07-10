@@ -216,10 +216,11 @@ Every PR must complete the repository PR template. The PR body gate is intention
 
 ### Bank rules
 
-- Default to one project bank per repo.
-- Optional second User Bank (legacy internal/config name: global bank) is allowed only through explicit config.
-- Do not default to one giant shared bank across unrelated repos.
-- If bank creation/configuration is needed, do it intentionally during initialization or setup, not accidentally on first write.
+- Default topology is **domain-tagged** (ADR-005): one shared **coding** bank for normal repos, soft-isolated by stable `project:<id>` tags (plus dual-tag legacy `repo:` during migration). Role names `coding`/`project` and `life`/`user` stay stable when concrete `bankId` strings change.
+- **isolated-bank** is the hard-wall escape hatch (path-derived or explicit dedicated bankId). Without an explicit `banks.project.bankId`, even domain-tagged mode path-derives a bank for upgrade safety — setup should set the shared coding bankId.
+- Optional second **Life / User Bank** (legacy internal/config name: global bank) is allowed only through explicit config. Automatic retain never writes there.
+- Do not default to one mega-bank for coding + life + sensitive client work.
+- If bank creation/configuration is needed, do it intentionally during initialization or setup, not accidentally on first write (setup gate).
 
 ### Safety rules
 
@@ -272,9 +273,14 @@ Required:
 - `hindsight_retain`
 - `hindsight_reflect`
 
-Suggested human surface:
+Agent control plane (selected banks only; ADR-005):
 
-- `/hindsight` TUI hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup)
+- `hindsight_status`, `hindsight_scope`, `hindsight_bank`, `hindsight_mental_model`
+- `hindsight_scope_migrate` (dry-run dual-tag / legacy guidance + local receipt; never silent rewrite)
+
+Human surface (thin TUI):
+
+- `/hindsight` hub: status, guided setup, emergencies (mode, next-opt-out, flush, doctor); import/templates/advanced demoted
 - `/hindsight:next-opt-out` (skip automatic retain for the next agent run)
 
 ## Implementation priorities
