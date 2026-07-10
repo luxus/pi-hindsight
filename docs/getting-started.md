@@ -75,6 +75,8 @@ After setup, `/hindsight` should show:
 
 If automatic recall injects irrelevant noise, see [Recall quality](memory-behavior.md#recall-quality) for always-on filters and optional score floors (off by default).
 
+To share the same banks with other AI tools over MCP (per-bank endpoints, `source:` tags), see the docs-site guide [MCP multi-client bank wiring](https://luxus.github.io/pi-hindsight/guides/mcp-multi-client/).
+
 ## 6. Import old sessions only when useful
 
 Live retain starts after setup. Historical import is optional backfill. Use guided setup's import prompt first when it appears; it previews before writing memory.

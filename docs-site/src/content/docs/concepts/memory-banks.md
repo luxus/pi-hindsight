@@ -49,9 +49,14 @@ Use tags to filter and isolate memory. Use metadata for provenance.
 
 Examples:
 
-- `source:pi`
-- `repo:pi-hindsight`
+- `source:pi` (always stamp a `source:` for the client that wrote the memory)
+- `project:<stable-id>` (coding bank repo scope; see [project identity](/pi-hindsight/concepts/project-identity/))
+- `repo:<slug>-<hash>` (legacy dual-tag window)
 - `session:<session-id>`
 - `profile:coding`
 
 Do not rely on metadata for filtering behavior when scope isolation matters.
+
+## Multi-client MCP
+
+Other AI tools can share the same banks via Hindsight’s **per-bank** MCP endpoint (`/mcp/<bankId>/`). Keep coding and life banks separate; always stamp `source:`; do not dump web chat into the coding bank. See [MCP multi-client bank wiring](/pi-hindsight/guides/mcp-multi-client/).

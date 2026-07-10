@@ -74,6 +74,7 @@ export default defineConfig({
             { label: "Inspect recalls and receipts", slug: "guides/inspect-recalls-and-receipts" },
             { label: "Recover Retain Queue", slug: "guides/recover-retain-queue" },
             { label: "Run local smoke test", slug: "guides/run-local-smoke-test" },
+            { label: "MCP multi-client bank wiring", slug: "guides/mcp-multi-client" },
           ],
         },
         {
