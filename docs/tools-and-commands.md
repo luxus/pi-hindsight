@@ -41,11 +41,15 @@ When mental models exist on active banks and `mentalModels.inject` is true (defa
 
 ## Model-facing tools
 
-These remain available for the agent:
+Available for the agent (control plane is agent-first; TUI is thin):
 
 - `hindsight_recall`
 - `hindsight_retain`
 - `hindsight_retain_global`
 - `hindsight_reflect`
+- `hindsight_status` — setup/banks/scope tones
+- `hindsight_scope` — project id derivation
+- `hindsight_bank` — get bank or update missions (dry-run default)
+- `hindsight_mental_model` — list/get/create/update/refresh/delete (delete dry-run default)
 
 See the generated [surface reference](surface-reference.md) for parameter schemas.

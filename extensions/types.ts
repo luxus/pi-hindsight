@@ -378,6 +378,55 @@ export interface HindsightLikeClient {
     bankId: string,
     options?: { tags?: string[]; signal?: AbortSignal },
   ): Promise<unknown>;
+  getMentalModel?(
+    bankId: string,
+    mentalModelId: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<unknown>;
+  createMentalModel?(
+    bankId: string,
+    name: string,
+    sourceQuery: string,
+    options?: {
+      id?: string;
+      tags?: string[];
+      maxTokens?: number;
+      trigger?: { refreshAfterConsolidation?: boolean };
+      signal?: AbortSignal;
+    },
+  ): Promise<unknown>;
+  updateMentalModel?(
+    bankId: string,
+    mentalModelId: string,
+    options: {
+      name?: string;
+      sourceQuery?: string;
+      tags?: string[];
+      maxTokens?: number;
+      trigger?: { refreshAfterConsolidation?: boolean };
+      signal?: AbortSignal;
+    },
+  ): Promise<unknown>;
+  refreshMentalModel?(
+    bankId: string,
+    mentalModelId: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<unknown>;
+  deleteMentalModel?(
+    bankId: string,
+    mentalModelId: string,
+    options?: { dryRun?: boolean; signal?: AbortSignal },
+  ): Promise<unknown>;
+  updateBankConfig?(
+    bankId: string,
+    options: {
+      reflectMission?: string;
+      retainMission?: string;
+      observationsMission?: string;
+      enableObservations?: boolean;
+      signal?: AbortSignal;
+    },
+  ): Promise<unknown>;
   health?(): Promise<unknown>;
   getVersion?(): Promise<unknown>;
 }

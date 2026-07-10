@@ -441,6 +441,10 @@ describe("operation catalog", () => {
       "hindsight_retain",
       "hindsight_retain_global",
       "hindsight_reflect",
+      "hindsight_status",
+      "hindsight_scope",
+      "hindsight_bank",
+      "hindsight_mental_model",
     ]);
 
     // Human surface is TUI-first: hub + next-opt-out slash command.

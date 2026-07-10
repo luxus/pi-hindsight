@@ -247,6 +247,54 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
         (signal) => raw.listMentalModels(bankId, { ...options, signal }),
         options?.signal,
       ),
+    getMentalModel: (bankId, mentalModelId, options) =>
+      withTimeout(
+        "hindsight getMentalModel",
+        timeoutMs,
+        (signal) => raw.getMentalModel(bankId, mentalModelId, { ...options, signal }),
+        options?.signal,
+      ),
+    createMentalModel: (bankId, name, sourceQuery, options) =>
+      withTimeout(
+        "hindsight createMentalModel",
+        timeoutMs,
+        (signal) => raw.createMentalModel(bankId, name, sourceQuery, { ...options, signal }),
+        options?.signal,
+      ),
+    updateMentalModel: (bankId, mentalModelId, options) =>
+      withTimeout(
+        "hindsight updateMentalModel",
+        timeoutMs,
+        (signal) => raw.updateMentalModel(bankId, mentalModelId, { ...options, signal }),
+        options?.signal,
+      ),
+    refreshMentalModel: (bankId, mentalModelId, options) =>
+      withTimeout(
+        "hindsight refreshMentalModel",
+        timeoutMs,
+        (signal) => raw.refreshMentalModel(bankId, mentalModelId, { ...options, signal }),
+        options?.signal,
+      ),
+    deleteMentalModel: (bankId, mentalModelId, options) =>
+      withTimeout(
+        "hindsight deleteMentalModel",
+        timeoutMs,
+        async (signal) => {
+          if (options?.dryRun) {
+            return { dryRun: true, bankId, mentalModelId, wouldDelete: true };
+          }
+          await raw.deleteMentalModel(bankId, mentalModelId, { signal });
+          return { deleted: true, bankId, mentalModelId };
+        },
+        options?.signal,
+      ),
+    updateBankConfig: (bankId, options) =>
+      withTimeout(
+        "hindsight updateBankConfig",
+        timeoutMs,
+        (signal) => raw.updateBankConfig(bankId, { ...options, signal }),
+        options?.signal,
+      ),
     health: () =>
       withTimeout("hindsight health", timeoutMs, (signal) =>
         withRetry("health", async () => {

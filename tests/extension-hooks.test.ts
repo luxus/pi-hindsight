@@ -513,10 +513,14 @@ describe("extension hooks", () => {
     hindsightExtension(pi as any);
 
     expect(Object.keys(tools).sort()).toEqual([
+      "hindsight_bank",
+      "hindsight_mental_model",
       "hindsight_recall",
       "hindsight_reflect",
       "hindsight_retain",
       "hindsight_retain_global",
+      "hindsight_scope",
+      "hindsight_status",
     ]);
   });
 

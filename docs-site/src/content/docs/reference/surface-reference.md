@@ -10,12 +10,16 @@ This reference is generated from the operation catalog and config editing regist
 
 Pi Hindsight 1.0 supports a stable Pi-first Hindsight integration. Core and Pi workflow tools are part of the stable 1.0 contract. Capability-gated tools are supported when the connected Hindsight server exposes the required upstream endpoint or field; unsupported servers should return a clear capability error.
 
-| Tool                      | Scope    |
-| ------------------------- | -------- |
-| `hindsight_recall`        | core 1.0 |
-| `hindsight_retain`        | core 1.0 |
-| `hindsight_retain_global` | core 1.0 |
-| `hindsight_reflect`       | core 1.0 |
+| Tool                      | Scope                |
+| ------------------------- | -------------------- |
+| `hindsight_recall`        | core 1.0             |
+| `hindsight_retain`        | core 1.0             |
+| `hindsight_retain_global` | core 1.0             |
+| `hindsight_reflect`       | core 1.0             |
+| `hindsight_status`        | supported 1.0        |
+| `hindsight_scope`         | supported 1.0        |
+| `hindsight_bank`          | supported 1.0        |
+| `hindsight_mental_model`  | capability-gated 1.0 |
 
 ## Deferred or non-goal upstream surfaces
 
@@ -110,6 +114,48 @@ Ask Hindsight to synthesize an answer from memory. Use explicitly, not for defau
 | `tags`                  | array<string>                                   | no       | Additional tag filter.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `tagsMatch`             | any \| all \| any_strict \| all_strict \| exact | no       | How to match tags. Always enforced together with the automatic Pi project/user scope tag filter. 'exact' folds the automatic scope tags into the exact-match set (memory tags must equal scope tags plus these tags, no more, no less) instead of AND-ing a separate scope group, since scope tags must still be present. Note: 'exact' with empty/omitted tags -- Hindsight's pattern for recalling shared/untagged observations -- is incompatible with scope isolation and will not surface those observations here; see issue #450. |
 | `tagGroups`             | array<object>                                   | no       | Compound Hindsight tag_groups filter. AND-ed with the automatic Pi project/user scope filter.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+### `hindsight_status`
+
+Inspect Pi Hindsight status: setup gate, coding/life banks, project scope tags (basis), recall/retain flags, queue. Use before changing memory config. Read-only.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+
+### `hindsight_scope`
+
+Show active project identity: project:<id> tag, derivation (pin/remote/basename), scope.mode (domain-tagged vs isolated-bank), coding/life bank ids. Read-only.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+
+### `hindsight_bank`
+
+Inspect or update the selected coding/life bank. action=get returns profile/stats/config. action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).
+
+| Parameter             | Type                  | Required | Description                                                              |
+| --------------------- | --------------------- | -------- | ------------------------------------------------------------------------ |
+| `action`              | get \| update_mission | yes      |                                                                          |
+| `bank`                | string                | no       | Bank id or alias project\|global\|user. Defaults to coding/project bank. |
+| `retainMission`       | string                | no       |                                                                          |
+| `reflectMission`      | string                | no       |                                                                          |
+| `observationsMission` | string                | no       |                                                                          |
+| `dryRun`              | boolean               | no       | When true (default for update_mission), preview only.                    |
+
+### `hindsight_mental_model`
+
+Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. delete defaults dryRun=true.
+
+| Parameter     | Type                                                 | Required | Description                                    |
+| ------------- | ---------------------------------------------------- | -------- | ---------------------------------------------- |
+| `action`      | list \| get \| create \| update \| refresh \| delete | yes      |                                                |
+| `bank`        | string                                               | no       | Bank id or alias project\|global\|user.        |
+| `id`          | string                                               | no       | Mental model id for get/update/refresh/delete. |
+| `name`        | string                                               | no       |                                                |
+| `sourceQuery` | string                                               | no       |                                                |
+| `tags`        | array<string>                                        | no       |                                                |
+| `maxTokens`   | integer                                              | no       |                                                |
+| `dryRun`      | boolean                                              | no       |                                                |
 
 ## Commands
 

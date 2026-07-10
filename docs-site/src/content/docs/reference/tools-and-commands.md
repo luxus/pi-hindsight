@@ -51,6 +51,10 @@ Pi exposes exactly four memory tools:
 - `hindsight_retain`
 - `hindsight_retain_global`
 - `hindsight_reflect`
+- `hindsight_status`
+- `hindsight_scope`
+- `hindsight_bank`
+- `hindsight_mental_model`
 
 Everything else — bank config/profile administration, document/entity/graph/tag browsing, memory inspection, consolidation control, and operation management — lives in the Hindsight control-plane web UI, except for the bundled mental-model templates applied from the hub (`t`).
 

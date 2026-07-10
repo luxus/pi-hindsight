@@ -453,6 +453,132 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       },
       renderResult: renderMemoryToolTextResult,
     }),
+    defineCatalogTool({
+      name: "hindsight_status",
+      label: "Hindsight Status",
+      description:
+        "Inspect Pi Hindsight status: setup gate, coding/life banks, project scope tags (basis), recall/retain flags, queue. Use before changing memory config. Read-only.",
+      parameters: Type.Object({}),
+      async execute(_id, _params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (signal?.aborted) throw new Error("Aborted");
+        const result = operations.status(ctx.cwd);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
+    defineCatalogTool({
+      name: "hindsight_scope",
+      label: "Hindsight Scope",
+      description:
+        "Show active project identity: project:<id> tag, derivation (pin/remote/basename), scope.mode (domain-tagged vs isolated-bank), coding/life bank ids. Read-only.",
+      parameters: Type.Object({}),
+      async execute(_id, _params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (signal?.aborted) throw new Error("Aborted");
+        const result = operations.scopeInfo(ctx.cwd);
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
+    defineCatalogTool({
+      name: "hindsight_bank",
+      label: "Hindsight Bank",
+      description:
+        "Inspect or update the selected coding/life bank. action=get returns profile/stats/config. action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).",
+      parameters: Type.Object({
+        action: Type.Union([Type.Literal("get"), Type.Literal("update_mission")]),
+        bank: Type.Optional(
+          Type.String({
+            description: "Bank id or alias project|global|user. Defaults to coding/project bank.",
+          }),
+        ),
+        retainMission: Type.Optional(Type.String()),
+        reflectMission: Type.Optional(Type.String()),
+        observationsMission: Type.Optional(Type.String()),
+        dryRun: Type.Optional(
+          Type.Boolean({ description: "When true (default for update_mission), preview only." }),
+        ),
+      }),
+      async execute(_id, params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (signal?.aborted) throw new Error("Aborted");
+        if (params.action === "get") {
+          const result = await operations.bankGet({
+            ...(params.bank ? { bank: params.bank } : {}),
+          });
+          return {
+            content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+            details: result,
+          };
+        }
+        const result = await operations.bankUpdateMission({
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.retainMission !== undefined ? { retainMission: params.retainMission } : {}),
+          ...(params.reflectMission !== undefined ? { reflectMission: params.reflectMission } : {}),
+          ...(params.observationsMission !== undefined
+            ? { observationsMission: params.observationsMission }
+            : {}),
+          dryRun: params.dryRun ?? true,
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
+    defineCatalogTool({
+      name: "hindsight_mental_model",
+      label: "Hindsight Mental Model",
+      description:
+        "Agent control plane for mental models on the selected bank. Actions: list|get|create|update|refresh|delete. Project-tier create defaults tags to source:pi + project:<activeId>. delete defaults dryRun=true.",
+      parameters: Type.Object({
+        action: Type.Union([
+          Type.Literal("list"),
+          Type.Literal("get"),
+          Type.Literal("create"),
+          Type.Literal("update"),
+          Type.Literal("refresh"),
+          Type.Literal("delete"),
+        ]),
+        bank: Type.Optional(Type.String({ description: "Bank id or alias project|global|user." })),
+        id: Type.Optional(
+          Type.String({ description: "Mental model id for get/update/refresh/delete." }),
+        ),
+        name: Type.Optional(Type.String()),
+        sourceQuery: Type.Optional(Type.String()),
+        tags: Type.Optional(Type.Array(Type.String())),
+        maxTokens: Type.Optional(Type.Integer({ minimum: 1 })),
+        dryRun: Type.Optional(Type.Boolean()),
+      }),
+      async execute(_id, params, signal, _onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (signal?.aborted) throw new Error("Aborted");
+        const result = await operations.mentalModel({
+          action: params.action,
+          cwd: ctx.cwd,
+          ...(params.bank ? { bank: params.bank } : {}),
+          ...(params.id ? { id: params.id } : {}),
+          ...(params.name ? { name: params.name } : {}),
+          ...(params.sourceQuery ? { sourceQuery: params.sourceQuery } : {}),
+          ...(params.tags ? { tags: params.tags } : {}),
+          ...(params.maxTokens !== undefined ? { maxTokens: params.maxTokens } : {}),
+          ...(params.dryRun !== undefined ? { dryRun: params.dryRun } : {}),
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          details: result,
+        };
+      },
+      renderResult: renderMemoryToolTextResult,
+    }),
   ];
 
   // Human surface is TUI-first: `/hindsight` hub plus a few deliberate slash commands.
