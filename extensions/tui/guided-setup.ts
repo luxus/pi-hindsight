@@ -27,11 +27,17 @@ export function hasProjectHindsightConfig(cwd: string): boolean {
 export function setupProfileChoiceToMemoryProfile(choice: SetupProfileChoice): MemoryProfile {
   if (choice === "project-user") return "project+global";
   if (choice === "user-only") return "global-only";
+  if (choice === "isolated-only") return "project-only";
   return choice;
 }
 
 function profileUsesProject(profile: SetupProfileChoice): boolean {
-  return profile === "project-user" || profile === "project-only" || profile === "recall-only";
+  return (
+    profile === "project-user" ||
+    profile === "project-only" ||
+    profile === "isolated-only" ||
+    profile === "recall-only"
+  );
 }
 
 function profileUsesUser(profile: SetupProfileChoice): boolean {
@@ -48,6 +54,8 @@ export function buildGuidedSetupPatch(args: {
   return {
     memoryProfile,
     setupComplete: true,
+    // Domain-tagged shares one coding bank + project tags; isolated keeps a hard wall.
+    scopeMode: args.profile === "isolated-only" ? "isolated-bank" : "domain-tagged",
     ...(profileUsesProject(args.profile) && args.projectBankId?.trim()
       ? { projectBankId: args.projectBankId.trim() }
       : {}),
@@ -245,18 +253,20 @@ export async function runGuidedSetup(args: {
   args.ctx.ui.notify(setupDocsHint("Guided setup", "/start/setup-tui/"), "info");
   args.ctx.ui.notify(setupDocsHint("Memory profiles", "/start/memory-profiles/"), "info");
   const profile = await args.ctx.ui.select("Choose memory profile", [
-    "Project + User",
-    "Project Only",
-    "User Only",
-    "Recall Only",
+    "Coding (shared coding bank + project tags)",
+    "Coding + Life (coding bank + user bank)",
+    "Isolated project (hard wall bank per repo)",
+    "Life only (user bank)",
+    "Recall only",
   ]);
   if (!profile) return false;
 
   const setupProfile = {
-    "Project + User": "project-user",
-    "Project Only": "project-only",
-    "User Only": "user-only",
-    "Recall Only": "recall-only",
+    "Coding (shared coding bank + project tags)": "project-only",
+    "Coding + Life (coding bank + user bank)": "project-user",
+    "Isolated project (hard wall bank per repo)": "isolated-only",
+    "Life only (user bank)": "user-only",
+    "Recall only": "recall-only",
   }[profile] as SetupProfileChoice;
 
   const agentUseLabel = await args.ctx.ui.select("How do you use this Pi agent?", [
@@ -272,8 +282,13 @@ export async function runGuidedSetup(args: {
   const projectBankId = profileUsesProject(setupProfile)
     ? await askBankId({
         ctx: args.ctx,
-        title: "Project bank ID",
-        fallback: config.banks.project.bankId ?? args.deps.getProjectBankId(),
+        title:
+          setupProfile === "isolated-only"
+            ? "Isolated project bank ID (optional; leave default for path-derived)"
+            : "Coding bank ID (shared across repos with project tags)",
+        fallback:
+          config.banks.project.bankId ??
+          (setupProfile === "isolated-only" ? args.deps.getProjectBankId() : "pi-coding"),
       })
     : undefined;
   if (profileUsesProject(setupProfile) && projectBankId === undefined) return false;

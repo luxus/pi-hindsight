@@ -87,6 +87,7 @@ export function deepMergeConfig(
 export interface ProjectConfigPatchInput {
   enabled?: boolean;
   setupComplete?: boolean;
+  scopeMode?: "domain-tagged" | "isolated-bank";
   projectId?: string;
   projectIdStrategy?: "remote" | "basename";
   baseUrl?: string;
@@ -145,8 +146,13 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
   const patch: Record<string, unknown> = {};
   if (input.enabled !== undefined) patch.enabled = input.enabled;
   if (input.setupComplete !== undefined) patch.setupComplete = input.setupComplete;
-  if (input.projectId !== undefined || input.projectIdStrategy !== undefined) {
+  if (
+    input.scopeMode !== undefined ||
+    input.projectId !== undefined ||
+    input.projectIdStrategy !== undefined
+  ) {
     patch.scope = {
+      ...(input.scopeMode !== undefined ? { mode: input.scopeMode } : {}),
       ...(input.projectId !== undefined ? { projectId: input.projectId } : {}),
       ...(input.projectIdStrategy !== undefined
         ? { projectIdStrategy: input.projectIdStrategy }

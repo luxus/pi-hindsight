@@ -161,10 +161,28 @@ export function legacyRepoScopeTag(legacyKey: string): string {
   return `repo:${legacyKey}`;
 }
 
+/**
+ * Resolve the coding-role bank id.
+ * - Explicit banks.project.bankId always wins (domain coding bank or isolated override).
+ * - isolated-bank mode (or legacy path when no bankId): path/cwd-derived bank.
+ * - domain-tagged without bankId: still path-derived for upgrade safety; setup should set bankId.
+ */
 export function deriveProjectBankId(cwd: string, config: ResolvedConfig): string {
   if (config.banks.project.bankId) return config.banks.project.bankId;
+  // Domain-tagged + explicit bankId is the preferred shared coding bank path.
+  // Without bankId, keep path-derived identity so upgrades do not silently merge banks.
   const basis = config.banks.project.derive === "cwd" ? resolve(cwd) : findRepoRoot(cwd);
   return `pi-project-${slug(basename(basis))}-${hash(basis)}`;
+}
+
+/** True when this repo uses a hard-isolated bank rather than a shared coding domain bank. */
+export function isIsolatedBankMode(config: ResolvedConfig): boolean {
+  return config.scope.mode === "isolated-bank";
+}
+
+/** Coding-role bank id (alias for deriveProjectBankId). */
+export function deriveCodingBankId(cwd: string, config: ResolvedConfig): string {
+  return deriveProjectBankId(cwd, config);
 }
 
 export function selectBanks(cwd: string, config: ResolvedConfig): BankSelection {

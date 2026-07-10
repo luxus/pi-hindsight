@@ -18,7 +18,12 @@ export type SetupActionId = FieldId | `reset:${FieldId}` | HubActionId;
 
 export type SetupStep = "config" | "profile" | "banks" | "review" | "done";
 
-export type SetupProfileChoice = "project-user" | "project-only" | "user-only" | "recall-only";
+export type SetupProfileChoice =
+  | "project-user"
+  | "project-only"
+  | "isolated-only"
+  | "user-only"
+  | "recall-only";
 
 export type SetupUiState = {
   step?: SetupStep;

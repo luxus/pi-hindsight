@@ -26,19 +26,35 @@ Doctor/status (`/hindsight` doctor, debug report) shows:
 - derivation basis (`pin` / `remote` / `basename`) and source
 - legacy `repo:` tag
 
+## Scope mode (bank topology)
+
+| Mode                          | Bank                                           | Tags                          |
+| ----------------------------- | ---------------------------------------------- | ----------------------------- |
+| **`domain-tagged`** (default) | Shared coding bank (`banks.project.bankId`)    | `project:<id>` isolates repos |
+| **`isolated-bank`**           | Hard wall per repo (path-derived if no bankId) | project tags still written    |
+
+`banks.coding` aliases `banks.project`. `banks.life` aliases `banks.user`.
+
 ## Config
 
 ```jsonc
+// ~/.pi/agent/hindsight.json
+{
+  "setupComplete": true,
+  "scope": { "mode": "domain-tagged", "projectIdStrategy": "remote" },
+  "banks": {
+    "project": { "enabled": true, "bankId": "kai-coding", "derive": "manual" },
+    "user": { "enabled": true, "bankId": "kai-life" }
+  }
+}
+
 // .pi/hindsight.json
 {
-  "scope": {
-    "projectId": "finalform", // optional pin
-    "projectIdStrategy": "remote", // or "basename"
-  },
+  "scope": { "projectId": "finalform" }
 }
 ```
 
-Env: prefer writing the pin into config via guided setup or agent tools. Bank selection remains `banks.project.bankId` / `PI_HINDSIGHT_PROJECT_BANK_ID` (setup gate).
+Env: `PI_HINDSIGHT_PROJECT_BANK_ID` sets the coding bank id (setup gate).
 
 ## Observation scopes
 

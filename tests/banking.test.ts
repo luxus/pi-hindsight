@@ -170,3 +170,20 @@ describe("banking/session identity", () => {
     expect(first).not.toBe(stableSessionId("ephemeral:/repo", "/repo"));
   });
 });
+
+describe("domain coding bank roles", () => {
+  it("uses explicit coding bank id for domain-tagged mode", async () => {
+    const { deriveProjectBankId } = await import("../extensions/banks/banking.js");
+    const { DEFAULT_CONFIG } = await import("../extensions/config/config.js");
+    const config = {
+      ...DEFAULT_CONFIG,
+      scope: { ...DEFAULT_CONFIG.scope, mode: "domain-tagged" as const },
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        project: { enabled: true, bankId: "kai-coding", derive: "manual" as const },
+      },
+    };
+    expect(deriveProjectBankId("/any/repo", config)).toBe("kai-coding");
+    expect(deriveProjectBankId("/other/repo", config)).toBe("kai-coding");
+  });
+});

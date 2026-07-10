@@ -185,6 +185,26 @@ export function normalizeConfig(
   const apiKey =
     directApiKey(config.hindsight?.apiKey, DEFAULT_CONFIG.hindsight.apiKey) ??
     resolveApiKeyRef(apiKeyRef, env);
+  // banks.coding → project; banks.life → user (ADR-005 role names).
+  const banksRaw = config.banks as
+    | {
+        project?: unknown;
+        coding?: unknown;
+        user?: unknown;
+        global?: unknown;
+        life?: unknown;
+      }
+    | undefined;
+  if (banksRaw && isRecord(banksRaw.coding) && !isRecord(banksRaw.project)) {
+    banksRaw.project = banksRaw.coding;
+  } else if (banksRaw && isRecord(banksRaw.coding) && isRecord(banksRaw.project)) {
+    banksRaw.project = { ...banksRaw.coding, ...banksRaw.project };
+  }
+  if (banksRaw && isRecord(banksRaw.life)) {
+    // life overlays user so alias fields win over defaults merged earlier.
+    if (isRecord(banksRaw.user)) banksRaw.user = { ...banksRaw.user, ...banksRaw.life };
+    else banksRaw.user = banksRaw.life;
+  }
   const projectBankId = optionalString(
     config.banks?.project?.bankId,
     DEFAULT_CONFIG.banks.project.bankId,
@@ -193,8 +213,11 @@ export function normalizeConfig(
   const defaultUserBankConfig = DEFAULT_CONFIG.banks.user;
   const globalBankId = optionalString(userBankConfig?.bankId, defaultUserBankConfig.bankId);
   const minScores = scoreFloors(config.recall?.minScores);
-  const scopeRaw = (config as { scope?: { projectId?: unknown; projectIdStrategy?: unknown } })
-    .scope;
+  const scopeRaw = (
+    config as {
+      scope?: { mode?: unknown; projectId?: unknown; projectIdStrategy?: unknown };
+    }
+  ).scope;
   const projectIdPin = optionalString(scopeRaw?.projectId, DEFAULT_CONFIG.scope.projectId);
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
@@ -203,6 +226,11 @@ export function normalizeConfig(
       DEFAULT_CONFIG.setupComplete,
     ),
     scope: {
+      mode: enumValue(
+        scopeRaw?.mode,
+        ["domain-tagged", "isolated-bank"] as const,
+        DEFAULT_CONFIG.scope.mode,
+      ),
       ...(projectIdPin ? { projectId: projectIdPin } : {}),
       projectIdStrategy: enumValue(
         scopeRaw?.projectIdStrategy,

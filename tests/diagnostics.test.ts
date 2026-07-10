@@ -35,10 +35,8 @@ function latestImport(overrides: Partial<ImportManifestEntry> = {}): ImportManif
 
 describe("diagnostics", () => {
   it("explains automatic bank selection and override", () => {
-    expect(bankSelectionMessage("bank-1", DEFAULT_CONFIG)).toContain("auto-selected");
-    expect(bankSelectionMessage("bank-1", DEFAULT_CONFIG)).toContain(
-      "PI_HINDSIGHT_PROJECT_BANK_ID",
-    );
+    expect(bankSelectionMessage("bank-1", DEFAULT_CONFIG)).toContain("path-derived");
+    expect(bankSelectionMessage("bank-1", DEFAULT_CONFIG)).toContain("banks.project.bankId");
   });
 
   it("explains configured bank selection", () => {
@@ -49,7 +47,9 @@ describe("diagnostics", () => {
         project: { ...DEFAULT_CONFIG.banks.project, bankId: "manual" },
       },
     };
-    expect(bankSelectionMessage("manual", config)).toBe("Hindsight bank configured: manual");
+    expect(bankSelectionMessage("manual", config)).toBe(
+      "Hindsight coding bank (domain-tagged): manual",
+    );
   });
 
   it("redacts api key in debug config", () => {

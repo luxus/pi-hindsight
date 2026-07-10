@@ -9,9 +9,11 @@ import {
   recallScopeTags,
   resolveProjectIdentity,
 } from "../extensions/banks/banking.js";
-import type { ResolvedConfig } from "../extensions/types.js";
+import type { ResolvedConfig, ScopeConfig } from "../extensions/types.js";
 
-function config(patch: Partial<ResolvedConfig> = {}): ResolvedConfig {
+function config(
+  patch: Partial<Omit<ResolvedConfig, "scope">> & { scope?: Partial<ScopeConfig> } = {},
+): ResolvedConfig {
   return {
     ...DEFAULT_CONFIG,
     ...patch,
@@ -60,9 +62,6 @@ describe("stable project identity", () => {
     const identity = resolveProjectIdentity(repo, config());
     expect(identity.basis).toBe("remote");
     expect(identity.projectId).toBe("github-com-luxus-my-app");
-    // Same remote identity if folder is renamed (path hash legacy differs).
-    const moved = join(parent, "my-app-renamed");
-    // Cannot easily rename git root in test without moving; assert dual tags include project.
     const tags = recallScopeTags(repo, config());
     expect(tags).toEqual(
       expect.arrayContaining([

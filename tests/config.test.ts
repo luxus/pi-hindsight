@@ -504,4 +504,24 @@ describe("resolveConfig", () => {
     expect(config.notifications.recall).toBe(true);
     expect(config.notifications.retain).toBe(true);
   });
+
+  it("accepts banks.coding and banks.life aliases", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        banks: {
+          coding: { enabled: true, bankId: "coding-bank" },
+          life: { enabled: true, bankId: "life-bank" },
+        },
+      }),
+    );
+    const home = tmp();
+    const config = resolveConfig(cwd, { ...process.env, HOME: home });
+    expect(config.banks.project.bankId).toBe("coding-bank");
+    expect(config.banks.user.bankId).toBe("life-bank");
+    expect(config.banks.user.enabled).toBe(true);
+    expect(config.scope.mode).toBe("domain-tagged");
+  });
 });

@@ -59,6 +59,7 @@ describe("guided setup", () => {
     ).toEqual({
       memoryProfile: "project-only",
       setupComplete: true,
+      scopeMode: "domain-tagged",
       projectBankId: "project-bank",
     });
 
@@ -72,6 +73,7 @@ describe("guided setup", () => {
     ).toEqual({
       memoryProfile: "project+global",
       setupComplete: true,
+      scopeMode: "domain-tagged",
       projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });
@@ -86,6 +88,7 @@ describe("guided setup", () => {
     ).toEqual({
       memoryProfile: "global-only",
       setupComplete: true,
+      scopeMode: "domain-tagged",
       resetDefaults: ["banks.global.bankId"],
     });
 
@@ -99,7 +102,23 @@ describe("guided setup", () => {
     ).toEqual({
       memoryProfile: "recall-only",
       setupComplete: true,
+      scopeMode: "domain-tagged",
       projectBankId: "project-bank",
+    });
+  });
+
+  it("marks isolated profile with isolated-bank scope mode", () => {
+    expect(
+      buildGuidedSetupPatch({
+        profile: "isolated-only",
+        projectBankId: "client-acme",
+        config: DEFAULT_CONFIG,
+      }),
+    ).toEqual({
+      memoryProfile: "project-only",
+      setupComplete: true,
+      scopeMode: "isolated-bank",
+      projectBankId: "client-acme",
     });
   });
 
@@ -284,6 +303,7 @@ describe("guided setup", () => {
     ).toEqual({
       memoryProfile: "project+global",
       setupComplete: true,
+      scopeMode: "domain-tagged",
       projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });

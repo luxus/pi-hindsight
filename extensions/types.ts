@@ -57,7 +57,14 @@ export interface HindsightEntityInput {
   type?: string;
 }
 
+export type ScopeMode = "domain-tagged" | "isolated-bank";
+
 export interface ScopeConfig {
+  /**
+   * domain-tagged: shared coding bank (banks.project.bankId) + project tags.
+   * isolated-bank: path-derived or dedicated bank per repo (hard wall).
+   */
+  mode: ScopeMode;
   /** Explicit project id pin (wins over remote/basename). Written as tag project:<slug>. */
   projectId?: string;
   /**

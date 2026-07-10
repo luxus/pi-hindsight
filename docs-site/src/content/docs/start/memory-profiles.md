@@ -4,25 +4,29 @@ title: "Memory profiles"
 
 Choose the narrowest memory route that fits the repository.
 
-## Project + User
+## Coding (shared bank + project tags)
 
-Best for most personal coding.
+Best for most personal coding (ADR-005 **domain-tagged**).
 
-- Recall can read project memory and user memory. Project Bank recall and User Bank recall each have their own token budget (`recall.maxTokens` and `recall.userMaxTokens`), so enabling User Bank recall does not silently grow the total context injected per turn.
-- Automatic retain writes repository session deltas to the Project Bank.
-- User Bank settings are stored once in global Pi config and reused across repositories.
+- One **coding bank** (`banks.project.bankId`) shared across repos.
+- Soft isolation via stable `project:<id>` tags (see [project identity](/pi-hindsight/concepts/project-identity/)).
+- Automatic retain writes to the coding bank with project tags.
 
-Use this when you want repo-specific memory plus durable cross-repo preferences and workflows.
+Use this when you hop between repos and want fewer Hindsight banks.
 
-## Project Only
+## Coding + Life (Project + User)
 
-Best for strict isolation.
+Best for personal coding OS.
 
-- Recall reads the Project Bank.
-- Automatic retain writes session deltas to the Project Bank.
-- User memory is not used by default.
+- Coding bank as above, plus optional **life/user bank** for durable cross-project prefs.
+- Recall can read both; each has its own token budget (`recall.maxTokens` and `recall.userMaxTokens`).
+- Automatic retain is coding-bank only; life/user writes stay explicit.
 
-Use this for sensitive repositories, client work, or any project where memory must stay isolated.
+## Isolated project
+
+Hard wall: dedicated bank for this repo (`scope.mode: isolated-bank`), path-derived if no bank id.
+
+Use for sensitive repositories, client work, or any project where memory must never share a bank.
 
 ## User Only
 

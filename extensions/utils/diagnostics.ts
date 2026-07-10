@@ -51,13 +51,18 @@ export interface DebugReportArgs {
 export function bankSelectionMessage(projectBankId: string, config: ResolvedConfig): string {
   if (!config.banks.project.enabled) {
     return config.banks.user.enabled && config.banks.user.bankId
-      ? `Hindsight global-only memory: ${config.banks.user.bankId}`
-      : "Hindsight project bank disabled and no global bank configured.";
+      ? `Hindsight life/user bank: ${config.banks.user.bankId}`
+      : "Hindsight coding bank disabled and no life/user bank configured.";
   }
+  const mode = config.scope.mode;
   if (config.banks.project.bankId) {
-    return `Hindsight bank configured: ${projectBankId}`;
+    return mode === "isolated-bank"
+      ? `Hindsight isolated bank: ${projectBankId}`
+      : `Hindsight coding bank (domain-tagged): ${projectBankId}`;
   }
-  return `Hindsight bank auto-selected: ${projectBankId}. Override with PI_HINDSIGHT_PROJECT_BANK_ID or .pi/hindsight.json banks.project.bankId.`;
+  return mode === "isolated-bank"
+    ? `Hindsight isolated bank auto-selected: ${projectBankId}. Set banks.project.bankId to pin.`
+    : `Hindsight coding bank path-derived (set banks.project.bankId for a shared domain bank): ${projectBankId}`;
 }
 
 export function memoryProfile(
