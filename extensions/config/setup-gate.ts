@@ -41,15 +41,27 @@ export function requiresExplicitCodingBankId(config: ResolvedConfig): boolean {
 const DOCS_BASE_URL = "https://luxus.github.io/pi-hindsight";
 const CHANGELOG_URL = "https://github.com/luxus/pi-hindsight/blob/main/CHANGELOG.md";
 
+/**
+ * Startup / status hint when automatic memory is blocked by the setup gate.
+ * Keep scannable: primary action first, durable opt-out visible, docs last.
+ */
 export function setupRequiredMessage(): string {
   return [
-    "Hindsight setup required: run /hindsight guided setup, or set banks.project.bankId",
-    "(or PI_HINDSIGHT_PROJECT_BANK_ID). Domain-tagged mode needs an explicit coding bank id",
-    "before automatic memory network I/O. Isolated-bank may path-derive.",
-    `Upgrade paths (soft dual-tag vs shared coding bank vs isolated): ${DOCS_BASE_URL}/guides/upgrading-to-domain-banks/`,
-    `Dual-tag (project: + legacy repo:): ${DOCS_BASE_URL}/concepts/project-identity/`,
+    "Hindsight setup required — automatic memory is off until this repo is configured.",
+    "",
+    "Start here: run  /hindsight",
+    "  • Guided setup — pick a profile, bank IDs, optional mental models / import",
+    "  • Ignore this repo — durable opt-out (no auto memory, tools, or status bar)",
+    "  • Skip for now — dismiss only; this warning can return next session",
+    "",
+    "Or set banks.project.bankId (or PI_HINDSIGHT_PROJECT_BANK_ID).",
+    "Domain-tagged mode needs an explicit coding bank id; isolated-bank may path-derive.",
+    "",
+    `Docs: ${DOCS_BASE_URL}/start/setup-tui/`,
+    `Upgrade: ${DOCS_BASE_URL}/guides/upgrading-to-domain-banks/`,
+    `Identity: ${DOCS_BASE_URL}/concepts/project-identity/`,
     `Changelog: ${CHANGELOG_URL}`,
-  ].join(" ");
+  ].join("\n");
 }
 
 function hasProjectConfigFile(cwd: string): boolean {

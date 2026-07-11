@@ -31,14 +31,21 @@ describe("setup gate", () => {
     expect(setupRequiredMessage()).toMatch(/setup required/i);
   });
 
-  it("points setup-required copy at upgrade guide, dual-tag docs, and changelog", () => {
+  it("points setup-required copy at /hindsight, ignore-repo, setup docs, and changelog", () => {
     const message = setupRequiredMessage();
     expect(message).toMatch(/setup required/i);
+    expect(message).toContain("/hindsight");
+    expect(message).toMatch(/Ignore this repo/i);
+    expect(message).toMatch(/Guided setup/i);
+    expect(message).toMatch(/Skip for now/i);
+    expect(message).toContain("https://luxus.github.io/pi-hindsight/start/setup-tui/");
     expect(message).toContain(
       "https://luxus.github.io/pi-hindsight/guides/upgrading-to-domain-banks/",
     );
     expect(message).toContain("https://luxus.github.io/pi-hindsight/concepts/project-identity/");
     expect(message).toContain("https://github.com/luxus/pi-hindsight/blob/main/CHANGELOG.md");
+    // Multi-line so the hub options stay scannable in notifications.
+    expect(message.split("\n").length).toBeGreaterThan(4);
   });
 
   it("rejects setupComplete alone under domain-tagged without coding bankId", () => {
