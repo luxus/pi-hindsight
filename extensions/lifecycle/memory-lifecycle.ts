@@ -158,7 +158,15 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           "info",
         );
       }
-      if (!config.enabled) return;
+      if (!config.enabled) {
+        // Clear status bar when extension is disabled for this repo.
+        try {
+          runtime.ui.setStatus("hindsight", undefined);
+        } catch {
+          // Session ctx can go stale; status clear is best effort.
+        }
+        return;
+      }
       if (!isMemorySetupComplete(config, runtime.cwd)) {
         initHealth = { checkedAt: new Date().toISOString(), failures: [] };
         setMemoryStatus(runtime, "idle");

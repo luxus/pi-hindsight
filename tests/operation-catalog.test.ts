@@ -58,6 +58,33 @@ describe("operation catalog", () => {
     }
   });
 
+  it("refuses tool execution when extension is disabled for the repo", async () => {
+    const recall = vi.fn(async () => []);
+    const catalog = createOperationCatalog({
+      getClient: () => ({ ...client(), recall }),
+      getConfig: () => ({ ...DEFAULT_CONFIG, enabled: false }),
+      getProjectBankId: () => "project-bank",
+    });
+    const tool = requireTool(catalog, "hindsight_recall");
+    const result = await tool.execute(
+      "call-1",
+      { query: "what did we decide?" },
+      undefined,
+      undefined,
+      {
+        cwd: mkdtempSync(join(tmpdir(), "pi-hindsight-disabled-tool-")),
+        sessionManager: { getSessionFile: () => undefined },
+      } as never,
+    );
+
+    expect(recall).not.toHaveBeenCalled();
+    expect(result.content[0]).toMatchObject({
+      type: "text",
+      text: expect.stringContaining("disabled for this repository"),
+    });
+    expect(result.details).toEqual({ disabled: true });
+  });
+
   it("exposes and maps advanced explicit retain options on the project retain tool", async () => {
     const retain = retainMock();
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-catalog-"));

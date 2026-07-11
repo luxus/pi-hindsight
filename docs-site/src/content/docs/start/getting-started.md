@@ -44,7 +44,7 @@ Open Pi in your repository and run:
 /hindsight
 ```
 
-If no project config exists, `/hindsight` offers guided setup, open hub, **Ignore this repo** (durable `enabled: false` + `setupComplete: true`), or skip for now. You can rerun guided setup later from the TUI with `g`. Details: [Setup TUI](/pi-hindsight/start/setup-tui/).
+If no project config exists, `/hindsight` offers guided setup, open hub, **Ignore this repo** (durable `enabled: false` + `setupComplete: true` + `status.style: off`; tools refuse calls), or skip for now. You can rerun guided setup later from the TUI with `g`. Details: [Setup TUI](/pi-hindsight/start/setup-tui/).
 
 **Setup gate:** automatic bank ensure, recall, and retain stay off until setup is satisfied. For default **domain-tagged** mode with project memory on, that means an explicit coding bank id (`banks.project.bankId` / `PI_HINDSIGHT_PROJECT_BANK_ID`, usually via guided setup). Soft signals alone (empty project config, queue/cursor files, or `setupComplete` without a bank id) do **not** unlock domain-tagged auto memory. **Isolated-bank** may keep path-derived banks after config/runtime signals or guided setup. Status warns when setup is required. Upgrading from path banks: [Upgrading to domain banks](/pi-hindsight/guides/upgrading-to-domain-banks/).
 

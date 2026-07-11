@@ -113,9 +113,11 @@ describe("setup TUI receipt facts", () => {
     const written = JSON.parse(readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")) as {
       enabled: boolean;
       setupComplete: boolean;
+      status?: { style?: string };
     };
     expect(written.enabled).toBe(false);
     expect(written.setupComplete).toBe(true);
+    expect(written.status?.style).toBe("off");
     expect(notify).toHaveBeenCalledWith(
       expect.stringContaining("Hindsight disabled for this repo"),
       "info",

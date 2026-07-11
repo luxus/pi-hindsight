@@ -28,7 +28,7 @@ If no project config exists, `/hindsight` offers:
 
 - **Guided setup** — configure profile, banks, optional mental models and import
 - **Open hub** — open status/settings without finishing setup first
-- **Ignore this repo** — durable opt-out: writes project config with `enabled: false` and `setupComplete: true` so automatic memory stays off and setup will not keep prompting. Re-enable later from the hub **enabled** field (advanced) or by editing `.pi/hindsight.json`
+- **Ignore this repo** — durable opt-out: writes project config with `enabled: false`, `setupComplete: true`, and `status.style: "off"`. Automatic memory, status bar, and tool calls stay off; `/hindsight` remains available to re-enable (hub **enabled** field / edit `.pi/hindsight.json`)
 - **Skip for now** — dismiss only this prompt; does not write config
 
 Rerun guided setup later with `g`.

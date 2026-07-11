@@ -11,6 +11,9 @@ import { runHindsightSetupTui } from "../tui/setup-tui.js";
 import { renderMemoryToolTextResult, retainToolResponse } from "../tui/tool-presenters.js";
 import { getSessionFile } from "../utils/session.js";
 
+export const HINDSIGHT_DISABLED_TOOL_MESSAGE =
+  "Hindsight is disabled for this repository (enabled=false). Open /hindsight and set enabled=true (and restore status.style if desired), or edit .pi/hindsight.json.";
+
 export type ToolOperation = Parameters<ExtensionAPI["registerTool"]>[0];
 
 const tagMatchSchema = Type.Union(
@@ -132,11 +135,6 @@ function explicitRetainOptions(params: ExplicitRetainOptionParams) {
   };
 }
 
-function defineCatalogTool<TParams extends ToolDefinition["parameters"], TDetails = unknown>(
-  tool: ToolDefinition<TParams, TDetails>,
-): ToolOperation {
-  return defineTool(tool);
-}
 export type CommandOperation = {
   name: string;
   spec: Parameters<ExtensionAPI["registerCommand"]>[1];
@@ -150,6 +148,26 @@ export interface OperationCatalog {
 export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCatalog {
   const operations = createMemoryOperations(deps);
   const useCwd = (cwd: string) => deps.reloadConfig?.(cwd);
+
+  function defineCatalogTool<TParams extends ToolDefinition["parameters"], TDetails = unknown>(
+    tool: ToolDefinition<TParams, TDetails>,
+  ): ToolOperation {
+    const defined = defineTool(tool);
+    const execute = defined.execute.bind(defined);
+    return {
+      ...defined,
+      async execute(id, params, signal, onUpdate, ctx) {
+        useCwd(ctx.cwd);
+        if (!deps.getConfig().enabled) {
+          return {
+            content: [{ type: "text" as const, text: HINDSIGHT_DISABLED_TOOL_MESSAGE }],
+            details: { disabled: true as const },
+          };
+        }
+        return execute(id, params, signal, onUpdate, ctx);
+      },
+    };
+  }
 
   const tools: ToolOperation[] = [
     defineCatalogTool({

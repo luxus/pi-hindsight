@@ -99,6 +99,7 @@ export function formatHindsightStatus(
   config: ResolvedConfig,
   state: HindsightStatusState,
 ): string | undefined {
+  if (!config.enabled) return undefined;
   const { style, detail, maxLength, showActivity } = config.status;
   if (style === "off") return undefined;
   const p = prefix(style, state.activity);

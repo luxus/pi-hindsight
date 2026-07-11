@@ -51,7 +51,11 @@ describe("guided setup", () => {
   });
 
   it("builds durable ignore-repo patch", () => {
-    expect(buildIgnoreRepoPatch()).toEqual({ enabled: false, setupComplete: true });
+    expect(buildIgnoreRepoPatch()).toEqual({
+      enabled: false,
+      setupComplete: true,
+      statusStyle: "off",
+    });
   });
 
   it("builds profile and bank patches without inventing global bank IDs", () => {

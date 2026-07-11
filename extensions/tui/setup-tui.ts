@@ -179,12 +179,17 @@ async function handleIgnoreRepo(
 ): Promise<boolean> {
   const confirmed = await ctx.ui.confirm(
     "Ignore Hindsight in this repo?",
-    "Writes project config with enabled=false and setupComplete=true so automatic memory stays off and setup will not keep prompting. Re-enable later from the hub (enabled field) or by editing .pi/hindsight.json.",
+    "Writes project config with enabled=false, setupComplete=true, and status.style=off. Automatic memory, status bar, and tool calls stay off; /hindsight remains available to re-enable.",
   );
   if (!confirmed) return false;
   const result = await createMemoryOperations(deps).configure(ctx.cwd, buildIgnoreRepoPatch());
+  try {
+    ctx.ui.setStatus?.("hindsight", undefined);
+  } catch {
+    // Best effort; some hosts may not expose setStatus on command UI.
+  }
   ctx.ui.notify(
-    `Wrote ${result.path}: Hindsight disabled for this repo (enabled=false). Open /hindsight hub to re-enable.`,
+    `Wrote ${result.path}: Hindsight disabled for this repo (enabled=false, status.style=off). Tools refuse calls until re-enabled via /hindsight.`,
     "info",
   );
   return true;

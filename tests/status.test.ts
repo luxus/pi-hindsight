@@ -3,6 +3,15 @@ import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { formatHindsightStatus } from "../extensions/utils/status.js";
 
 describe("formatHindsightStatus", () => {
+  it("hides status when extension is disabled", () => {
+    expect(
+      formatHindsightStatus(
+        { ...DEFAULT_CONFIG, enabled: false },
+        { cwd: "/repo", projectBankId: "bank", activity: "connected" },
+      ),
+    ).toBeUndefined();
+  });
+
   it("separates style from detail and truncates length", () => {
     const config = {
       ...DEFAULT_CONFIG,
