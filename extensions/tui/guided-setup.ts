@@ -16,6 +16,7 @@ import {
   renderBankTemplateApplyResult,
   renderBankTemplateMentalModelDetails,
 } from "./bank-template-presentation.js";
+import { ensureServerConnectionForSetup } from "./setup-server-probe.js";
 
 export function hasProjectHindsightConfig(cwd: string): boolean {
   return (
@@ -261,6 +262,15 @@ export async function runGuidedSetup(args: {
 }): Promise<boolean> {
   args.ctx.ui.notify(setupDocsHint("Guided setup", "/start/setup-tui/"), "info");
   args.ctx.ui.notify(setupDocsHint("Memory profiles", "/start/memory-profiles/"), "info");
+
+  // Health-check Hindsight before profile/banks so missing server/key fails early.
+  const serverOk = await ensureServerConnectionForSetup({
+    ctx: args.ctx,
+    deps: args.deps,
+    cwd: args.cwd,
+  });
+  if (!serverOk) return false;
+
   const profile = await args.ctx.ui.select("Choose memory profile", [
     "Coding (shared coding bank + project tags)",
     "Coding + Life (coding bank + user bank)",

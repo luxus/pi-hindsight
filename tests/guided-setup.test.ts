@@ -184,6 +184,7 @@ describe("guided setup", () => {
           retain: vi.fn(),
           recall: vi.fn(),
           reflect: vi.fn(),
+          health: vi.fn(async () => ({ status: "ok" })),
         }),
         getConfig: () => DEFAULT_CONFIG,
         getProjectBankId: () => "project-bank",
