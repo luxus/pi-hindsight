@@ -125,10 +125,29 @@ export async function probeBankExistence(
   }
 }
 
+export type SetupBankResolveState = "existing" | "created" | "unverified";
+
+export type ResolvedSetupBank = {
+  bankId: string;
+  state: SetupBankResolveState;
+};
+
+/** One-line status after server + bank resolution. */
+export function formatSetupBankStatusLine(args: {
+  serverReachable: boolean;
+  banks: Array<{ kind: "project" | "user"; bankId: string; state: SetupBankResolveState }>;
+}): string {
+  const server = args.serverReachable ? "Server: reachable" : "Server: offline";
+  if (args.banks.length === 0) return server;
+  const bankParts = args.banks.map((bank) => `${bank.kind} bank ${bank.bankId}: ${bank.state}`);
+  return `${server} · ${bankParts.join(" · ")}`;
+}
+
 /**
  * Collect a bank ID, verify it against Hindsight, and confirm create when missing
  * so typos do not silently mint a new bank.
  * Returns undefined when the user cancels input.
+ * When offline, skips network probe/create and accepts the ID as unverified.
  */
 export async function resolveSetupBankId(args: {
   ctx: ExtensionCommandContext;
@@ -137,7 +156,8 @@ export async function resolveSetupBankId(args: {
   kind: "project" | "user";
   title: string;
   fallback: string;
-}): Promise<string | undefined> {
+  offline?: boolean;
+}): Promise<ResolvedSetupBank | undefined> {
   while (true) {
     const bankId = await askBankId({
       ctx: args.ctx,
@@ -151,13 +171,21 @@ export async function resolveSetupBankId(args: {
         args.ctx.ui.notify("User bank ID is required.", "warning");
         continue;
       }
-      return trimmed;
+      return { bankId: trimmed, state: "unverified" };
+    }
+
+    if (args.offline) {
+      args.ctx.ui.notify(
+        `Offline: accepting ${args.kind} bank ${trimmed} without server verification.`,
+        "info",
+      );
+      return { bankId: trimmed, state: "unverified" };
     }
 
     const existence = await probeBankExistence(args.client, trimmed);
     if (existence.status === "exists") {
       args.ctx.ui.notify(`Using existing ${args.kind} bank ${trimmed}.`, "info");
-      return trimmed;
+      return { bankId: trimmed, state: "existing" };
     }
 
     if (existence.status === "missing") {
@@ -189,7 +217,7 @@ export async function resolveSetupBankId(args: {
           });
         }
         args.ctx.ui.notify(`Created ${args.kind} bank ${trimmed}.`, "info");
-        return trimmed;
+        return { bankId: trimmed, state: "created" };
       } catch (error) {
         args.ctx.ui.notify(
           `Failed to create ${args.kind} bank ${trimmed}: ${error instanceof Error ? error.message : String(error)}`,
@@ -200,13 +228,15 @@ export async function resolveSetupBankId(args: {
     }
 
     // Profile API missing: cannot verify; keep prior behavior.
-    if (existence.error === "getBankProfile unavailable") return trimmed;
+    if (existence.error === "getBankProfile unavailable") {
+      return { bankId: trimmed, state: "unverified" };
+    }
 
     const proceed = await args.ctx.ui.confirm(
       `Could not verify ${args.kind} bank "${trimmed}"`,
       `${existence.error ?? "Unknown error"}. Continue with this ID anyway, or cancel to re-enter?`,
     );
-    if (proceed) return trimmed;
+    if (proceed) return { bankId: trimmed, state: "unverified" };
   }
 }
 
@@ -566,12 +596,13 @@ export async function runGuidedSetup(args: {
   args.ctx.ui.notify(setupDocsHint("Memory profiles", "/start/memory-profiles/"), "info");
 
   // Health-check Hindsight before profile/banks so missing server/key fails early.
-  const serverOk = await ensureServerConnectionForSetup({
+  const connection = await ensureServerConnectionForSetup({
     ctx: args.ctx,
     deps: args.deps,
     cwd: args.cwd,
   });
-  if (!serverOk) return false;
+  if (!connection.continue) return false;
+  const offline = connection.offline;
 
   const profile = await args.ctx.ui.select("Choose memory profile", [
     "Coding (shared coding bank + project tags)",
@@ -601,7 +632,13 @@ export async function runGuidedSetup(args: {
 
   const config = args.deps.getConfig();
   const client = args.deps.getClient();
-  const projectBankId = profileUsesProject(setupProfile)
+  const resolvedBanks: Array<{
+    kind: "project" | "user";
+    bankId: string;
+    state: SetupBankResolveState;
+  }> = [];
+
+  const projectBank = profileUsesProject(setupProfile)
     ? await resolveSetupBankId({
         ctx: args.ctx,
         client,
@@ -614,11 +651,15 @@ export async function runGuidedSetup(args: {
         fallback:
           config.banks.project.bankId ??
           (setupProfile === "isolated-only" ? args.deps.getProjectBankId() : "pi-coding"),
+        offline,
       })
     : undefined;
-  if (profileUsesProject(setupProfile) && projectBankId === undefined) return false;
+  if (profileUsesProject(setupProfile) && projectBank === undefined) return false;
+  if (projectBank?.bankId) {
+    resolvedBanks.push({ kind: "project", bankId: projectBank.bankId, state: projectBank.state });
+  }
 
-  const globalBankId = profileUsesUser(setupProfile)
+  const globalBank = profileUsesUser(setupProfile)
     ? await resolveSetupBankId({
         ctx: args.ctx,
         client,
@@ -626,12 +667,27 @@ export async function runGuidedSetup(args: {
         kind: "user",
         title: "User bank ID",
         fallback: config.banks.user.bankId ?? "",
+        offline,
       })
     : undefined;
-  if (profileUsesUser(setupProfile) && !globalBankId) {
+  if (profileUsesUser(setupProfile) && !globalBank) {
     args.ctx.ui.notify("User bank ID required for user memory profiles.", "warning");
     return false;
   }
+  if (globalBank?.bankId) {
+    resolvedBanks.push({ kind: "user", bankId: globalBank.bankId, state: globalBank.state });
+  }
+
+  args.ctx.ui.notify(
+    formatSetupBankStatusLine({
+      serverReachable: connection.serverReachable,
+      banks: resolvedBanks,
+    }),
+    "info",
+  );
+
+  const projectBankId = projectBank?.bankId;
+  const globalBankId = globalBank?.bankId;
 
   const patch = {
     ...buildGuidedSetupPatch({
@@ -650,11 +706,13 @@ export async function runGuidedSetup(args: {
   const summary = [
     `Profile: ${setupProfileChoiceToMemoryProfile(setupProfile)}`,
     `Agent use: ${agentUse}`,
+    `Server: ${connection.serverReachable ? "reachable" : "offline"}`,
     ...(projectBankId ? [`Project config: project bank ${projectBankId}`] : []),
     ...(globalBankId ? [`Global config: user bank ${globalBankId}`] : []),
     ...(setupProfile === "recall-only"
       ? ["Automatic retain: disabled; automatic recall: enabled"]
       : []),
+    ...(offline ? ["Offline: mental models and import will be skipped"] : []),
   ].join("\n");
   const confirmed = await args.ctx.ui.confirm("Write Pi Hindsight config?", summary);
   if (!confirmed) return false;
@@ -666,6 +724,14 @@ export async function runGuidedSetup(args: {
   }
   const result = await operations.configure(args.cwd, patch);
   args.ctx.ui.notify(`Wrote ${result.path}`, "info");
+
+  if (offline) {
+    args.ctx.ui.notify(
+      "Offline setup complete. Re-run guided setup or use hub (t / i) when the server is reachable for mental models and import.",
+      "info",
+    );
+    return true;
+  }
 
   await maybeOfferMentalModelsForSetup({
     ctx: args.ctx,

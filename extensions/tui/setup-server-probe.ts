@@ -17,6 +17,16 @@ export type ServerProbeResult = {
   error?: string;
 };
 
+/** Result of the guided-setup server connection step. */
+export type SetupServerConnection = {
+  /** false = cancel guided setup entirely */
+  continue: boolean;
+  /** true when proceeding without a reachable server (skip network offers) */
+  offline: boolean;
+  serverReachable: boolean;
+  baseUrl?: string;
+};
+
 function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/$/, "") || LOCAL_DEFAULT_BASE_URL;
 }
@@ -65,6 +75,16 @@ export function formatServerProbeFailure(args: {
     "",
     "Local embed often needs no key. Cloud / locked APIs need HINDSIGHT_API_KEY (or your env name).",
     "Cloud base URL comes from your Hindsight dashboard after signup — not a fixed public URL.",
+  ].join("\n");
+}
+
+export function formatApiKeyRestartRequired(envName: string): string {
+  return [
+    `Saved API key env ref “${envName}”, but it is not set in this Pi process.`,
+    `Export it, then restart Pi so the key is available:`,
+    `  export ${envName}=…`,
+    `  # restart Pi, then re-run /hindsight guided setup`,
+    "Or continue offline now for config-only setup (no mental models / import until online).",
   ].join("\n");
 }
 
@@ -125,15 +145,33 @@ export async function probeHindsightCandidates(args: {
   return { ok: undefined, attempts };
 }
 
+async function chooseOfflineOrCancel(
+  ctx: ExtensionCommandContext,
+  title: string,
+): Promise<SetupServerConnection> {
+  const choice = await ctx.ui.select(title, [
+    "Continue offline (config only)",
+    "Cancel guided setup",
+  ]);
+  if (!choice || choice === "Cancel guided setup") {
+    return { continue: false, offline: false, serverReachable: false };
+  }
+  ctx.ui.notify(
+    "Continuing guided setup offline. Mental models and import are skipped until a server is reachable.",
+    "warning",
+  );
+  return { continue: true, offline: true, serverReachable: false };
+}
+
 /**
  * Guided-setup step: health-check Hindsight, recover base URL / API key env, show docs.
- * Returns false if the user cancels guided setup.
+ * Returns offline=true when continuing without a reachable server (caller should skip MM/import).
  */
 export async function ensureServerConnectionForSetup(args: {
   ctx: ExtensionCommandContext;
   deps: MemoryOperationsDeps;
   cwd: string;
-}): Promise<boolean> {
+}): Promise<SetupServerConnection> {
   const { ctx, deps, cwd } = args;
   ctx.ui.notify(formatServerProbeDocs(), "info");
   ctx.ui.notify("Checking Hindsight server connectivity…", "info");
@@ -141,22 +179,48 @@ export async function ensureServerConnectionForSetup(args: {
   let config = deps.getConfig();
   let attempts = 0;
   const maxAttempts = 4;
+  /** After saving an env ref that is missing in-process, do not re-probe empty. */
+  let pendingKeyRestart = false;
 
   while (attempts < maxAttempts) {
     attempts += 1;
+
+    if (pendingKeyRestart) {
+      ctx.ui.notify(
+        "API key env is configured in project config but not loaded in this process. Restart Pi after exporting the key, or continue offline.",
+        "warning",
+      );
+      const choice = await ctx.ui.select("API key requires restart", [
+        "Cancel guided setup (export key + restart Pi)",
+        "Continue offline (config only)",
+      ]);
+      if (!choice || choice.startsWith("Cancel")) {
+        return { continue: false, offline: false, serverReachable: false };
+      }
+      ctx.ui.notify(
+        "Continuing guided setup offline. Mental models and import are skipped until a server is reachable.",
+        "warning",
+      );
+      return { continue: true, offline: true, serverReachable: false };
+    }
+
     const { ok, attempts: probeAttempts } = await probeHindsightCandidates({
       config,
       configuredClient: deps.getClient(),
     });
     if (ok) {
-      // Persist working base URL when it differs from config (e.g. fallback localhost).
       if (normalizeBaseUrl(config.hindsight.baseUrl) !== ok.baseUrl) {
         await createMemoryOperations(deps).configure(cwd, { baseUrl: ok.baseUrl });
         deps.reloadConfig?.(cwd);
         config = deps.getConfig();
       }
       ctx.ui.notify(formatServerProbeSuccess(ok), "info");
-      return true;
+      return {
+        continue: true,
+        offline: false,
+        serverReachable: true,
+        baseUrl: ok.baseUrl,
+      };
     }
 
     const apiKeyEnvLabel =
@@ -184,11 +248,12 @@ export async function ensureServerConnectionForSetup(args: {
           deps.reloadConfig?.(cwd);
           config = deps.getConfig();
           if (!hasResolvedApiKey(config)) {
-            ctx.ui.notify(
-              `Saved apiKey env ref “${envName.trim()}”, but it is not set in this process. Export it and restart Pi, or continue offline for config-only setup.`,
-              "warning",
-            );
+            ctx.ui.notify(formatApiKeyRestartRequired(envName.trim()), "warning");
+            pendingKeyRestart = true;
+            // Do not empty-reprobe; next loop handles restart vs offline.
+            continue;
           }
+          // Key resolved after reload (unlikely mid-process unless injected) → re-probe.
           continue;
         }
       }
@@ -216,18 +281,19 @@ export async function ensureServerConnectionForSetup(args: {
       "Continue offline (config only)",
       "Cancel guided setup",
     ]);
-    if (!choice || choice === "Cancel guided setup") return false;
+    if (!choice || choice === "Cancel guided setup") {
+      return { continue: false, offline: false, serverReachable: false };
+    }
     if (choice === "Retry health check") continue;
     ctx.ui.notify(
-      "Continuing guided setup offline. Memory network ops will fail until a server is reachable.",
+      "Continuing guided setup offline. Mental models and import are skipped until a server is reachable.",
       "warning",
     );
-    return true;
+    return { continue: true, offline: true, serverReachable: false };
   }
 
-  ctx.ui.notify(
-    "Continuing guided setup after multiple connection attempts. Fix server/key later via /hindsight (d deployment).",
-    "warning",
+  return chooseOfflineOrCancel(
+    ctx,
+    "Still no server after several attempts. Continue offline or cancel?",
   );
-  return true;
 }

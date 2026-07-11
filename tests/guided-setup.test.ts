@@ -8,6 +8,7 @@ import {
   buildGuidedSetupPatch,
   buildIgnoreRepoPatch,
   extractMentalModelNames,
+  formatSetupBankStatusLine,
   hasProjectHindsightConfig,
   importChoicesForSetup,
   maybeOfferHistoricalImportForSetup,
@@ -457,6 +458,10 @@ describe("guided setup", () => {
       "info",
     );
     expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Server: reachable · project bank project-bank: existing"),
+      "info",
+    );
+    expect(notify).toHaveBeenCalledWith(
       expect.stringContaining("1 mental model(s) already present"),
       "info",
     );
@@ -509,7 +514,7 @@ describe("guided setup", () => {
       ui: { notify, input, confirm, select: vi.fn() },
     } as never;
 
-    const bankId = await resolveSetupBankId({
+    const resolved = await resolveSetupBankId({
       ctx,
       client,
       config: DEFAULT_CONFIG,
@@ -518,7 +523,7 @@ describe("guided setup", () => {
       fallback: "pi-coding",
     });
 
-    expect(bankId).toBe("pi-coding");
+    expect(resolved).toEqual({ bankId: "pi-coding", state: "existing" });
     expect(createBank).not.toHaveBeenCalled();
     expect(confirm).toHaveBeenCalledWith(
       'Create project bank "typo-bank"?',
@@ -551,7 +556,7 @@ describe("guided setup", () => {
       ui: { notify, input, confirm, select: vi.fn() },
     } as never;
 
-    const bankId = await resolveSetupBankId({
+    const resolved = await resolveSetupBankId({
       ctx,
       client,
       config: DEFAULT_CONFIG,
@@ -560,11 +565,112 @@ describe("guided setup", () => {
       fallback: "pi-coding",
     });
 
-    expect(bankId).toBe("new-coding");
+    expect(resolved).toEqual({ bankId: "new-coding", state: "created" });
     expect(createBank).toHaveBeenCalledWith(
       "new-coding",
       expect.objectContaining({ name: "new-coding" }),
     );
     expect(notify).toHaveBeenCalledWith("Created project bank new-coding.", "info");
+  });
+
+  it("formats server and bank status line", () => {
+    expect(
+      formatSetupBankStatusLine({
+        serverReachable: true,
+        banks: [{ kind: "project", bankId: "pi-coding", state: "existing" }],
+      }),
+    ).toBe("Server: reachable · project bank pi-coding: existing");
+    expect(
+      formatSetupBankStatusLine({
+        serverReachable: false,
+        banks: [{ kind: "project", bankId: "pi-coding", state: "unverified" }],
+      }),
+    ).toBe("Server: offline · project bank pi-coding: unverified");
+  });
+
+  it("accepts bank ids offline without probing", async () => {
+    const getBankProfile = vi.fn();
+    const resolved = await resolveSetupBankId({
+      ctx: {
+        ui: {
+          notify: vi.fn(),
+          input: vi.fn().mockResolvedValueOnce("offline-bank"),
+          confirm: vi.fn(),
+        },
+      } as never,
+      client: {
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile,
+      },
+      config: DEFAULT_CONFIG,
+      kind: "project",
+      title: "Coding bank ID",
+      fallback: "pi-coding",
+      offline: true,
+    });
+    expect(resolved).toEqual({ bankId: "offline-bank", state: "unverified" });
+    expect(getBankProfile).not.toHaveBeenCalled();
+  });
+
+  it("skips mental models and import when server probe ends offline", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-offline-"));
+    const notify = vi.fn();
+    const applyBankTemplate = vi.fn();
+    const listMentalModels = vi.fn();
+    const confirm = vi
+      .fn()
+      // Decline API key env setup after failed probe
+      .mockResolvedValueOnce(false)
+      // Write config yes only (no MM / import prompts)
+      .mockResolvedValueOnce(true);
+    const ctx = {
+      cwd,
+      sessionManager: { getSessionFile: () => undefined },
+      ui: {
+        notify,
+        input: vi.fn().mockResolvedValueOnce("project-bank"),
+        select: vi
+          .fn()
+          // After key decline: Server still unreachable → offline
+          .mockResolvedValueOnce("Continue offline (config only)")
+          .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+        confirm,
+      },
+    } as never;
+
+    const completed = await runGuidedSetup({
+      ctx,
+      cwd,
+      deps: {
+        getClient: () => ({
+          retain: vi.fn(),
+          recall: vi.fn(),
+          reflect: vi.fn(),
+          // No health → check falls through and fails without network mock
+          getBankProfile: vi.fn(async () => {
+            throw Object.assign(new Error("ECONNREFUSED"), { status: 503 });
+          }),
+          listMentalModels,
+          importBankTemplate: applyBankTemplate,
+        }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "project-bank",
+      } as never,
+    });
+
+    expect(completed).toBe(true);
+    expect(hasProjectHindsightConfig(cwd)).toBe(true);
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Server: offline · project bank project-bank: unverified"),
+      "info",
+    );
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Offline setup complete"), "info");
+    expect(applyBankTemplate).not.toHaveBeenCalled();
+    expect(listMentalModels).not.toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(confirm.mock.calls[1]?.[0]).toBe("Write Pi Hindsight config?");
   });
 });

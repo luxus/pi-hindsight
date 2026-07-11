@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config/config-defaults.js";
 import {
   buildServerProbeCandidates,
+  formatApiKeyRestartRequired,
   formatServerProbeDocs,
   formatServerProbeFailure,
   formatServerProbeSuccess,
@@ -80,5 +81,12 @@ describe("setup server probe", () => {
     expect(ok?.baseUrl).toBe(LOCAL_DEFAULT_BASE_URL);
     expect(attempts).toHaveLength(2);
     expect(check).toHaveBeenCalledTimes(2);
+  });
+
+  it("formats API key restart guidance after env write without process value", () => {
+    const message = formatApiKeyRestartRequired("HINDSIGHT_API_KEY");
+    expect(message).toContain("export HINDSIGHT_API_KEY=");
+    expect(message).toMatch(/restart Pi/i);
+    expect(message).toMatch(/offline/i);
   });
 });

@@ -35,12 +35,12 @@ Rerun guided setup later with `g`.
 
 Guided setup handles:
 
-1. **server health check** — probe configured URL (fallback `http://localhost:8888`); if unreachable and no API key, offer `HINDSIGHT_API_KEY` env setup; if a key is set, offer an alternate Cloud/self-hosted base URL; docs links shown on this screen
+1. **server health check** — probe configured URL (fallback `http://localhost:8888`); if unreachable and no API key, offer `HINDSIGHT_API_KEY` env setup (restart required if the env is not in this process); if a key is set, offer an alternate Cloud/self-hosted base URL; docs links shown on this screen. Offline continue skips mental models and import.
 2. memory profile
 3. **agent use** (coding vs conversation)
-4. project and/or user bank target
-5. optional starter mental models (dry-run + confirm)
-6. optional dry-run-first historical import
+4. project and/or user bank target (existing vs create; one-line `Server: … · Bank: …` status)
+5. optional starter mental models (dry-run + confirm; skipped offline / when catalog already present)
+6. optional dry-run-first historical import (skipped offline)
 
 Setup also prints docs links for the current area, such as [memory profiles](/pi-hindsight/start/memory-profiles/) and [imports](/pi-hindsight/guides/importing-sessions/).
 
