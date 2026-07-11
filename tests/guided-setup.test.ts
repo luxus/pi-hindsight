@@ -11,7 +11,9 @@ import {
   hasProjectHindsightConfig,
   importChoicesForSetup,
   maybeOfferHistoricalImportForSetup,
+  probeBankExistence,
   probeBankMentalModels,
+  resolveSetupBankId,
   runGuidedSetup,
   selectMentalModelTargetsToOffer,
   setupProfileChoiceToMemoryProfile,
@@ -451,9 +453,118 @@ describe("guided setup", () => {
     expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
     expect(confirm.mock.calls[1]?.[0]).toBe("Preview historical import now?");
     expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Using existing project bank project-bank"),
+      "info",
+    );
+    expect(notify).toHaveBeenCalledWith(
       expect.stringContaining("1 mental model(s) already present"),
       "info",
     );
     expect(applyBankTemplate).not.toHaveBeenCalled();
+  });
+
+  it("probes bank existence for typo protection", async () => {
+    const getBankProfile = vi
+      .fn()
+      .mockResolvedValueOnce({ id: "ok" })
+      .mockRejectedValueOnce(Object.assign(new Error("not found"), { status: 404 }))
+      .mockRejectedValueOnce(new Error("timeout"));
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      getBankProfile,
+    };
+    await expect(probeBankExistence(client, "ok")).resolves.toEqual({ status: "exists" });
+    await expect(probeBankExistence(client, "missing")).resolves.toEqual({ status: "missing" });
+    await expect(probeBankExistence(client, "broken")).resolves.toEqual({
+      status: "unknown",
+      error: "timeout",
+    });
+    await expect(
+      probeBankExistence(
+        { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
+        "x",
+      ),
+    ).resolves.toEqual({ status: "unknown", error: "getBankProfile unavailable" });
+  });
+
+  it("confirms create for missing banks and re-prompts on decline", async () => {
+    const notify = vi.fn();
+    const input = vi.fn().mockResolvedValueOnce("typo-bank").mockResolvedValueOnce("pi-coding");
+    const confirm = vi.fn().mockResolvedValueOnce(false);
+    const getBankProfile = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error("not found"), { status: 404 }))
+      .mockResolvedValueOnce({ id: "pi-coding" });
+    const createBank = vi.fn();
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      getBankProfile,
+      createBank,
+    };
+    const ctx = {
+      ui: { notify, input, confirm, select: vi.fn() },
+    } as never;
+
+    const bankId = await resolveSetupBankId({
+      ctx,
+      client,
+      config: DEFAULT_CONFIG,
+      kind: "project",
+      title: "Coding bank ID",
+      fallback: "pi-coding",
+    });
+
+    expect(bankId).toBe("pi-coding");
+    expect(createBank).not.toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalledWith(
+      'Create project bank "typo-bank"?',
+      expect.stringContaining("typo protection"),
+    );
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Using existing project bank pi-coding"),
+      "info",
+    );
+  });
+
+  it("creates a missing bank after confirmation", async () => {
+    const notify = vi.fn();
+    const input = vi.fn().mockResolvedValueOnce("new-coding");
+    const confirm = vi.fn().mockResolvedValueOnce(true);
+    const getBankProfile = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error("not found"), { status: 404 }))
+      // ensureProjectBank re-checks existence before create
+      .mockRejectedValueOnce(Object.assign(new Error("not found"), { status: 404 }));
+    const createBank = vi.fn(async () => ({ id: "new-coding" }));
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      getBankProfile,
+      createBank,
+    };
+    const ctx = {
+      ui: { notify, input, confirm, select: vi.fn() },
+    } as never;
+
+    const bankId = await resolveSetupBankId({
+      ctx,
+      client,
+      config: DEFAULT_CONFIG,
+      kind: "project",
+      title: "Coding bank ID",
+      fallback: "pi-coding",
+    });
+
+    expect(bankId).toBe("new-coding");
+    expect(createBank).toHaveBeenCalledWith(
+      "new-coding",
+      expect.objectContaining({ name: "new-coding" }),
+    );
+    expect(notify).toHaveBeenCalledWith("Created project bank new-coding.", "info");
   });
 });

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import { ensureGlobalBank, ensureProjectBank } from "../banks/bank-operations.js";
 import {
   createMemoryOperations,
   type MemoryOperations,
@@ -95,6 +96,118 @@ async function askBankId(args: {
   const value = await args.ctx.ui.input(args.title, args.fallback);
   if (value === undefined) return undefined;
   return value.trim() || args.fallback;
+}
+
+export type BankExistence =
+  | { status: "exists" }
+  | { status: "missing" }
+  | { status: "unknown"; error?: string };
+
+/** Check whether a bank ID already exists in Hindsight (typo protection for setup). */
+export async function probeBankExistence(
+  client: HindsightLikeClient,
+  bankId: string,
+): Promise<BankExistence> {
+  const id = bankId.trim();
+  if (!id) return { status: "unknown", error: "missing bank id" };
+  if (!client.getBankProfile) {
+    return { status: "unknown", error: "getBankProfile unavailable" };
+  }
+  try {
+    await client.getBankProfile(id);
+    return { status: "exists" };
+  } catch (error) {
+    if (isNotFoundError(error)) return { status: "missing" };
+    return {
+      status: "unknown",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Collect a bank ID, verify it against Hindsight, and confirm create when missing
+ * so typos do not silently mint a new bank.
+ * Returns undefined when the user cancels input.
+ */
+export async function resolveSetupBankId(args: {
+  ctx: ExtensionCommandContext;
+  client: HindsightLikeClient;
+  config: ResolvedConfig;
+  kind: "project" | "user";
+  title: string;
+  fallback: string;
+}): Promise<string | undefined> {
+  while (true) {
+    const bankId = await askBankId({
+      ctx: args.ctx,
+      title: args.title,
+      fallback: args.fallback,
+    });
+    if (bankId === undefined) return undefined;
+    const trimmed = bankId.trim();
+    if (!trimmed) {
+      if (args.kind === "user") {
+        args.ctx.ui.notify("User bank ID is required.", "warning");
+        continue;
+      }
+      return trimmed;
+    }
+
+    const existence = await probeBankExistence(args.client, trimmed);
+    if (existence.status === "exists") {
+      args.ctx.ui.notify(`Using existing ${args.kind} bank ${trimmed}.`, "info");
+      return trimmed;
+    }
+
+    if (existence.status === "missing") {
+      const create = await args.ctx.ui.confirm(
+        `Create ${args.kind} bank "${trimmed}"?`,
+        `No bank with this ID was found in Hindsight. Confirm create, or cancel to re-enter the ID (typo protection).`,
+      );
+      if (!create) {
+        args.ctx.ui.notify("Bank ID not created. Re-enter the correct bank ID.", "info");
+        continue;
+      }
+      if (!args.client.createBank) {
+        args.ctx.ui.notify(
+          "Hindsight client cannot create banks. Re-enter an existing bank ID or fix client support.",
+          "error",
+        );
+        continue;
+      }
+      try {
+        if (args.kind === "project") {
+          await ensureProjectBank(args.client, trimmed, {
+            ...args.config.banks.project,
+            enableObservations: args.config.observations.enabled,
+          });
+        } else {
+          await ensureGlobalBank(args.client, trimmed, {
+            ...args.config.banks.user,
+            enableObservations: args.config.observations.enabled,
+          });
+        }
+        args.ctx.ui.notify(`Created ${args.kind} bank ${trimmed}.`, "info");
+        return trimmed;
+      } catch (error) {
+        args.ctx.ui.notify(
+          `Failed to create ${args.kind} bank ${trimmed}: ${error instanceof Error ? error.message : String(error)}`,
+          "error",
+        );
+        continue;
+      }
+    }
+
+    // Profile API missing: cannot verify; keep prior behavior.
+    if (existence.error === "getBankProfile unavailable") return trimmed;
+
+    const proceed = await args.ctx.ui.confirm(
+      `Could not verify ${args.kind} bank "${trimmed}"`,
+      `${existence.error ?? "Unknown error"}. Continue with this ID anyway, or cancel to re-enter?`,
+    );
+    if (proceed) return trimmed;
+  }
 }
 
 export function importChoicesForSetup(args: {
@@ -487,9 +600,13 @@ export async function runGuidedSetup(args: {
     : ("coding" as const);
 
   const config = args.deps.getConfig();
+  const client = args.deps.getClient();
   const projectBankId = profileUsesProject(setupProfile)
-    ? await askBankId({
+    ? await resolveSetupBankId({
         ctx: args.ctx,
+        client,
+        config,
+        kind: "project",
         title:
           setupProfile === "isolated-only"
             ? "Isolated project bank ID (optional; leave default for path-derived)"
@@ -502,8 +619,11 @@ export async function runGuidedSetup(args: {
   if (profileUsesProject(setupProfile) && projectBankId === undefined) return false;
 
   const globalBankId = profileUsesUser(setupProfile)
-    ? await askBankId({
+    ? await resolveSetupBankId({
         ctx: args.ctx,
+        client,
+        config,
+        kind: "user",
         title: "User bank ID",
         fallback: config.banks.user.bankId ?? "",
       })
@@ -550,7 +670,7 @@ export async function runGuidedSetup(args: {
   await maybeOfferMentalModelsForSetup({
     ctx: args.ctx,
     operations,
-    client: args.deps.getClient(),
+    client,
     agentUse,
     setupProfile,
     ...(projectBankId !== undefined ? { projectBankId } : {}),
