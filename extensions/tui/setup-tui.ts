@@ -11,6 +11,7 @@ import {
 } from "../queue/flush-presenter.js";
 import { defaultTemplateIdFor, listBankTemplatesForAgentUse } from "../banks/bank-templates.js";
 import {
+  buildIgnoreRepoPatch,
   hasProjectHindsightConfig,
   maybeOfferHistoricalImportForSetup,
   runGuidedSetup,
@@ -172,6 +173,23 @@ async function handleInitConfig(
   );
 }
 
+async function handleIgnoreRepo(
+  ctx: ExtensionCommandContext,
+  deps: MemoryOperationsDeps,
+): Promise<boolean> {
+  const confirmed = await ctx.ui.confirm(
+    "Ignore Hindsight in this repo?",
+    "Writes project config with enabled=false and setupComplete=true so automatic memory stays off and setup will not keep prompting. Re-enable later from the hub (enabled field) or by editing .pi/hindsight.json.",
+  );
+  if (!confirmed) return false;
+  const result = await createMemoryOperations(deps).configure(ctx.cwd, buildIgnoreRepoPatch());
+  ctx.ui.notify(
+    `Wrote ${result.path}: Hindsight disabled for this repo (enabled=false). Open /hindsight hub to re-enable.`,
+    "info",
+  );
+  return true;
+}
+
 export async function runHindsightSetupTui(
   ctx: ExtensionCommandContext,
   deps: MemoryOperationsDeps,
@@ -181,10 +199,14 @@ export async function runHindsightSetupTui(
     const choice = await ctx.ui.select("No project Hindsight config found", [
       "Guided setup",
       "Open hub",
-      "Skip",
+      "Ignore this repo",
+      "Skip for now",
     ]);
     if (choice === "Guided setup") await runGuidedSetup({ ctx, deps, cwd: ctx.cwd });
-    if (choice === "Skip" || !choice) return;
+    else if (choice === "Ignore this repo") {
+      await handleIgnoreRepo(ctx, deps);
+      return;
+    } else if (choice === "Skip for now" || !choice) return;
   }
   while (true) {
     const config = deps.getConfig();

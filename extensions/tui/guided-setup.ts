@@ -77,6 +77,14 @@ export function buildGuidedSetupGlobalPatch(args: {
   };
 }
 
+/**
+ * Durable per-repo opt-out: automatic memory stays off and setup gate is satisfied
+ * so `/hindsight` stops re-prompting for guided setup.
+ */
+export function buildIgnoreRepoPatch(): ProjectConfigPatchInput {
+  return { enabled: false, setupComplete: true };
+}
+
 async function askBankId(args: {
   ctx: ExtensionCommandContext;
   title: string;

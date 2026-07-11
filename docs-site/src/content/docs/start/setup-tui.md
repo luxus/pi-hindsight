@@ -24,7 +24,14 @@ The hub shows status first (profile, agent use, banks, queue, receipts). Press `
 
 ## Guided setup
 
-If no project config exists, `/hindsight` offers guided setup. Rerun later with `g`.
+If no project config exists, `/hindsight` offers:
+
+- **Guided setup** — configure profile, banks, optional mental models and import
+- **Open hub** — open status/settings without finishing setup first
+- **Ignore this repo** — durable opt-out: writes project config with `enabled: false` and `setupComplete: true` so automatic memory stays off and setup will not keep prompting. Re-enable later from the hub **enabled** field (advanced) or by editing `.pi/hindsight.json`
+- **Skip for now** — dismiss only this prompt; does not write config
+
+Rerun guided setup later with `g`.
 
 Guided setup handles:
 

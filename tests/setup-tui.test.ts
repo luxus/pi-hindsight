@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { buildConfigEditingTabs } from "../extensions/config/config-editing-model.js";
 import {
   buildRetainReceiptStatusFacts,
   createSetupComponent,
+  runHindsightSetupTui,
 } from "../extensions/tui/setup-tui.js";
 import { HUB_ACTION_HELP } from "../extensions/tui/setup-tui-types.js";
 
@@ -79,5 +83,69 @@ describe("setup TUI receipt facts", () => {
       { showAdvanced: true },
     );
     expect(advanced.map((tab) => tab.id)).toContain("Banks");
+  });
+
+  it("writes durable ignore-repo config from no-config prompt", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ignore-repo-"));
+    const notify = vi.fn();
+    const ctx = {
+      cwd,
+      sessionManager: { getSessionFile: () => undefined },
+      ui: {
+        notify,
+        select: vi.fn().mockResolvedValueOnce("Ignore this repo"),
+        confirm: vi.fn().mockResolvedValueOnce(true),
+        custom: vi.fn(),
+        input: vi.fn(),
+      },
+    } as never;
+
+    await runHindsightSetupTui(ctx, {
+      getClient: () => ({
+        retain: vi.fn(),
+        recall: vi.fn(),
+        reflect: vi.fn(),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    } as never);
+
+    const written = JSON.parse(readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")) as {
+      enabled: boolean;
+      setupComplete: boolean;
+    };
+    expect(written.enabled).toBe(false);
+    expect(written.setupComplete).toBe(true);
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Hindsight disabled for this repo"),
+      "info",
+    );
+  });
+
+  it("does not write ignore-repo config when confirm is declined", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-ignore-decline-"));
+    const ctx = {
+      cwd,
+      sessionManager: { getSessionFile: () => undefined },
+      ui: {
+        notify: vi.fn(),
+        select: vi.fn().mockResolvedValueOnce("Ignore this repo"),
+        confirm: vi.fn().mockResolvedValueOnce(false),
+        custom: vi.fn(),
+        input: vi.fn(),
+      },
+    } as never;
+
+    await runHindsightSetupTui(ctx, {
+      getClient: () => ({
+        retain: vi.fn(),
+        recall: vi.fn(),
+        reflect: vi.fn(),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "project-bank",
+    } as never);
+
+    expect(() => readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")).toThrow();
   });
 });

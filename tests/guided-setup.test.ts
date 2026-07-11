@@ -6,6 +6,7 @@ import { DEFAULT_CONFIG } from "../extensions/config/config-defaults.js";
 import {
   buildGuidedSetupGlobalPatch,
   buildGuidedSetupPatch,
+  buildIgnoreRepoPatch,
   hasProjectHindsightConfig,
   importChoicesForSetup,
   maybeOfferHistoricalImportForSetup,
@@ -47,6 +48,10 @@ describe("guided setup", () => {
     expect(setupProfileChoiceToMemoryProfile("project-only")).toBe("project-only");
     expect(setupProfileChoiceToMemoryProfile("user-only")).toBe("global-only");
     expect(setupProfileChoiceToMemoryProfile("recall-only")).toBe("recall-only");
+  });
+
+  it("builds durable ignore-repo patch", () => {
+    expect(buildIgnoreRepoPatch()).toEqual({ enabled: false, setupComplete: true });
   });
 
   it("builds profile and bank patches without inventing global bank IDs", () => {
