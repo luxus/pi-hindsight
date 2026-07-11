@@ -167,11 +167,14 @@ export async function resolveSetupBankId(args: {
     if (bankId === undefined) return undefined;
     const trimmed = bankId.trim();
     if (!trimmed) {
-      if (args.kind === "user") {
-        args.ctx.ui.notify("User bank ID is required.", "warning");
-        continue;
-      }
-      return { bankId: trimmed, state: "unverified" };
+      // Empty IDs are never valid config values (askBankId already falls back when possible).
+      args.ctx.ui.notify(
+        args.kind === "user"
+          ? "User bank ID is required."
+          : "Project bank ID is required (cannot be empty).",
+        "warning",
+      );
+      continue;
     }
 
     if (args.offline) {

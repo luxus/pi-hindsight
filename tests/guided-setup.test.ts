@@ -614,6 +614,32 @@ describe("guided setup", () => {
     expect(getBankProfile).not.toHaveBeenCalled();
   });
 
+  it("re-prompts when project bank id would be empty", async () => {
+    const notify = vi.fn();
+    const input = vi.fn().mockResolvedValueOnce("").mockResolvedValueOnce("pi-coding");
+    const resolved = await resolveSetupBankId({
+      ctx: {
+        ui: { notify, input, confirm: vi.fn() },
+      } as never,
+      client: {
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile: vi.fn(async () => ({ id: "pi-coding" })),
+      },
+      config: DEFAULT_CONFIG,
+      kind: "project",
+      title: "Coding bank ID",
+      fallback: "",
+    });
+    expect(resolved).toEqual({ bankId: "pi-coding", state: "existing" });
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Project bank ID is required"),
+      "warning",
+    );
+    expect(input).toHaveBeenCalledTimes(2);
+  });
+
   it("skips mental models and import when server probe ends offline", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-offline-"));
     const notify = vi.fn();
