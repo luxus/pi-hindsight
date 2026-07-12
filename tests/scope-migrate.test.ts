@@ -117,7 +117,7 @@ describe("scope migrate dry-run", () => {
       projectBankId: "kai-coding",
     });
     const receipt = await writeScopeMigrateReceipt(cwd, plan);
-    expect(receipt.receiptPath).toContain(".pi/hindsight/scope-migrate-receipt.json");
+    expect(receipt.receiptPath).toBe(join(cwd, ".pi", "hindsight", "scope-migrate-receipt.json"));
     const raw = JSON.parse(readFileSync(receipt.receiptPath, "utf8")) as { rewrite: string };
     expect(raw.rewrite).toBe("none");
   });
