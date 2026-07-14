@@ -53,8 +53,8 @@ describe("bank operations", () => {
     expect(createBank).toHaveBeenCalledWith(
       "project-bank",
       expect.objectContaining({
-        reflectMission: expect.stringContaining("project-specific architecture"),
-        retainMission: expect.stringContaining("durable project memory"),
+        reflectMission: expect.stringContaining("senior developer"),
+        retainMission: expect.stringContaining("technical decisions"),
         observationsMission: expect.stringContaining("durable project patterns"),
       }),
     );
@@ -126,8 +126,8 @@ describe("bank operations", () => {
     expect(createBank).toHaveBeenCalledWith(
       "project-bank",
       expect.objectContaining({
-        reflectMission: expect.stringContaining("project-specific architecture"),
-        retainMission: expect.stringContaining("durable project memory"),
+        reflectMission: expect.stringContaining("senior developer"),
+        retainMission: expect.stringContaining("technical decisions"),
         observationsMission: expect.stringContaining("durable project patterns"),
       }),
     );
@@ -140,9 +140,9 @@ describe("bank operations", () => {
     expect(createBank).toHaveBeenCalledWith(
       "global-bank",
       expect.objectContaining({
-        reflectMission: expect.stringContaining("cross-project user preferences"),
-        retainMission: expect.stringContaining("Do not retain repo-specific code facts"),
-        observationsMission: expect.stringContaining("cross-project user preferences"),
+        reflectMission: expect.stringContaining("cross-project context"),
+        retainMission: expect.stringContaining("repo-specific code facts"),
+        observationsMission: expect.stringContaining("cross-project preferences"),
         retainExtractionMode: "concise",
         enableObservations: true,
       }),

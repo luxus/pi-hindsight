@@ -13,6 +13,14 @@ Starter suggestions live here and in `extensions/banks/bank-templates.ts` (keep 
 - **Agent use** selects which seed set applies: `coding` vs `conversation` (real-life / chat agents).
 - Tags on seeds must be a subset of retain tags (`source:pi`) so refresh is not empty.
 - When models have content, automatic context injects them ephemerally under `<hindsight-mental-models>`; retain strips that injection like recall blocks.
+- Seed `max_tokens` stays lean (600 prefs / 800 project) so inject does not dominate every turn (see [coding-memory-evaluation.md](coding-memory-evaluation.md)).
+- Template triggers use `mode: delta`, `refresh_after_consolidation: true`, observation-first refresh, and `exclude_mental_models` (oh-my-pi / Claude Code pattern).
+
+## Coding bank-global (shared coding bank)
+
+| Name                                   | Source query (summary)                                                             | Why              |
+| -------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
+| Coding assistant operating preferences | Durable plan/verify/commit/tool + clarification style; exclude probe harness rules | Cross-repo prefs |
 
 ## Coding project bank
 

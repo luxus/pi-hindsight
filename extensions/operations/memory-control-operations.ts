@@ -300,6 +300,7 @@ export function createControlOperations(deps: MemoryOperationsDeps) {
             ...(args.id ? { id: args.id } : {}),
             tags,
             ...(args.maxTokens !== undefined ? { maxTokens: args.maxTokens } : {}),
+            // Client maps only refreshAfterConsolidation; template import carries full delta trigger.
             trigger: { refreshAfterConsolidation: true },
           });
           return { bankId, result };

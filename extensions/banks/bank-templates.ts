@@ -44,10 +44,22 @@ function bankConfigFromMissions(missions: BankMissionDefaults): BankTemplateConf
 // Project-tier models get project:<id> stamped at apply time (resolveBankTemplateManifest).
 const RETAIN_COMPAT_TAGS = ["source:pi"] as const;
 
-/** Default after observations consolidation; matches agent createMentalModel path. */
-const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]> = {
+/**
+ * Coding-agent MM refresh defaults (oh-my-pi / Claude Code / Hindsight deep dive):
+ * delta folds new evidence; refresh after consolidation; observations-first; no MM→MM feedback.
+ * Template import sends the full trigger object; agent create is limited by the TS client mapping
+ * (refreshAfterConsolidation only) until the client maps mode/fact_types.
+ */
+export const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]> = {
+  mode: "delta",
   refresh_after_consolidation: true,
+  fact_types: ["observation"],
+  exclude_mental_models: true,
 };
+
+/** Seed max_tokens: keep inject lean (AMB cost; inject shares mentalModels.maxChars). */
+export const DEFAULT_MM_MAX_TOKENS_PREFS = 600;
+export const DEFAULT_MM_MAX_TOKENS_PROJECT = 800;
 
 // Bank-global on shared coding bank (no project:* tag) — injects for every project.
 const CODING_BANK_GLOBAL_MENTAL_MODELS: BankTemplateMentalModel[] = [
@@ -57,7 +69,7 @@ const CODING_BANK_GLOBAL_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable preferences has the user shown for how coding assistants should plan, verify, commit, use tools, and communicate across repositories? Especially capture clarification style: whether questions are welcome, when to ask (up front vs mid-task), and that questions should be high-signal (not answerable by the agent alone). Exclude one-off probe/bait/test session constraints such as temporary 'do not ask questions; just execute' rules. Capture only stable cross-project habits.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
 ];
@@ -70,7 +82,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What are the stable architecture boundaries, modules, and seams in this project?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 800,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PROJECT,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -79,7 +91,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What are this project's conventions for code style, build, testing, release, and review? Only include conventions explicit in the project or repeatedly enforced.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 800,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PROJECT,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -88,7 +100,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable architectural or product decisions have been made for this project, and what rationale or trade-offs were recorded? Exclude transient plans and active task state.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 800,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PROJECT,
     trigger: DEFAULT_MM_TRIGGER,
   },
 ];
@@ -101,7 +113,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What goals, commitments, deadlines, and open loops is the user tracking in this context? Prefer durable ongoing items over one-off chat filler.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 800,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PROJECT,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -110,7 +122,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "Which people, roles, relationships, and recurring situations matter here? Capture only durable context the assistant needs, not sensitive private details.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -119,7 +131,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable decisions, preferences, and constraints has the user stated for this conversation or life domain? Exclude one-off requests.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 800,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PROJECT,
     trigger: DEFAULT_MM_TRIGGER,
   },
 ];
@@ -131,7 +143,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable preferences has the user shown for collaboration, review, autonomy, and communication?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -140,7 +152,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable preferences has the user shown for how coding assistants should plan, verify, commit, and use tools?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -149,7 +161,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What workflow habits recur across the user's repositories, issue tracking, PR review, and release process?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
 ];
@@ -161,7 +173,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What durable preferences has the user shown for tone, length, language, and how the assistant should respond?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -170,7 +182,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "What recurring real-life workflows, planning habits, and task-management preferences does the user express across conversations?",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
   {
@@ -179,7 +191,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
     source_query:
       "How does the user prefer to prioritize, schedule, and trade off time across personal and work tasks? Capture durable patterns only.",
     tags: [...RETAIN_COMPAT_TAGS],
-    max_tokens: 600,
+    max_tokens: DEFAULT_MM_MAX_TOKENS_PREFS,
     trigger: DEFAULT_MM_TRIGGER,
   },
 ];

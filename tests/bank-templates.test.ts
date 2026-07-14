@@ -64,10 +64,16 @@ describe("bank templates", () => {
     );
   });
 
-  it("sets refresh_after_consolidation on bundled mental models", () => {
+  it("uses delta refresh defaults on bundled mental models", () => {
     for (const template of BUILT_IN_BANK_TEMPLATES) {
       for (const model of template.manifest.mental_models ?? []) {
-        expect(model.trigger?.refresh_after_consolidation).toBe(true);
+        expect(model.trigger).toMatchObject({
+          mode: "delta",
+          refresh_after_consolidation: true,
+          fact_types: ["observation"],
+          exclude_mental_models: true,
+        });
+        expect(model.max_tokens).toBeLessThanOrEqual(800);
       }
     }
   });

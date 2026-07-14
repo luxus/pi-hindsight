@@ -63,6 +63,10 @@ export default defineConfig({
               label: "Starter mental model suggestions",
               slug: "concepts/starter-mental-model-suggestions",
             },
+            {
+              label: "Coding memory evaluation",
+              slug: "concepts/coding-memory-evaluation",
+            },
           ],
         },
         {

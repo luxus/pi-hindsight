@@ -28,7 +28,8 @@
     "docs/risky-memory-modes.md",
     "docs/next-opt-out-design.md",
     "docs/surface-reference.md",
-    "docs/starter-mental-model-suggestions.md"
+    "docs/starter-mental-model-suggestions.md",
+    "docs/coding-memory-evaluation.md"
   ],
   "type": "module",
   "publishConfig": {

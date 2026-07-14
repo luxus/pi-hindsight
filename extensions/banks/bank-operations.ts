@@ -1,22 +1,22 @@
 import type { BankMissionSettings, HindsightLikeClient } from "../types.js";
 
 const DEFAULT_PROJECT_REFLECT_MISSION =
-  "Help a Pi coding agent recall project-specific architecture, engineering decisions, conventions, tasks, bugs, fixes, constraints, and continuity.";
+  "You are a senior developer helping a Pi coding agent. Prefer past technical decisions, architecture trade-offs, conventions, and constraints. Be direct and opinionated when memory supports it; do not invent facts not grounded in memory.";
 
 const DEFAULT_PROJECT_RETAIN_MISSION =
-  "Extract durable project memory from raw Pi coding sessions: architecture decisions, constraints, bugs, fixes, TODOs, repo conventions, and project-local user preferences. Ignore transient chatter, secrets, and resurfaced recalled memories unless they add a new correction or decision.";
+  "Always extract technical decisions, API/architecture trade-offs, blockers, error resolutions, repo conventions, and durable project-local preferences. Ignore greetings, small talk, scheduling logistics, secrets, probe/bait harness instructions (e.g. temporary 'do not ask questions' test rules), and resurfaced recalled memory unless it adds a new correction or decision.";
 
 const DEFAULT_PROJECT_OBSERVATIONS_MISSION =
-  "Identify durable project patterns, recurring constraints, architectural preferences, and contradictions across Pi coding sessions. Focus on stable repo-relevant knowledge, not transient task state.";
+  "Identify evolving durable project patterns, recurring constraints, architectural preferences, and contradictions with prior knowledge. Focus on stable repo-relevant knowledge — not transient task state, one-off plans, or test-harness noise.";
 
 const DEFAULT_GLOBAL_REFLECT_MISSION =
-  "Help a Pi coding agent recall durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior guidance.";
+  "You are a coding assistant with durable cross-project context. Personalize using stable user preferences, workflows, and communication style. Be direct; prefer high-signal clarifications over speculation.";
 
 const DEFAULT_GLOBAL_RETAIN_MISSION =
-  "Extract durable cross-project memory from raw Pi sessions: user preferences, recurring workflows, coding habits, and stable assistant behavior. Do not retain repo-specific code facts, file paths, project-local bugs, or transcript dumps unless they generalize across projects.";
+  "Extract durable cross-project memory: user preferences (including clarification/communication style), recurring workflows, coding habits, and stable assistant behavior. Ignore greetings, secrets, probe/bait session rules, repo-specific code facts, file paths, and project-local bugs unless they generalize across projects.";
 
 const DEFAULT_GLOBAL_OBSERVATIONS_MISSION =
-  "Identify durable cross-project user preferences, recurring workflows, coding habits, and stable assistant behavior patterns. Ignore repo-specific implementation details unless they generalize across projects.";
+  "Identify durable cross-project preferences, recurring workflows, coding habits, and stable assistant behavior patterns. Highlight contradictions with prior knowledge. Ignore repo-specific implementation details and one-off probe constraints unless they generalize.";
 
 export interface BankMissionDefaults {
   reflectMission: string;

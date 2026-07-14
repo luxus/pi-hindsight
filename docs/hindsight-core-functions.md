@@ -110,9 +110,9 @@ Good mental model examples:
 - “What recurring workflow habits matter?”
 - “What does this project consider good design?”
 
-Mental models are not raw recall. They are reusable synthesized answers. In Pi Hindsight they are explicit advanced resources. Pi's `/hindsight` TUI shows a read-only list/detail view and hands off create, edit, refresh, and delete to the Hindsight web interface. The extension must not auto-create mental models from routine sessions or refresh them in the background unless a future issue designs that policy. Starter suggestions are documented in [`starter-mental-model-suggestions.md`](starter-mental-model-suggestions.md).
+Mental models are not raw recall. They are reusable synthesized answers. In Pi Hindsight they are explicit advanced resources (setup / hub `t` / agent control plane). The extension must not auto-create mental models from routine sessions. Starter suggestions are documented in [`starter-mental-model-suggestions.md`](starter-mental-model-suggestions.md). Evaluation alignment notes: [`coding-memory-evaluation.md`](coding-memory-evaluation.md).
 
-Creating a mental model preserves a source query. Hindsight runs that query through reflect and stores the generated content. Refresh reruns the stored source query against newer memory.
+Creating a mental model preserves a source query. Hindsight runs that query through reflect and stores the generated content. Bundled templates set `trigger.mode: delta` and `refresh_after_consolidation: true` so consolidation folds new observations without full rewrites every time (server-side; not a Pi background job).
 
 ```text
 Observations  = facts learned from repetition
