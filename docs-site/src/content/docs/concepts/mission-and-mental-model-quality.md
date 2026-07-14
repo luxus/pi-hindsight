@@ -54,6 +54,59 @@ Propose `hindsight_bank` `update_mission` (dry-run) when:
 
 Do **not** churn missions every session.
 
+## When optimization is worth it (signals)
+
+Optimize only when a **repeatable problem** shows up—not because content is imperfect once.
+
+### Mental-model signals (inspect inject + `hindsight_mental_model` list/get)
+
+| Signal                        | What you see                                                                                                 | Likely fix                                                                                                                   | Priority                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Broken / empty content**    | Inject or get shows `"#"`, empty body, “Generating…”, or only a title                                        | `refresh`; if still empty after retain has landed, check tags ⊆ retain tags; clear+refresh if delta-drifted                  | **High** — do this session                  |
+| **Wrong durable policy**      | Prefs MM contradicts the user’s stated preference (e.g. “never ask” vs wants high-signal questions)          | Explicit `hindsight_retain` of the correct pref → then refresh prefs MM; tighten `source_query` if probe noise keeps winning | **High**                                    |
+| **Missing project starters**  | Active `project:<id>` has no architecture/conventions/decisions models; bank only has other projects’ models | Propose apply/create starters for **this** project (+ bank-global prefs if missing)                                          | **High** on setup / first real work in repo |
+| **Inject always truncated**   | Blocks end mid-sentence; one model dominates (multi‑k chars, e.g. 8k–12k) while others starve                | Cap `max_tokens` (600–800), refresh fat model; don’t add more models                                                         | **Medium**                                  |
+| **Stale after big decisions** | User finished a real architecture/product choice; MM still describes the old world                           | Wait until retain finished (next turn+); refresh `project-decisions` (and architecture if seams changed)                     | **Medium** — after the decision is retained |
+| **Recurring same question**   | Every session user asks the same durable “how do we X?”                                                      | One new MM for that **single** dimension, lean max_tokens                                                                    | **Medium**                                  |
+| **Cross-project bleed**       | Prefs or decisions clearly about another repo appear under this project’s inject                             | Fix tags (project vs bank-global); never “fix” by editing another project’s ids while working here                           | **High** if isolation broken                |
+| **Noise as “facts”**          | Probe/bait/test harness text treated as durable prefs                                                        | Retain correction + refresh; mission ignore-list for probes; don’t import bait sessions                                      | **Medium**                                  |
+| **Slightly imperfect prose**  | Wording could be nicer but policy is right                                                                   | Leave it; delta refresh after consolidation is enough                                                                        | **Low** — do not nag                        |
+
+### Mission signals (`hindsight_bank` get + memory quality over several sessions)
+
+| Signal                      | What you see                                                                  | Likely fix                                                             | Priority                          |
+| --------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------- |
+| **Noise flood**             | Recall full of greets, scheduling, tool-probe rules, one-off chat             | Tighten **retain** mission ignore-list                                 | Medium–High if multi-session      |
+| **Missing decisions**       | Real architecture choices never appear in recall/MMs after real work          | Broaden retain “extract decisions/trade-offs”; keep ignore list        | Medium                            |
+| **Transient as durable**    | Observations track active TODOs / “today we…” as eternal truth                | Observations mission: durable only, contradictions, not task state     | Medium                            |
+| **Wrong persona**           | Reflect answers like a generic chatbot or wrong domain (coding vs life)       | Align reflect mission with bank role (coding project vs life user)     | Medium when reflect is used       |
+| **Coding vs life mismatch** | Life bank extract file paths/PRs; coding bank extract pure calendar chit-chat | Use life vs global defaults (`defaultLifeBankMissions` vs coding user) | High only if life bank is enabled |
+
+### Cadence (how often to even look)
+
+| Cadence                                        | Action                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Session start / first work in a repo**       | Quick: expected project starters present? Prefs MM non-empty and not obviously wrong? |
+| **After a major decision or multi-hour slice** | Optional: refresh decisions/architecture **after** retain has had a chance to land    |
+| **User complains about memory**                | Full inspect (status, scope, list MMs, bank missions); propose a **small** patch list |
+| **Not every turn**                             | No “shall I refresh mental models?” spam                                              |
+
+### Priority order when several things look off
+
+1. Broken/empty MM content or isolation bleed
+2. Prefs contradicting the user
+3. Missing starters for **this** project
+4. Fat inject / truncation
+5. Mission noise (only if pattern spans sessions)
+6. Polish / “could be nicer”
+
+### Cost check before proposing
+
+Ask: will this change save **future** turns or only rephrase once?
+
+- **Yes (optimize):** empty prefs, wrong “never ask”, 12k decisions eating inject, missing project MMs.
+- **No (skip):** single awkward sentence, one stale bullet that recall already covers, speculative “maybe add 5 more models.”
+
 ## Mental models — what “good” looks like
 
 | Field            | Good                                                                     | Bad                                  |
@@ -77,14 +130,7 @@ Conversation/life seeds: goals, people/context, decisions/preferences (see start
 
 ### When to propose mental-model actions
 
-| Signal                                                                                   | Proposal                                                                           |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Missing expected starter for active project (domain-tagged bank has other projects only) | Create/apply starters for **this** `project:<id>` + bank-global prefs if missing   |
-| Inject shows empty / “Generating…” / useless “#”                                         | Refresh (or clear+refresh if delta-drifted)                                        |
-| Prefs contradict user (e.g. “never ask questions” vs user wants high-signal questions)   | Explicit retain of correct pref + refresh prefs MM; tighten source_query if needed |
-| Content bloated / always truncated in inject                                             | Lower `max_tokens`, refresh; avoid adding more models                              |
-| Same question every session, no MM                                                       | Propose **one** new model for that dimension only                                  |
-| User finished a major architecture decision                                              | Refresh `project-decisions` after retain has landed (not same turn as retain)      |
+Use the **signals table above** (broken content, wrong prefs, missing starters, fat inject, post-decision refresh, recurring questions). Same tool path: dry-run create/update/refresh → user confirms.
 
 ### When **not** to propose
 
@@ -92,6 +138,7 @@ Conversation/life seeds: goals, people/context, decisions/preferences (see start
 - Creating models from probe/bait sessions.
 - Duplicating recall (raw facts) as a mental model.
 - Editing other projects’ tagged models while working in this project.
+- Optimizing for polish when policy and inject budget are already fine.
 
 ## Agent workflow (copy pattern)
 
