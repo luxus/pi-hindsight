@@ -5,6 +5,7 @@ import type {
 } from "@vectorize-io/hindsight-client";
 import {
   defaultGlobalBankMissions,
+  defaultLifeBankMissions,
   defaultProjectBankMissions,
   resolveBankMissions,
 } from "./bank-operations.js";
@@ -242,7 +243,7 @@ export const BUILT_IN_BANK_TEMPLATES: readonly BuiltInBankTemplate[] = [
     description: "Cross-context durable communication and life-workflow preferences.",
     manifest: {
       version: "1",
-      bank: bankConfigFromMissions(defaultGlobalBankMissions()),
+      bank: bankConfigFromMissions(defaultLifeBankMissions()),
       mental_models: CONVERSATION_USER_MENTAL_MODELS,
     },
   },
@@ -278,8 +279,14 @@ export function getBuiltInBankTemplate(id: string): BuiltInBankTemplate | undefi
   return BUILT_IN_BANK_TEMPLATES.find((template) => template.id === resolved);
 }
 
-function defaultMissionsForTarget(target: BankTemplateTarget): BankMissionDefaults {
-  return target === "user" ? defaultGlobalBankMissions() : defaultProjectBankMissions();
+function defaultMissionsForTarget(
+  target: BankTemplateTarget,
+  agentUse: AgentUseProfile,
+): BankMissionDefaults {
+  if (target === "user") {
+    return agentUse === "conversation" ? defaultLifeBankMissions() : defaultGlobalBankMissions();
+  }
+  return defaultProjectBankMissions();
 }
 
 function slugProjectId(projectId: string): string {
@@ -311,7 +318,7 @@ export function resolveBankTemplateManifest(
 ): BankTemplateManifest {
   const missions = resolveBankMissions(
     bankMissionSettings,
-    defaultMissionsForTarget(template.target),
+    defaultMissionsForTarget(template.target, template.agentUse),
   );
   const projectId = options?.projectId?.trim();
   let mental_models = template.manifest.mental_models;

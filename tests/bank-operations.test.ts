@@ -149,6 +149,20 @@ describe("bank operations", () => {
     );
   });
 
+  it("uses life missions when ensuring a conversation user bank", async () => {
+    const createBank = vi.fn(async () => undefined);
+    await ensureGlobalBank(client({ createBank }), "life-bank", { agentUse: "conversation" });
+
+    expect(createBank).toHaveBeenCalledWith(
+      "life-bank",
+      expect.objectContaining({
+        reflectMission: expect.stringContaining("personal assistant"),
+        retainMission: expect.stringContaining("life-task memory"),
+        observationsMission: expect.stringContaining("life and task patterns"),
+      }),
+    );
+  });
+
   it("does not overwrite missions when bank profile already exists", async () => {
     const createBank = vi.fn(async () => undefined);
     const getBankProfile = vi.fn(async () => ({ bankId: "project-bank" }));

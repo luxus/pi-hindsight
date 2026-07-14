@@ -193,6 +193,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
           await ensureGlobalBank(client, config.banks.user.bankId, {
             ...config.banks.user,
             enableObservations: config.observations.enabled,
+            agentUse: config.agentUse,
           });
           ensureSucceeded = true;
         } catch (error) {

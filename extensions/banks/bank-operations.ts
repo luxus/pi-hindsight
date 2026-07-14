@@ -1,4 +1,4 @@
-import type { BankMissionSettings, HindsightLikeClient } from "../types.js";
+import type { AgentUseProfile, BankMissionSettings, HindsightLikeClient } from "../types.js";
 
 const DEFAULT_PROJECT_REFLECT_MISSION =
   "You are a senior developer helping a Pi coding agent. Prefer past technical decisions, architecture trade-offs, conventions, and constraints. Be direct and opinionated when memory supports it; do not invent facts not grounded in memory.";
@@ -17,6 +17,16 @@ const DEFAULT_GLOBAL_RETAIN_MISSION =
 
 const DEFAULT_GLOBAL_OBSERVATIONS_MISSION =
   "Identify durable cross-project preferences, recurring workflows, coding habits, and stable assistant behavior patterns. Highlight contradictions with prior knowledge. Ignore repo-specific implementation details and one-off probe constraints unless they generalize.";
+
+/** Life / conversation user bank — personal durable context, not coding-repo facts. */
+const DEFAULT_LIFE_REFLECT_MISSION =
+  "You are a personal assistant with durable life and task context. Use stable preferences, commitments, people/context, and planning habits. Be concise and practical; prefer high-signal clarifications over speculation. Do not invent personal facts not grounded in memory.";
+
+const DEFAULT_LIFE_RETAIN_MISSION =
+  "Extract durable personal and life-task memory: communication preferences, commitments, deadlines, people/roles/context, planning and prioritization habits, and stable constraints. Ignore greetings, secrets, probe/bait harness rules, and repo-specific engineering details (file paths, bugs, PR mechanics) unless they are truly personal durable preferences.";
+
+const DEFAULT_LIFE_OBSERVATIONS_MISSION =
+  "Identify durable life and task patterns: recurring preferences, commitments, relationship/context patterns, and planning habits. Highlight contradictions with prior knowledge. Ignore transient chat filler, one-off logistics, and coding-repo implementation noise.";
 
 export interface BankMissionDefaults {
   reflectMission: string;
@@ -40,8 +50,24 @@ export function defaultGlobalBankMissions(): BankMissionDefaults {
   };
 }
 
+/** Defaults for Life / conversation user bank (agentUse conversation). */
+export function defaultLifeBankMissions(): BankMissionDefaults {
+  return {
+    reflectMission: DEFAULT_LIFE_REFLECT_MISSION,
+    retainMission: DEFAULT_LIFE_RETAIN_MISSION,
+    observationsMission: DEFAULT_LIFE_OBSERVATIONS_MISSION,
+  };
+}
+
+/** User/life bank defaults: conversation → life missions; coding → cross-project coding prefs. */
+export function defaultUserBankMissions(agentUse: AgentUseProfile = "coding"): BankMissionDefaults {
+  return agentUse === "conversation" ? defaultLifeBankMissions() : defaultGlobalBankMissions();
+}
+
 export interface BankMissionConfig extends BankMissionSettings {
   enableObservations?: boolean;
+  /** Selects life vs coding-user mission defaults when creating a user bank. */
+  agentUse?: AgentUseProfile;
 }
 
 export function resolveBankMissions(
@@ -107,7 +133,10 @@ export async function ensureGlobalBank(
   config: BankMissionConfig = {},
 ): Promise<void> {
   if (!client.createBank || !(await bankNeedsCreate(client, bankId))) return;
-  const missions = resolveBankMissions(config, defaultGlobalBankMissions());
+  const missions = resolveBankMissions(
+    config,
+    defaultUserBankMissions(config.agentUse ?? "coding"),
+  );
   await client.createBank(bankId, {
     name: bankId,
     ...missions,

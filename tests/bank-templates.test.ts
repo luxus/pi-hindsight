@@ -55,6 +55,20 @@ describe("bank templates", () => {
     });
   });
 
+  it("uses life bank missions for the conversation user template", async () => {
+    const { defaultLifeBankMissions } = await import("../extensions/banks/bank-operations.js");
+    const template = getBuiltInBankTemplate("pi-conversation-user");
+    const defaults = defaultLifeBankMissions();
+
+    expect(template?.target).toBe("user");
+    expect(template?.agentUse).toBe("conversation");
+    expect(template?.manifest.bank).toMatchObject({
+      reflect_mission: defaults.reflectMission,
+      retain_mission: defaults.retainMission,
+      observations_mission: defaults.observationsMission,
+    });
+  });
+
   it("includes a conversation project template distinct from coding", () => {
     const coding = getBuiltInBankTemplate("pi-coding-project");
     const conversation = getBuiltInBankTemplate("pi-conversation-project");

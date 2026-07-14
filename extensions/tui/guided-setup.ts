@@ -218,6 +218,7 @@ export async function resolveSetupBankId(args: {
           await ensureGlobalBank(args.client, trimmed, {
             ...args.config.banks.user,
             enableObservations: args.config.observations.enabled,
+            agentUse: args.config.agentUse,
           });
         }
         args.ctx.ui.notify(`Created ${args.kind} bank ${trimmed}.`, "info");

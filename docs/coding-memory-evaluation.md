@@ -20,6 +20,7 @@ What Vectorize’s own evaluation surface implies for **pi-hindsight** defaults.
 | Cost is co-equal with accuracy (AMB)                                                 | Cap MM `max_tokens` (600–800 seeds); keep recall budgets mid/low unless deep context is required             |
 | Consolidation is a server hot path (perf monitor)                                    | Client should not re-synthesize every turn: inject cached MMs; use **delta** + `refresh_after_consolidation` |
 | Prefs applied to multi-step work (PersonaMem / AMB)                                  | Bank-global prefs MM + explicit retain of durable prefs (not probe harness noise)                            |
+| Life vs coding user banks                                                            | Coding user bank: cross-project coding prefs missions; conversation/life: `defaultLifeBankMissions()`        |
 | Retain then same-turn recall is an anti-pattern                                      | Retain at `agent_end`; recall at `context` (already)                                                         |
 | One MM for everything is an anti-pattern                                             | One model per knowledge dimension (architecture / conventions / decisions / prefs)                           |
 
