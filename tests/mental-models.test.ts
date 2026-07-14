@@ -62,9 +62,15 @@ describe("use-profile mental model sets", () => {
     const manifest = resolveBankTemplateManifest(template!, {}, { projectId: "finalform" });
     const models = manifest.mental_models ?? [];
     expect(models.length).toBeGreaterThan(0);
-    for (const model of models) {
-      expect(model.id).toContain("--finalform");
+    const projectModels = models.filter((model) => model.id.includes("--finalform"));
+    const bankGlobal = models.filter((model) => !model.id.includes("--"));
+    expect(projectModels.length).toBeGreaterThan(0);
+    expect(bankGlobal.length).toBeGreaterThan(0);
+    for (const model of projectModels) {
       expect(model.tags).toEqual(expect.arrayContaining(["source:pi", "project:finalform"]));
+    }
+    for (const model of bankGlobal) {
+      expect(model.tags).toEqual(["source:pi"]);
     }
   });
 });

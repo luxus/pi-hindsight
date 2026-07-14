@@ -12,7 +12,8 @@ import type { ImportProgressEvent } from "../imports/import-sessions.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "../config/config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
 import type { AgentUseProfile, HindsightLikeClient, ResolvedConfig } from "../types.js";
-import { defaultTemplateIdFor } from "../banks/bank-templates.js";
+import { defaultTemplateIdFor, expectedStarterMentalModelIds } from "../banks/bank-templates.js";
+import { resolveProjectIdentity } from "../banks/banking.js";
 import {
   renderBankTemplateApplyResult,
   renderBankTemplateMentalModelDetails,
@@ -292,11 +293,16 @@ export interface SetupBankMentalModelProbe {
   /** False when getBankProfile reports not found (or no profile API). */
   bankExists: boolean;
   modelNames: string[];
+  /** Present mental-model ids from listMentalModels (preferred for ensure checks). */
+  modelIds: string[];
+  /** Expected starter ids for this setup target (resolved template + projectId). */
+  expectedModelIds?: string[];
+  /** Subset of expectedModelIds not present on the bank. */
+  missingModelIds?: string[];
   error?: string;
 }
 
-/** Extract mental-model names from a listMentalModels response body. */
-export function extractMentalModelNames(response: unknown): string[] {
+function mentalModelListRows(response: unknown): Array<Record<string, unknown>> {
   if (!response || typeof response !== "object") return [];
   const body = response as { items?: unknown; mental_models?: unknown };
   const rows = Array.isArray(body.items)
@@ -304,19 +310,35 @@ export function extractMentalModelNames(response: unknown): string[] {
     : Array.isArray(body.mental_models)
       ? body.mental_models
       : [];
+  return rows.filter((entry): entry is Record<string, unknown> =>
+    Boolean(entry && typeof entry === "object"),
+  );
+}
+
+/** Extract mental-model names from a listMentalModels response body. */
+export function extractMentalModelNames(response: unknown): string[] {
   const names: string[] = [];
-  for (const entry of rows) {
-    if (!entry || typeof entry !== "object") continue;
-    const row = entry as { name?: unknown; id?: unknown };
+  for (const row of mentalModelListRows(response)) {
     if (typeof row.name === "string" && row.name.trim()) names.push(row.name.trim());
     else if (typeof row.id === "string" && row.id.trim()) names.push(row.id.trim());
   }
   return names;
 }
 
+/** Extract mental-model ids from a listMentalModels response body. */
+export function extractMentalModelIds(response: unknown): string[] {
+  const ids: string[] = [];
+  for (const row of mentalModelListRows(response)) {
+    if (typeof row.id === "string" && row.id.trim()) ids.push(row.id.trim());
+  }
+  return ids;
+}
+
 /**
  * Decide which setup targets should be offered starter mental models.
- * Existing banks that already have models are not offered by default.
+ * When expectedModelIds is set, skip only if every expected id is already present
+ * (domain-tagged multi-project: other projects' models must not skip this project).
+ * Without expected ids, fall back to empty-catalog offer.
  * Probe failures are not auto-offered (hub remains the intentional path).
  */
 export function selectMentalModelTargetsToOffer(probes: SetupBankMentalModelProbe[]): {
@@ -332,7 +354,16 @@ export function selectMentalModelTargetsToOffer(probes: SetupBankMentalModelProb
       unknown.push(probe);
       continue;
     }
-    if (probe.bankExists && probe.modelNames.length > 0) {
+    const expected = probe.expectedModelIds ?? [];
+    if (expected.length > 0) {
+      const have = new Set(probe.modelIds);
+      const missing = expected.filter((id) => !have.has(id));
+      const next = { ...probe, missingModelIds: missing };
+      if (missing.length === 0) alreadyProvisioned.push(next);
+      else toOffer.push(next);
+      continue;
+    }
+    if (probe.bankExists && (probe.modelIds.length > 0 || probe.modelNames.length > 0)) {
       alreadyProvisioned.push(probe);
       continue;
     }
@@ -354,6 +385,7 @@ export async function probeBankMentalModels(args: {
       bankId: "",
       bankExists: false,
       modelNames: [],
+      modelIds: [],
       error: "missing bank id",
     };
   }
@@ -365,13 +397,14 @@ export async function probeBankMentalModels(args: {
       bankExists = true;
     } catch (error) {
       if (isNotFoundError(error)) {
-        return { target: args.target, bankId, bankExists: false, modelNames: [] };
+        return { target: args.target, bankId, bankExists: false, modelNames: [], modelIds: [] };
       }
       return {
         target: args.target,
         bankId,
         bankExists: false,
         modelNames: [],
+        modelIds: [],
         error: error instanceof Error ? error.message : String(error),
       };
     }
@@ -386,6 +419,7 @@ export async function probeBankMentalModels(args: {
       bankId,
       bankExists,
       modelNames: [],
+      modelIds: [],
       ...(bankExists ? { error: "listMentalModels unavailable" } : {}),
     };
   }
@@ -397,25 +431,43 @@ export async function probeBankMentalModels(args: {
       bankId,
       bankExists,
       modelNames: extractMentalModelNames(response),
+      modelIds: extractMentalModelIds(response),
     };
   } catch (error) {
     if (isNotFoundError(error)) {
-      return { target: args.target, bankId, bankExists: false, modelNames: [] };
+      return { target: args.target, bankId, bankExists: false, modelNames: [], modelIds: [] };
     }
     return {
       target: args.target,
       bankId,
       bankExists,
       modelNames: [],
+      modelIds: [],
       error: error instanceof Error ? error.message : String(error),
     };
   }
 }
 
 function formatExistingMentalModelsSummary(probe: SetupBankMentalModelProbe): string {
+  const expected = probe.expectedModelIds?.length ?? 0;
+  if (expected > 0) {
+    return `${probe.target} bank ${probe.bankId}: all ${expected} starter mental model(s) already present. Skipping starter provision; use hub (t) to re-apply intentionally.`;
+  }
   const preview = probe.modelNames.slice(0, 6).join(", ");
   const more = probe.modelNames.length > 6 ? ` (+${probe.modelNames.length - 6} more)` : "";
   return `${probe.target} bank ${probe.bankId}: ${probe.modelNames.length} mental model(s) already present (${preview}${more}). Skipping starter provision; use hub (t) to re-apply intentionally.`;
+}
+
+function formatOfferTargetSummary(probe: SetupBankMentalModelProbe): string {
+  const expected = probe.expectedModelIds?.length ?? 0;
+  const missing = probe.missingModelIds?.length ?? 0;
+  if (expected > 0) {
+    const present = expected - missing;
+    return `${probe.target}=${probe.bankId} (${present}/${expected} starters present; missing ${missing})`;
+  }
+  return probe.bankExists
+    ? `${probe.target}=${probe.bankId} (exists, empty catalog)`
+    : `${probe.target}=${probe.bankId} (new or missing)`;
 }
 
 async function maybeOfferMentalModelsForSetup(args: {
@@ -426,6 +478,8 @@ async function maybeOfferMentalModelsForSetup(args: {
   setupProfile: SetupProfileChoice;
   projectBankId?: string;
   globalBankId?: string;
+  cwd?: string;
+  config?: ResolvedConfig;
 }): Promise<void> {
   const targets: Array<{ target: "project" | "user"; bankId: string }> = [];
   if (profileUsesProject(args.setupProfile) && args.projectBankId?.trim()) {
@@ -436,15 +490,31 @@ async function maybeOfferMentalModelsForSetup(args: {
   }
   if (targets.length === 0) return;
 
+  const cwd = args.cwd ?? process.cwd();
+  const projectId = args.config ? resolveProjectIdentity(cwd, args.config).projectId : undefined;
+
   const probes: SetupBankMentalModelProbe[] = [];
   for (const entry of targets) {
-    probes.push(
-      await probeBankMentalModels({
-        client: args.client,
-        target: entry.target,
-        bankId: entry.bankId,
-      }),
-    );
+    const probe = await probeBankMentalModels({
+      client: args.client,
+      target: entry.target,
+      bankId: entry.bankId,
+    });
+    const expectedModelIds = expectedStarterMentalModelIds({
+      target: entry.target,
+      agentUse: args.agentUse,
+      ...(entry.target === "project" && projectId ? { projectId } : {}),
+      ...(args.config
+        ? {
+            bankMissionSettings:
+              entry.target === "user" ? args.config.banks.user : args.config.banks.project,
+          }
+        : {}),
+    });
+    probes.push({
+      ...probe,
+      ...(expectedModelIds.length > 0 ? { expectedModelIds } : {}),
+    });
   }
 
   const { toOffer, alreadyProvisioned, unknown } = selectMentalModelTargetsToOffer(probes);
@@ -461,16 +531,10 @@ async function maybeOfferMentalModelsForSetup(args: {
 
   if (toOffer.length === 0) return;
 
-  const bankSummary = toOffer
-    .map((probe) =>
-      probe.bankExists
-        ? `${probe.target}=${probe.bankId} (exists, empty catalog)`
-        : `${probe.target}=${probe.bankId} (new or missing)`,
-    )
-    .join("; ");
+  const bankSummary = toOffer.map(formatOfferTargetSummary).join("; ");
   const proceed = await args.ctx.ui.confirm(
     "Provision starter mental models?",
-    `Agent use: ${args.agentUse}. Targets: ${bankSummary}. Dry-run preview first; nothing is written without confirmation. Mental models become part of automatic context when present.`,
+    `Agent use: ${args.agentUse}. Targets: ${bankSummary}. Ensures bank-global + this project's starters when missing. Dry-run preview first; nothing is written without confirmation. Mental models become part of automatic context when present.`,
   );
   if (!proceed) return;
 
@@ -742,6 +806,8 @@ export async function runGuidedSetup(args: {
     client,
     agentUse,
     setupProfile,
+    cwd: args.cwd,
+    config,
     ...(projectBankId !== undefined ? { projectBankId } : {}),
     ...(globalBankId !== undefined ? { globalBankId } : {}),
   });

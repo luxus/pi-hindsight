@@ -44,6 +44,24 @@ function bankConfigFromMissions(missions: BankMissionDefaults): BankTemplateConf
 // Project-tier models get project:<id> stamped at apply time (resolveBankTemplateManifest).
 const RETAIN_COMPAT_TAGS = ["source:pi"] as const;
 
+/** Default after observations consolidation; matches agent createMentalModel path. */
+const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]> = {
+  refresh_after_consolidation: true,
+};
+
+// Bank-global on shared coding bank (no project:* tag) — injects for every project.
+const CODING_BANK_GLOBAL_MENTAL_MODELS: BankTemplateMentalModel[] = [
+  {
+    id: "coding-assistant-operating-preferences",
+    name: "Coding assistant operating preferences",
+    source_query:
+      "What durable preferences has the user shown for how coding assistants should plan, verify, commit, and use tools across repositories? Capture only stable cross-project habits, not one-off task instructions.",
+    tags: [...RETAIN_COMPAT_TAGS],
+    max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
+  },
+];
+
 // Coding project models — durable engineering knowledge (oh-my-pi-shaped core + a few extras).
 const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
   {
@@ -53,6 +71,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What are the stable architecture boundaries, modules, and seams in this project?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 800,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "project-conventions",
@@ -61,6 +80,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What are this project's conventions for code style, build, testing, release, and review? Only include conventions explicit in the project or repeatedly enforced.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 800,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "project-decisions",
@@ -69,6 +89,7 @@ const CODING_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What durable architectural or product decisions have been made for this project, and what rationale or trade-offs were recorded? Exclude transient plans and active task state.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 800,
+    trigger: DEFAULT_MM_TRIGGER,
   },
 ];
 
@@ -81,6 +102,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What goals, commitments, deadlines, and open loops is the user tracking in this context? Prefer durable ongoing items over one-off chat filler.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 800,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "people-and-context",
@@ -89,6 +111,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "Which people, roles, relationships, and recurring situations matter here? Capture only durable context the assistant needs, not sensitive private details.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "decisions-and-preferences",
@@ -97,6 +120,7 @@ const CONVERSATION_PROJECT_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What durable decisions, preferences, and constraints has the user stated for this conversation or life domain? Exclude one-off requests.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 800,
+    trigger: DEFAULT_MM_TRIGGER,
   },
 ];
 
@@ -108,6 +132,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What durable preferences has the user shown for collaboration, review, autonomy, and communication?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "coding-assistant-operating-preferences",
@@ -116,6 +141,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What durable preferences has the user shown for how coding assistants should plan, verify, commit, and use tools?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "cross-project-workflow-habits",
@@ -124,6 +150,7 @@ const CODING_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What workflow habits recur across the user's repositories, issue tracking, PR review, and release process?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
 ];
 
@@ -135,6 +162,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What durable preferences has the user shown for tone, length, language, and how the assistant should respond?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "life-workflow-habits",
@@ -143,6 +171,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "What recurring real-life workflows, planning habits, and task-management preferences does the user express across conversations?",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
   {
     id: "priority-and-scheduling-preferences",
@@ -151,6 +180,7 @@ const CONVERSATION_USER_MENTAL_MODELS: BankTemplateMentalModel[] = [
       "How does the user prefer to prioritize, schedule, and trade off time across personal and work tasks? Capture durable patterns only.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
+    trigger: DEFAULT_MM_TRIGGER,
   },
 ];
 
@@ -250,10 +280,19 @@ function slugProjectId(projectId: string): string {
   );
 }
 
+/** Bank-global models merged into coding project template apply (unstamped). */
+export function bankGlobalMentalModelsForTemplate(
+  templateId: string,
+): readonly BankTemplateMentalModel[] {
+  if (templateId === "pi-coding-project") return CODING_BANK_GLOBAL_MENTAL_MODELS;
+  return [];
+}
+
 /**
  * Resolve template manifest for import. For project-target templates with a projectId,
  * stamp project-tier mental models with project:<id> tags and id suffixes so multi-project
- * domain banks do not share one architecture model (ADR-005).
+ * domain banks do not share one architecture model (ADR-005). Coding project templates also
+ * merge bank-global models (no project tag) so setup can ensure cross-project starters.
  */
 export function resolveBankTemplateManifest(
   template: BuiltInBankTemplate,
@@ -269,15 +308,34 @@ export function resolveBankTemplateManifest(
   if (template.target === "project" && projectId && mental_models?.length) {
     const suffix = slugProjectId(projectId);
     const projectTag = `project:${projectId}`;
-    mental_models = mental_models.map((model) => ({
+    const stamped = mental_models.map((model) => ({
       ...model,
       id: `${model.id}--${suffix}`,
       tags: [...new Set([...(model.tags ?? []), "source:pi", projectTag])],
     }));
+    const bankGlobal = bankGlobalMentalModelsForTemplate(template.id);
+    mental_models = bankGlobal.length > 0 ? [...bankGlobal, ...stamped] : stamped;
   }
   return {
     ...template.manifest,
     ...(mental_models ? { mental_models } : {}),
     bank: bankConfigFromMissions(missions),
   };
+}
+
+/** Expected starter mental-model ids after resolve (for setup ensure checks). */
+export function expectedStarterMentalModelIds(args: {
+  target: BankTemplateTarget;
+  agentUse: AgentUseProfile;
+  projectId?: string;
+  bankMissionSettings?: BankMissionSettings;
+}): string[] {
+  const template = getBuiltInBankTemplate(defaultTemplateIdFor(args.target, args.agentUse));
+  if (!template) return [];
+  const manifest = resolveBankTemplateManifest(template, args.bankMissionSettings ?? {}, {
+    ...(args.projectId ? { projectId: args.projectId } : {}),
+  });
+  return (manifest.mental_models ?? [])
+    .map((model) => model.id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
 }

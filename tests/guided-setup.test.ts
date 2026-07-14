@@ -2,6 +2,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { resolveProjectIdentity } from "../extensions/banks/banking.js";
+import { expectedStarterMentalModelIds } from "../extensions/banks/bank-templates.js";
 import { DEFAULT_CONFIG } from "../extensions/config/config-defaults.js";
 import {
   buildGuidedSetupGlobalPatch,
@@ -341,30 +343,47 @@ describe("guided setup", () => {
     expect(extractMentalModelNames(null)).toEqual([]);
   });
 
-  it("skips starter mental-model offer when banks already have models", () => {
+  it("skips starter offer only when expected starter ids are all present", () => {
+    const expected = [
+      "coding-assistant-operating-preferences",
+      "project-architecture-and-seams--proj-b",
+    ];
     const decision = selectMentalModelTargetsToOffer([
       {
         target: "project",
-        bankId: "pi-coding",
+        bankId: "coding",
         bankExists: true,
-        modelNames: ["Architecture decisions"],
+        modelNames: ["Other project architecture"],
+        modelIds: ["project-architecture-and-seams--proj-a"],
+        expectedModelIds: expected,
+      },
+      {
+        target: "project",
+        bankId: "coding-complete",
+        bankExists: true,
+        modelNames: ["Global", "Arch"],
+        modelIds: expected,
+        expectedModelIds: expected,
       },
       {
         target: "user",
         bankId: "life",
         bankExists: false,
         modelNames: [],
+        modelIds: [],
       },
       {
         target: "user",
         bankId: "broken",
         bankExists: true,
         modelNames: [],
+        modelIds: [],
         error: "timeout",
       },
     ]);
-    expect(decision.toOffer.map((probe) => probe.bankId)).toEqual(["life"]);
-    expect(decision.alreadyProvisioned.map((probe) => probe.bankId)).toEqual(["pi-coding"]);
+    expect(decision.toOffer.map((probe) => probe.bankId)).toEqual(["coding", "life"]);
+    expect(decision.toOffer[0]?.missingModelIds).toEqual(expected);
+    expect(decision.alreadyProvisioned.map((probe) => probe.bankId)).toEqual(["coding-complete"]);
     expect(decision.unknown.map((probe) => probe.bankId)).toEqual(["broken"]);
   });
 
@@ -391,6 +410,7 @@ describe("guided setup", () => {
       bankId: "pi-coding",
       bankExists: true,
       modelNames: ["Project architecture"],
+      modelIds: ["mm1"],
     });
     await expect(
       probeBankMentalModels({ client, target: "project", bankId: "new-bank" }),
@@ -399,21 +419,23 @@ describe("guided setup", () => {
       bankId: "new-bank",
       bankExists: false,
       modelNames: [],
+      modelIds: [],
     });
     expect(listMentalModels).toHaveBeenCalledTimes(1);
   });
 
-  it("does not prompt for starter mental models when the bank already has them", async () => {
+  it("still offers starters when bank has other projects' models but not this project's", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-existing-mm-"));
     const notify = vi.fn();
     const confirm = vi
       .fn()
-      // Write config yes; import no. No mental-model confirm should appear.
+      // Write config yes; decline MM provision; import no.
       .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(false);
     const applyBankTemplate = vi.fn();
     const listMentalModels = vi.fn(async () => ({
-      items: [{ id: "mm1", name: "Architecture decisions" }],
+      items: [{ id: "project-architecture-and-seams--other-project", name: "Other arch" }],
     }));
     const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
     const ctx = {
@@ -450,19 +472,68 @@ describe("guided setup", () => {
     expect(completed).toBe(true);
     expect(getBankProfile).toHaveBeenCalledWith("project-bank");
     expect(listMentalModels).toHaveBeenCalledWith("project-bank");
+    expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
+    expect(confirm.mock.calls[1]?.[0]).toBe("Provision starter mental models?");
+    expect(confirm.mock.calls[1]?.[1]).toEqual(expect.stringContaining("starters present"));
+    expect(applyBankTemplate).not.toHaveBeenCalled();
+  });
+
+  it("does not prompt for starter mental models when expected starters already exist", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-complete-mm-"));
+    const notify = vi.fn();
+    const confirm = vi
+      .fn()
+      // Write config yes; import no. No mental-model confirm should appear.
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    const applyBankTemplate = vi.fn();
+    const projectId = resolveProjectIdentity(cwd, DEFAULT_CONFIG).projectId;
+    const expectedIds = expectedStarterMentalModelIds({
+      target: "project",
+      agentUse: "coding",
+      projectId,
+    });
+    const listMentalModels = vi.fn(async () => ({
+      items: expectedIds.map((id) => ({ id, name: id })),
+    }));
+    const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
+    const ctx = {
+      cwd,
+      sessionManager: { getSessionFile: () => undefined },
+      ui: {
+        notify,
+        input: vi.fn().mockResolvedValueOnce("project-bank"),
+        select: vi
+          .fn()
+          .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+        confirm,
+      },
+    } as never;
+
+    const completed = await runGuidedSetup({
+      ctx,
+      cwd,
+      deps: {
+        getClient: () => ({
+          retain: vi.fn(),
+          recall: vi.fn(),
+          reflect: vi.fn(),
+          getBankProfile,
+          listMentalModels,
+          importBankTemplate: applyBankTemplate,
+        }),
+        getConfig: () => DEFAULT_CONFIG,
+        getProjectBankId: () => "project-bank",
+      } as never,
+    });
+
+    expect(completed).toBe(true);
     expect(confirm).toHaveBeenCalledTimes(2);
     expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
     expect(confirm.mock.calls[1]?.[0]).toBe("Preview historical import now?");
     expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining("Using existing project bank project-bank"),
-      "info",
-    );
-    expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining("Server: reachable · project bank project-bank: existing"),
-      "info",
-    );
-    expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining("1 mental model(s) already present"),
+      expect.stringContaining("all 4 starter mental model(s) already present"),
       "info",
     );
     expect(applyBankTemplate).not.toHaveBeenCalled();

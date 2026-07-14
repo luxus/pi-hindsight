@@ -39,7 +39,7 @@ Guided setup handles:
 2. memory profile
 3. **agent use** (coding vs conversation)
 4. project and/or user bank target (existing vs create; one-line `Server: … · Bank: …` status)
-5. optional starter mental models (dry-run + confirm; skipped offline / when catalog already present)
+5. optional starter mental models (dry-run + confirm; skipped offline / when **all expected** bank-global + this-project starters are already present — other projects' models on a shared coding bank do not skip)
 6. optional dry-run-first historical import (skipped offline)
 
 Setup also prints docs links for the current area, such as [memory profiles](/pi-hindsight/start/memory-profiles/) and [imports](/pi-hindsight/guides/importing-sessions/).
