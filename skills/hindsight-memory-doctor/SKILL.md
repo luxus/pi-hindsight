@@ -14,7 +14,7 @@ description: >
 
 When the user is **upset or skeptical about memory**, behave like a careful human under conflict: **stop, inspect, question the memory stack**, then propose a small fix. Do not argue from broken inject. Do not mutate banks silently.
 
-Authoritative criteria: `docs/mission-and-mental-model-quality.md` (packaged; also docs-site *Mission and mental-model quality*).
+Authoritative criteria: `docs/mission-and-mental-model-quality.md` (packaged; also docs-site _Mission and mental-model quality_).
 
 ## Trigger (yes)
 
@@ -39,7 +39,7 @@ Authoritative criteria: `docs/mission-and-mental-model-quality.md` (packaged; al
    - `hindsight_mental_model` action=get for broken/suspicious ids
    - `hindsight_bank` action=get for coding (and life if enabled) — missions
 3. **Score against the quality guide** (priority order):
-   1. Broken/empty MM content (`#`, empty, Generating…)
+   1. Broken/empty MM content (`#`, empty, Generating…) — prefs MMs may need `fact_types` world+experience+observation, not observation-only
    2. Prefs contradict the user
    3. Missing starters for **this** `project:<id>`
    4. Fat inject / truncation

@@ -79,14 +79,31 @@ describe("bank templates", () => {
   });
 
   it("uses delta refresh defaults on bundled mental models", () => {
+    const prefsFactTypes = ["world", "experience", "observation"];
+    const projectFactTypes = ["observation"];
     for (const template of BUILT_IN_BANK_TEMPLATES) {
       for (const model of template.manifest.mental_models ?? []) {
         expect(model.trigger).toMatchObject({
           mode: "delta",
           refresh_after_consolidation: true,
-          fact_types: ["observation"],
           exclude_mental_models: true,
         });
+        const ft = model.trigger?.fact_types ?? [];
+        const isPrefs =
+          /prefer|habit|operating|communication|collaboration|priority|goals|people|decision/i.test(
+            model.id ?? "",
+          ) || model.max_tokens === 600;
+        if (isPrefs && !model.id?.startsWith("project-")) {
+          expect(ft).toEqual(prefsFactTypes);
+        } else if (
+          model.id?.startsWith("project-architecture") ||
+          model.id?.startsWith("project-conventions") ||
+          model.id?.startsWith("project-decisions")
+        ) {
+          expect(ft).toEqual(projectFactTypes);
+        } else {
+          expect([prefsFactTypes, projectFactTypes]).toContainEqual(ft);
+        }
         expect(model.max_tokens).toBeLessThanOrEqual(800);
       }
     }
