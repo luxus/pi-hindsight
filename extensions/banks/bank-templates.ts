@@ -50,7 +50,7 @@ const RETAIN_COMPAT_TAGS = ["source:pi"] as const;
  * Template import sends the full trigger object; agent create is limited by the TS client mapping
  * (refreshAfterConsolidation only) until the client maps mode/fact_types.
  */
-export const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]> = {
+const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]> = {
   mode: "delta",
   refresh_after_consolidation: true,
   fact_types: ["observation"],
@@ -58,8 +58,8 @@ export const DEFAULT_MM_TRIGGER: NonNullable<BankTemplateMentalModel["trigger"]>
 };
 
 /** Seed max_tokens: keep inject lean (AMB cost; inject shares mentalModels.maxChars). */
-export const DEFAULT_MM_MAX_TOKENS_PREFS = 600;
-export const DEFAULT_MM_MAX_TOKENS_PROJECT = 800;
+const DEFAULT_MM_MAX_TOKENS_PREFS = 600;
+const DEFAULT_MM_MAX_TOKENS_PROJECT = 800;
 
 // Bank-global on shared coding bank (no project:* tag) — injects for every project.
 const CODING_BANK_GLOBAL_MENTAL_MODELS: BankTemplateMentalModel[] = [
@@ -293,9 +293,7 @@ function slugProjectId(projectId: string): string {
 }
 
 /** Bank-global models merged into coding project template apply (unstamped). */
-export function bankGlobalMentalModelsForTemplate(
-  templateId: string,
-): readonly BankTemplateMentalModel[] {
+function bankGlobalMentalModelsForTemplate(templateId: string): readonly BankTemplateMentalModel[] {
   if (templateId === "pi-coding-project") return CODING_BANK_GLOBAL_MENTAL_MODELS;
   return [];
 }
