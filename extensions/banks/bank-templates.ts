@@ -55,7 +55,7 @@ const CODING_BANK_GLOBAL_MENTAL_MODELS: BankTemplateMentalModel[] = [
     id: "coding-assistant-operating-preferences",
     name: "Coding assistant operating preferences",
     source_query:
-      "What durable preferences has the user shown for how coding assistants should plan, verify, commit, and use tools across repositories? Capture only stable cross-project habits, not one-off task instructions.",
+      "What durable preferences has the user shown for how coding assistants should plan, verify, commit, use tools, and communicate across repositories? Especially capture clarification style: whether questions are welcome, when to ask (up front vs mid-task), and that questions should be high-signal (not answerable by the agent alone). Exclude one-off probe/bait/test session constraints such as temporary 'do not ask questions; just execute' rules. Capture only stable cross-project habits.",
     tags: [...RETAIN_COMPAT_TAGS],
     max_tokens: 600,
     trigger: DEFAULT_MM_TRIGGER,
