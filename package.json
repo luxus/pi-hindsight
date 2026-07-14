@@ -30,7 +30,8 @@
     "docs/surface-reference.md",
     "docs/starter-mental-model-suggestions.md",
     "docs/coding-memory-evaluation.md",
-    "docs/mission-and-mental-model-quality.md"
+    "docs/mission-and-mental-model-quality.md",
+    "skills"
   ],
   "type": "module",
   "publishConfig": {
@@ -109,6 +110,9 @@
   "pi": {
     "extensions": [
       "./extensions"
+    ],
+    "skills": [
+      "./skills"
     ]
   }
 }

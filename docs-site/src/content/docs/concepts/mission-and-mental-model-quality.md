@@ -142,6 +142,8 @@ Use the **signals table above** (broken content, wrong prefs, missing starters, 
 
 ## Agent workflow (copy pattern)
 
+On user **memory complaints**, load skill `hindsight-memory-doctor` (`/skill:hindsight-memory-doctor`) — same inspect → diagnose → dry-run propose flow.
+
 1. **Inspect:** `hindsight_status`, `hindsight_scope`, `hindsight_mental_model` list/get, `hindsight_bank` get.
 2. **Diagnose** against this doc (tags, size, empty content, wrong prefs, missing project starters).
 3. **Propose** in plain language: what changes, why, dry-run payload.
