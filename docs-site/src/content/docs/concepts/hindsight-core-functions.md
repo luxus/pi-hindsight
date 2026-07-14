@@ -116,6 +116,8 @@ Mental models are not raw recall. They are reusable synthesized answers. In Pi H
 
 Creating a mental model preserves a source query. Hindsight runs that query through reflect and stores the generated content. Bundled templates set `trigger.mode: delta` and `refresh_after_consolidation: true` so consolidation folds new observations without full rewrites every time (server-side; not a Pi background job).
 
+Agents should treat missions and mental models as tunable policy: propose improvements with dry-run tools, do not mutate silently. See [Mission and mental-model quality](/pi-hindsight/concepts/mission-and-mental-model-quality/).
+
 ```text
 Observations  = facts learned from repetition
 Mental Models = answers built from remembered facts

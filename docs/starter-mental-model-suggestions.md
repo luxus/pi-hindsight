@@ -6,6 +6,8 @@ Mental models are a **core** Hindsight feature. Pi Hindsight provisions them thr
 
 Starter suggestions live here and in `extensions/banks/bank-templates.ts` (keep in sync). Applying a bundled template creates these models via Hindsight's bank-template import endpoint — dry-run gated, confirm before write. Arbitrary mental-model authoring remains in the Hindsight control-plane web UI.
 
+For quality criteria and when agents should **propose** create/update/refresh (never silent), see [Mission and mental-model quality](mission-and-mental-model-quality.md).
+
 ## Product rules
 
 - Suggestions are explicit opt-in (setup/TUI), never silent bank mutation on every boot.

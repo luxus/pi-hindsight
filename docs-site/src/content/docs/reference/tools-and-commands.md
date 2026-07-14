@@ -43,7 +43,7 @@ Config field `agentUse` is `coding` (default) or `conversation`.
 
 Legacy id `pi-user-preferences` still resolves to `pi-coding-user`.
 
-When mental models exist on active banks and `mentalModels.inject` is true (default), their content is injected into automatic context alongside recall (ephemeral; not retained). See [Starter mental model suggestions](/pi-hindsight/concepts/starter-mental-model-suggestions/).
+When mental models exist on active banks and `mentalModels.inject` is true (default), their content is injected into automatic context alongside recall (ephemeral; not retained). See [Starter mental model suggestions](/pi-hindsight/concepts/starter-mental-model-suggestions/). Quality guide: [Mission and mental-model quality](/pi-hindsight/concepts/mission-and-mental-model-quality/).
 
 ## Explicit tools
 

@@ -29,7 +29,8 @@
     "docs/next-opt-out-design.md",
     "docs/surface-reference.md",
     "docs/starter-mental-model-suggestions.md",
-    "docs/coding-memory-evaluation.md"
+    "docs/coding-memory-evaluation.md",
+    "docs/mission-and-mental-model-quality.md"
   ],
   "type": "module",
   "publishConfig": {

@@ -41,6 +41,8 @@ Legacy id `pi-user-preferences` still resolves to `pi-coding-user`.
 
 When mental models exist on active banks and `mentalModels.inject` is true (default), their content is injected into automatic context alongside recall (ephemeral; not retained). List results are cached for `mentalModels.cacheTtlMs` (default 5 minutes).
 
+Quality criteria and when the agent should **propose** mission/MM create, update, or refresh (dry-run first, never silent): [Mission and mental-model quality](mission-and-mental-model-quality.md).
+
 ## Model-facing tools
 
 Available for the agent (control plane is agent-first; TUI is thin):

@@ -67,6 +67,10 @@ export default defineConfig({
               label: "Coding memory evaluation",
               slug: "concepts/coding-memory-evaluation",
             },
+            {
+              label: "Mission and mental-model quality",
+              slug: "concepts/mission-and-mental-model-quality",
+            },
           ],
         },
         {
