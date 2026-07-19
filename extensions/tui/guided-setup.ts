@@ -327,7 +327,7 @@ export function extractMentalModelNames(response: unknown): string[] {
 }
 
 /** Extract mental-model ids from a listMentalModels response body. */
-export function extractMentalModelIds(response: unknown): string[] {
+function extractMentalModelIds(response: unknown): string[] {
   const ids: string[] = [];
   for (const row of mentalModelListRows(response)) {
     if (typeof row.id === "string" && row.id.trim()) ids.push(row.id.trim());
