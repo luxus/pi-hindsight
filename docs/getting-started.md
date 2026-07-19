@@ -50,7 +50,7 @@ Guided setup handles:
 
 1. Hindsight server URL
 2. memory profile
-3. project and/or user bank
+3. project and/or user bank (shared coding bank id is saved to user/global config and prefilled next time)
 4. optional dry-run-first historical import
 
 Starter mental models can be applied from setup/templates. Ongoing mental-model and mission maintenance is agent-first (ADR-005); the Hindsight web UI remains available for control-plane browsing.

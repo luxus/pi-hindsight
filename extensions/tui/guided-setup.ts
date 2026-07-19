@@ -18,6 +18,7 @@ import {
   renderBankTemplateApplyResult,
   renderBankTemplateMentalModelDetails,
 } from "./bank-template-presentation.js";
+import { inputWithPrefill } from "./prefill-input.js";
 import { ensureServerConnectionForSetup } from "./setup-server-probe.js";
 
 export function hasProjectHindsightConfig(cwd: string): boolean {
@@ -47,6 +48,11 @@ function profileUsesUser(profile: SetupProfileChoice): boolean {
   return profile === "project-user" || profile === "user-only";
 }
 
+/** Shared coding bank (domain-tagged) — not isolated hard-wall. */
+function usesSharedCodingBank(profile: SetupProfileChoice): boolean {
+  return profileUsesProject(profile) && profile !== "isolated-only";
+}
+
 export function buildGuidedSetupPatch(args: {
   profile: SetupProfileChoice;
   projectBankId?: string;
@@ -54,14 +60,17 @@ export function buildGuidedSetupPatch(args: {
   config: ResolvedConfig;
 }): ProjectConfigPatchInput {
   const memoryProfile = setupProfileChoiceToMemoryProfile(args.profile);
+  // Isolated bank is per-repo; shared coding bank is written to global config.
+  const isolatedBankId =
+    args.profile === "isolated-only" && args.projectBankId?.trim()
+      ? args.projectBankId.trim()
+      : undefined;
   return {
     memoryProfile,
     setupComplete: true,
     // Domain-tagged shares one coding bank + project tags; isolated keeps a hard wall.
     scopeMode: args.profile === "isolated-only" ? "isolated-bank" : "domain-tagged",
-    ...(profileUsesProject(args.profile) && args.projectBankId?.trim()
-      ? { projectBankId: args.projectBankId.trim() }
-      : {}),
+    ...(isolatedBankId ? { projectBankId: isolatedBankId } : {}),
     ...(profileUsesUser(args.profile) ? { resetDefaults: ["banks.global.bankId" as const] } : {}),
   };
 }
@@ -69,14 +78,21 @@ export function buildGuidedSetupPatch(args: {
 export function buildGuidedSetupGlobalPatch(args: {
   profile: SetupProfileChoice;
   globalBankId?: string;
+  projectBankId?: string;
   config: ResolvedConfig;
 }): ProjectConfigPatchInput | undefined {
-  if (!profileUsesUser(args.profile)) return undefined;
+  const wantsUser = profileUsesUser(args.profile);
+  const sharedCodingBankId =
+    usesSharedCodingBank(args.profile) && args.projectBankId?.trim()
+      ? args.projectBankId.trim()
+      : undefined;
+  if (!wantsUser && !sharedCodingBankId) return undefined;
   const globalBankId = args.globalBankId?.trim() || args.config.banks.user.bankId;
   return {
     scope: "global",
-    enableGlobalBank: true,
-    ...(globalBankId ? { globalBankId } : {}),
+    ...(wantsUser ? { enableGlobalBank: true } : {}),
+    ...(wantsUser && globalBankId ? { globalBankId } : {}),
+    ...(sharedCodingBankId ? { projectBankId: sharedCodingBankId } : {}),
   };
 }
 
@@ -94,7 +110,7 @@ async function askBankId(args: {
   title: string;
   fallback: string;
 }): Promise<string | undefined> {
-  const value = await args.ctx.ui.input(args.title, args.fallback);
+  const value = await inputWithPrefill(args.ctx.ui, args.title, args.fallback);
   if (value === undefined) return undefined;
   return value.trim() || args.fallback;
 }
@@ -769,13 +785,20 @@ export async function runGuidedSetup(args: {
   const globalPatch = buildGuidedSetupGlobalPatch({
     profile: setupProfile,
     ...(globalBankId !== undefined ? { globalBankId } : {}),
+    ...(projectBankId !== undefined ? { projectBankId } : {}),
     config,
   });
   const summary = [
     `Profile: ${setupProfileChoiceToMemoryProfile(setupProfile)}`,
     `Agent use: ${agentUse}`,
     `Server: ${connection.serverReachable ? "reachable" : "offline"}`,
-    ...(projectBankId ? [`Project config: project bank ${projectBankId}`] : []),
+    ...(projectBankId
+      ? [
+          setupProfile === "isolated-only"
+            ? `Project config: isolated bank ${projectBankId}`
+            : `Global config: coding bank ${projectBankId}`,
+        ]
+      : []),
     ...(globalBankId ? [`Global config: user bank ${globalBankId}`] : []),
     ...(setupProfile === "recall-only"
       ? ["Automatic retain: disabled; automatic recall: enabled"]

@@ -9,6 +9,7 @@ Choose the narrowest memory route that fits the repository.
 Best for most personal coding (ADR-005 **domain-tagged**).
 
 - One **coding bank** (`banks.project.bankId`) shared across repos.
+- Guided setup stores that bank id in **user/global** config so new repos prefill the same id.
 - Soft isolation via stable `project:<id>` tags (see [project identity](/pi-hindsight/concepts/project-identity/)).
 - Automatic retain writes to the coding bank with project tags.
 

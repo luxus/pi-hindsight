@@ -30,6 +30,7 @@ describe("config editing model", () => {
 
     expect(fields.find((field) => field.id === "projectBankId")?.editableScopes).toEqual([
       "project",
+      "global",
     ]);
     expect(fields.find((field) => field.id === "projectRetainMission")).toBeUndefined();
     expect(fields.find((field) => field.id === "memoryProfile")?.editableScopes).toEqual([

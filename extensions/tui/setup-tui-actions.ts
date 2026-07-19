@@ -14,6 +14,7 @@ import {
   type MemoryOperationsDeps,
 } from "../operations/memory-operation-service.js";
 import { type ConfigScope, type ProjectConfigPatchInput } from "../config/config-writer.js";
+import { inputWithPrefill } from "./prefill-input.js";
 import { CANCEL } from "./setup-tui-types.js";
 
 const LOCAL_EMBED_GUIDANCE = [
@@ -123,7 +124,8 @@ async function promptScopedValue(
 
   const scope = await chooseScope(ctx, field);
   if (!scope) return undefined;
-  const value = await ctx.ui.input(
+  const value = await inputWithPrefill(
+    ctx.ui,
     settingPrompt(field),
     inputDefaultForConfigEditingField(field.id, deps.getConfig(), deps.getProjectBankId()),
   );

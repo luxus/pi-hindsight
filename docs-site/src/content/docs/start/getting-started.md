@@ -52,7 +52,7 @@ Guided setup handles:
 
 1. Hindsight server URL
 2. memory profile
-3. project and/or user bank
+3. project and/or user bank (shared coding bank id is saved to user/global config and prefilled next time)
 4. optional dry-run-first historical import
 
 Bank templates, mental models, and directives are managed in the Hindsight control-plane web UI, not in Pi.

@@ -30,6 +30,17 @@ const configuredGlobal = {
   },
 };
 
+/** Isolate global config writes from the real user home. */
+function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
+  const home = mkdtempSync(join(tmpdir(), "pi-hindsight-home-"));
+  const previous = process.env.HOME;
+  process.env.HOME = home;
+  return fn(home).finally(() => {
+    if (previous === undefined) delete process.env.HOME;
+    else process.env.HOME = previous;
+  });
+}
+
 describe("guided setup", () => {
   it("detects project config files", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-"));
@@ -67,6 +78,7 @@ describe("guided setup", () => {
   });
 
   it("builds profile and bank patches without inventing global bank IDs", () => {
+    // Shared coding bank is written to global config, not project.
     expect(
       buildGuidedSetupPatch({
         profile: "project-only",
@@ -77,7 +89,6 @@ describe("guided setup", () => {
       memoryProfile: "project-only",
       setupComplete: true,
       scopeMode: "domain-tagged",
-      projectBankId: "project-bank",
     });
 
     expect(
@@ -91,7 +102,6 @@ describe("guided setup", () => {
       memoryProfile: "project+global",
       setupComplete: true,
       scopeMode: "domain-tagged",
-      projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });
 
@@ -120,7 +130,6 @@ describe("guided setup", () => {
       memoryProfile: "recall-only",
       setupComplete: true,
       scopeMode: "domain-tagged",
-      projectBankId: "project-bank",
     });
   });
 
@@ -139,14 +148,27 @@ describe("guided setup", () => {
     });
   });
 
-  it("builds global config patches for user memory profiles", () => {
+  it("builds global config patches for shared coding bank and user memory", () => {
+    expect(
+      buildGuidedSetupGlobalPatch({
+        profile: "project-only",
+        projectBankId: "pi-coding",
+        config: DEFAULT_CONFIG,
+      }),
+    ).toEqual({ scope: "global", projectBankId: "pi-coding" });
     expect(
       buildGuidedSetupGlobalPatch({
         profile: "project-user",
+        projectBankId: "pi-coding",
         globalBankId: "global-luxus",
         config: DEFAULT_CONFIG,
       }),
-    ).toEqual({ scope: "global", enableGlobalBank: true, globalBankId: "global-luxus" });
+    ).toEqual({
+      scope: "global",
+      enableGlobalBank: true,
+      globalBankId: "global-luxus",
+      projectBankId: "pi-coding",
+    });
     expect(
       buildGuidedSetupGlobalPatch({
         profile: "user-only",
@@ -155,56 +177,73 @@ describe("guided setup", () => {
       }),
     ).toEqual({ scope: "global", enableGlobalBank: true, globalBankId: "global-luxus" });
     expect(
-      buildGuidedSetupGlobalPatch({ profile: "project-only", config: DEFAULT_CONFIG }),
+      buildGuidedSetupGlobalPatch({
+        profile: "recall-only",
+        projectBankId: "pi-coding",
+        config: DEFAULT_CONFIG,
+      }),
+    ).toEqual({ scope: "global", projectBankId: "pi-coding" });
+    expect(
+      buildGuidedSetupGlobalPatch({
+        profile: "isolated-only",
+        projectBankId: "client-acme",
+        config: DEFAULT_CONFIG,
+      }),
     ).toBeUndefined();
     expect(
-      buildGuidedSetupGlobalPatch({ profile: "recall-only", config: DEFAULT_CONFIG }),
+      buildGuidedSetupGlobalPatch({ profile: "project-only", config: DEFAULT_CONFIG }),
     ).toBeUndefined();
   });
 
   it("writes project config without a template step", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-run-"));
-    const notify = vi.fn();
-    const ctx = {
-      cwd,
-      sessionManager: { getSessionFile: () => undefined },
-      ui: {
-        notify,
-        input: vi.fn().mockResolvedValueOnce("project-bank"),
-        select: vi
-          .fn()
-          .mockResolvedValueOnce("Project Only")
-          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
-        // Write config yes; skip mental models; skip import.
-        confirm: vi
-          .fn()
-          .mockResolvedValueOnce(true)
-          .mockResolvedValueOnce(false)
-          .mockResolvedValueOnce(false),
-      },
-    } as never;
+    await withTempHome(async (home) => {
+      const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-run-"));
+      const notify = vi.fn();
+      const ctx = {
+        cwd,
+        sessionManager: { getSessionFile: () => undefined },
+        ui: {
+          notify,
+          input: vi.fn().mockResolvedValueOnce("project-bank"),
+          select: vi
+            .fn()
+            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+          // Write config yes; skip mental models; skip import.
+          confirm: vi
+            .fn()
+            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce(false)
+            .mockResolvedValueOnce(false),
+        },
+      } as never;
 
-    const completed = await runGuidedSetup({
-      ctx,
-      cwd,
-      deps: {
-        getClient: () => ({
-          retain: vi.fn(),
-          recall: vi.fn(),
-          reflect: vi.fn(),
-          health: vi.fn(async () => ({ status: "ok" })),
-        }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "project-bank",
-      } as never,
+      const completed = await runGuidedSetup({
+        ctx,
+        cwd,
+        deps: {
+          getClient: () => ({
+            retain: vi.fn(),
+            recall: vi.fn(),
+            reflect: vi.fn(),
+            health: vi.fn(async () => ({ status: "ok" })),
+          }),
+          getConfig: () => DEFAULT_CONFIG,
+          getProjectBankId: () => "project-bank",
+        } as never,
+      });
+
+      expect(completed).toBe(true);
+      expect(hasProjectHindsightConfig(cwd)).toBe(true);
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining(`Wrote ${join(home, ".pi", "agent", "hindsight.json")}`),
+        "info",
+      );
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining(`Wrote ${join(cwd, ".pi", "hindsight.json")}`),
+        "info",
+      );
     });
-
-    expect(completed).toBe(true);
-    expect(hasProjectHindsightConfig(cwd)).toBe(true);
-    expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining(`Wrote ${join(cwd, ".pi", "hindsight.json")}`),
-      "info",
-    );
   });
 
   it("limits setup import choices to configured setup banks", () => {
@@ -322,15 +361,20 @@ describe("guided setup", () => {
       memoryProfile: "project+global",
       setupComplete: true,
       scopeMode: "domain-tagged",
-      projectBankId: "project-bank",
       resetDefaults: ["banks.global.bankId"],
     });
     expect(
       buildGuidedSetupGlobalPatch({
         profile: "project-user",
+        projectBankId: "project-bank",
         config: configuredGlobal,
       }),
-    ).toEqual({ scope: "global", enableGlobalBank: true, globalBankId: "global-luxus" });
+    ).toEqual({
+      scope: "global",
+      enableGlobalBank: true,
+      globalBankId: "global-luxus",
+      projectBankId: "project-bank",
+    });
   });
 
   it("extracts mental model names from list responses", () => {
@@ -425,118 +469,122 @@ describe("guided setup", () => {
   });
 
   it("still offers starters when bank has other projects' models but not this project's", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-existing-mm-"));
-    const notify = vi.fn();
-    const confirm = vi
-      .fn()
-      // Write config yes; decline MM provision; import no.
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(false);
-    const applyBankTemplate = vi.fn();
-    const listMentalModels = vi.fn(async () => ({
-      items: [{ id: "project-architecture-and-seams--other-project", name: "Other arch" }],
-    }));
-    const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
-    const ctx = {
-      cwd,
-      sessionManager: { getSessionFile: () => undefined },
-      ui: {
-        notify,
-        input: vi.fn().mockResolvedValueOnce("project-bank"),
-        select: vi
-          .fn()
-          .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
-          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
-        confirm,
-      },
-    } as never;
+    await withTempHome(async () => {
+      const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-existing-mm-"));
+      const notify = vi.fn();
+      const confirm = vi
+        .fn()
+        // Write config yes; decline MM provision; import no.
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(false);
+      const applyBankTemplate = vi.fn();
+      const listMentalModels = vi.fn(async () => ({
+        items: [{ id: "project-architecture-and-seams--other-project", name: "Other arch" }],
+      }));
+      const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
+      const ctx = {
+        cwd,
+        sessionManager: { getSessionFile: () => undefined },
+        ui: {
+          notify,
+          input: vi.fn().mockResolvedValueOnce("project-bank"),
+          select: vi
+            .fn()
+            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+          confirm,
+        },
+      } as never;
 
-    const completed = await runGuidedSetup({
-      ctx,
-      cwd,
-      deps: {
-        getClient: () => ({
-          retain: vi.fn(),
-          recall: vi.fn(),
-          reflect: vi.fn(),
-          getBankProfile,
-          listMentalModels,
-          importBankTemplate: applyBankTemplate,
-        }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "project-bank",
-      } as never,
+      const completed = await runGuidedSetup({
+        ctx,
+        cwd,
+        deps: {
+          getClient: () => ({
+            retain: vi.fn(),
+            recall: vi.fn(),
+            reflect: vi.fn(),
+            getBankProfile,
+            listMentalModels,
+            importBankTemplate: applyBankTemplate,
+          }),
+          getConfig: () => DEFAULT_CONFIG,
+          getProjectBankId: () => "project-bank",
+        } as never,
+      });
+
+      expect(completed).toBe(true);
+      expect(getBankProfile).toHaveBeenCalledWith("project-bank");
+      expect(listMentalModels).toHaveBeenCalledWith("project-bank");
+      expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
+      expect(confirm.mock.calls[1]?.[0]).toBe("Provision starter mental models?");
+      expect(confirm.mock.calls[1]?.[1]).toEqual(expect.stringContaining("starters present"));
+      expect(applyBankTemplate).not.toHaveBeenCalled();
     });
-
-    expect(completed).toBe(true);
-    expect(getBankProfile).toHaveBeenCalledWith("project-bank");
-    expect(listMentalModels).toHaveBeenCalledWith("project-bank");
-    expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
-    expect(confirm.mock.calls[1]?.[0]).toBe("Provision starter mental models?");
-    expect(confirm.mock.calls[1]?.[1]).toEqual(expect.stringContaining("starters present"));
-    expect(applyBankTemplate).not.toHaveBeenCalled();
   });
 
   it("does not prompt for starter mental models when expected starters already exist", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-complete-mm-"));
-    const notify = vi.fn();
-    const confirm = vi
-      .fn()
-      // Write config yes; import no. No mental-model confirm should appear.
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false);
-    const applyBankTemplate = vi.fn();
-    const projectId = resolveProjectIdentity(cwd, DEFAULT_CONFIG).projectId;
-    const expectedIds = expectedStarterMentalModelIds({
-      target: "project",
-      agentUse: "coding",
-      projectId,
-    });
-    const listMentalModels = vi.fn(async () => ({
-      items: expectedIds.map((id) => ({ id, name: id })),
-    }));
-    const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
-    const ctx = {
-      cwd,
-      sessionManager: { getSessionFile: () => undefined },
-      ui: {
-        notify,
-        input: vi.fn().mockResolvedValueOnce("project-bank"),
-        select: vi
-          .fn()
-          .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
-          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
-        confirm,
-      },
-    } as never;
+    await withTempHome(async () => {
+      const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-complete-mm-"));
+      const notify = vi.fn();
+      const confirm = vi
+        .fn()
+        // Write config yes; import no. No mental-model confirm should appear.
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      const applyBankTemplate = vi.fn();
+      const projectId = resolveProjectIdentity(cwd, DEFAULT_CONFIG).projectId;
+      const expectedIds = expectedStarterMentalModelIds({
+        target: "project",
+        agentUse: "coding",
+        projectId,
+      });
+      const listMentalModels = vi.fn(async () => ({
+        items: expectedIds.map((id) => ({ id, name: id })),
+      }));
+      const getBankProfile = vi.fn(async () => ({ id: "project-bank" }));
+      const ctx = {
+        cwd,
+        sessionManager: { getSessionFile: () => undefined },
+        ui: {
+          notify,
+          input: vi.fn().mockResolvedValueOnce("project-bank"),
+          select: vi
+            .fn()
+            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+          confirm,
+        },
+      } as never;
 
-    const completed = await runGuidedSetup({
-      ctx,
-      cwd,
-      deps: {
-        getClient: () => ({
-          retain: vi.fn(),
-          recall: vi.fn(),
-          reflect: vi.fn(),
-          getBankProfile,
-          listMentalModels,
-          importBankTemplate: applyBankTemplate,
-        }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "project-bank",
-      } as never,
-    });
+      const completed = await runGuidedSetup({
+        ctx,
+        cwd,
+        deps: {
+          getClient: () => ({
+            retain: vi.fn(),
+            recall: vi.fn(),
+            reflect: vi.fn(),
+            getBankProfile,
+            listMentalModels,
+            importBankTemplate: applyBankTemplate,
+          }),
+          getConfig: () => DEFAULT_CONFIG,
+          getProjectBankId: () => "project-bank",
+        } as never,
+      });
 
-    expect(completed).toBe(true);
-    expect(confirm).toHaveBeenCalledTimes(2);
-    expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
-    expect(confirm.mock.calls[1]?.[0]).toBe("Preview historical import now?");
-    expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining("all 4 starter mental model(s) already present"),
-      "info",
-    );
-    expect(applyBankTemplate).not.toHaveBeenCalled();
+      expect(completed).toBe(true);
+      expect(confirm).toHaveBeenCalledTimes(2);
+      expect(confirm.mock.calls[0]?.[0]).toBe("Write Pi Hindsight config?");
+      expect(confirm.mock.calls[1]?.[0]).toBe("Preview historical import now?");
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining("all 4 starter mental model(s) already present"),
+        "info",
+      );
+      expect(applyBankTemplate).not.toHaveBeenCalled();
+    });
   });
 
   it("probes bank existence for typo protection", async () => {
@@ -712,62 +760,67 @@ describe("guided setup", () => {
   });
 
   it("skips mental models and import when server probe ends offline", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-offline-"));
-    const notify = vi.fn();
-    const applyBankTemplate = vi.fn();
-    const listMentalModels = vi.fn();
-    const confirm = vi
-      .fn()
-      // Decline API key env setup after failed probe
-      .mockResolvedValueOnce(false)
-      // Write config yes only (no MM / import prompts)
-      .mockResolvedValueOnce(true);
-    const ctx = {
-      cwd,
-      sessionManager: { getSessionFile: () => undefined },
-      ui: {
-        notify,
-        input: vi.fn().mockResolvedValueOnce("project-bank"),
-        select: vi
-          .fn()
-          // After key decline: Server still unreachable → offline
-          .mockResolvedValueOnce("Continue offline (config only)")
-          .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
-          .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
-        confirm,
-      },
-    } as never;
+    await withTempHome(async () => {
+      const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-offline-"));
+      const notify = vi.fn();
+      const applyBankTemplate = vi.fn();
+      const listMentalModels = vi.fn();
+      const confirm = vi
+        .fn()
+        // Decline API key env setup after failed probe
+        .mockResolvedValueOnce(false)
+        // Write config yes only (no MM / import prompts)
+        .mockResolvedValueOnce(true);
+      const ctx = {
+        cwd,
+        sessionManager: { getSessionFile: () => undefined },
+        ui: {
+          notify,
+          input: vi.fn().mockResolvedValueOnce("project-bank"),
+          select: vi
+            .fn()
+            // After key decline: Server still unreachable → offline
+            .mockResolvedValueOnce("Continue offline (config only)")
+            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
+          confirm,
+        },
+      } as never;
 
-    const completed = await runGuidedSetup({
-      ctx,
-      cwd,
-      deps: {
-        getClient: () => ({
-          retain: vi.fn(),
-          recall: vi.fn(),
-          reflect: vi.fn(),
-          // No health → check falls through and fails without network mock
-          getBankProfile: vi.fn(async () => {
-            throw Object.assign(new Error("ECONNREFUSED"), { status: 503 });
+      const completed = await runGuidedSetup({
+        ctx,
+        cwd,
+        deps: {
+          getClient: () => ({
+            retain: vi.fn(),
+            recall: vi.fn(),
+            reflect: vi.fn(),
+            // No health → check falls through and fails without network mock
+            getBankProfile: vi.fn(async () => {
+              throw Object.assign(new Error("ECONNREFUSED"), { status: 503 });
+            }),
+            listMentalModels,
+            importBankTemplate: applyBankTemplate,
           }),
-          listMentalModels,
-          importBankTemplate: applyBankTemplate,
-        }),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "project-bank",
-      } as never,
-    });
+          getConfig: () => DEFAULT_CONFIG,
+          getProjectBankId: () => "project-bank",
+        } as never,
+      });
 
-    expect(completed).toBe(true);
-    expect(hasProjectHindsightConfig(cwd)).toBe(true);
-    expect(notify).toHaveBeenCalledWith(
-      expect.stringContaining("Server: offline · project bank project-bank: unverified"),
-      "info",
-    );
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Offline setup complete"), "info");
-    expect(applyBankTemplate).not.toHaveBeenCalled();
-    expect(listMentalModels).not.toHaveBeenCalled();
-    expect(confirm).toHaveBeenCalledTimes(2);
-    expect(confirm.mock.calls[1]?.[0]).toBe("Write Pi Hindsight config?");
+      expect(completed).toBe(true);
+      expect(hasProjectHindsightConfig(cwd)).toBe(true);
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining("Server: offline · project bank project-bank: unverified"),
+        "info",
+      );
+      expect(notify).toHaveBeenCalledWith(
+        expect.stringContaining("Offline setup complete"),
+        "info",
+      );
+      expect(applyBankTemplate).not.toHaveBeenCalled();
+      expect(listMentalModels).not.toHaveBeenCalled();
+      expect(confirm).toHaveBeenCalledTimes(2);
+      expect(confirm.mock.calls[1]?.[0]).toBe("Write Pi Hindsight config?");
+    });
   });
 });
