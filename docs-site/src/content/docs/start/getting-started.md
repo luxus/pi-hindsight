@@ -51,26 +51,29 @@ If no project config exists, `/hindsight` offers guided setup, open hub, **Ignor
 Guided setup handles:
 
 1. Hindsight server URL
-2. memory profile
-3. project and/or user bank (shared coding bank id is saved to user/global config and prefilled next time)
+2. memory profile (**Coding** is recommended for normal repos)
+3. coding and/or life bank ids (shared coding bank id is saved to user/global config and prefilled next time)
 4. optional dry-run-first historical import
 
 Bank templates, mental models, and directives are managed in the Hindsight control-plane web UI, not in Pi.
 
-## 4. Pick the narrowest profile
+## 4. Pick a profile (Coding is the default recommendation)
 
-- **Project + User**: best personal-coding default. Project facts stay repo-scoped; user memory carries durable preferences across repos.
-- **Project Only**: best for strict isolation, client work, sensitive repos, and team projects.
-- **User Only**: best for non-repo assistance where project memory would be noise.
-- **Recall Only**: best cautious start. Recall works; automatic retain is off.
+- **Coding** (recommended): one shared coding bank; repos separated by tags. Use for almost every personal coding repo.
+- **Coding + Life**: coding bank plus an optional personal/life bank for prefs and goals.
+- **Isolated project**: hard-wall bank for this repo only (client/sensitive work).
+- **Life only**: personal bank only; no coding bank.
+- **Recall only**: inject memory, do not auto-save this session.
+
+See [Memory profiles](/pi-hindsight/start/memory-profiles/) and [Memory banks](/pi-hindsight/concepts/memory-banks/).
 
 ## 5. Check status
 
 After setup, `/hindsight` should show:
 
 - reachable Hindsight server
-- expected memory profile
-- expected Project Bank and/or User Bank
+- expected memory profile (usually **Coding**)
+- expected coding bank and optional life bank
 - automatic recall/retain state
 - retain queue path
 - import checkpoint/manifest state when imports have run

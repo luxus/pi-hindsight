@@ -2,53 +2,65 @@
 title: "Memory profiles"
 ---
 
-Choose the narrowest memory route that fits the repository.
+A **profile** picks which banks this repo uses. It is not a second product.
 
-## Coding (shared bank + project tags)
+## Recommended: Coding
 
-Best for most personal coding (ADR-005 **domain-tagged**).
+**Use this for almost every personal coding repo.**
 
-- One **coding bank** (`banks.project.bankId`) shared across repos.
-- Guided setup stores that bank id in **user/global** config so new repos prefill the same id.
-- Soft isolation via stable `project:<id>` tags (see [project identity](/pi-hindsight/concepts/project-identity/)).
-- Automatic retain writes to the coding bank with project tags.
+- One **shared coding bank** across repos
+- Soft isolation with `project:<id>` tags (see [project identity](/pi-hindsight/concepts/project-identity/))
+- Automatic retain → coding bank only
+- Coding bank id is saved in **user/global** config so new repos prefill it
 
-Use this when you hop between repos and want fewer Hindsight banks.
+In guided setup this is the first option (**Coding — recommended**).
 
-## Coding + Life (Project + User)
+## Coding + Life
 
-Best for personal coding OS.
+Same as **Coding**, plus an optional **Life / User bank** for durable personal memory (prefs, people, goals).
 
-- Coding bank as above, plus optional **life/user bank** for durable cross-project prefs.
-- Recall can read both; each has its own token budget (`recall.maxTokens` and `recall.userMaxTokens`).
-- Automatic retain is coding-bank only; life/user writes stay explicit.
+- Recall can read both banks (separate token budgets)
+- Automatic retain still **only** hits the coding bank
+- Life writes stay explicit (`hindsight_retain_global` / hub)
 
 ## Isolated project
 
-Hard wall: dedicated bank for this repo (`scope.mode: isolated-bank`), path-derived if no bank id.
+Hard wall: dedicated bank for **this repo only** (`scope.mode: isolated-bank`).
 
-Use for sensitive repositories, client work, or any project where memory must never share a bank.
+Use for client work, sensitive repos, or anything that must not share the coding bank.
 
-## User Only
+## Life only
 
-Best for non-repo assistance.
+No coding bank. Only the personal Life / User bank.
 
-- Project Bank is disabled.
-- User Bank settings are stored in global Pi config.
-- Automatic retain is off, same as every other profile; use `hindsight_retain_global` or a command to write User Bank memory explicitly.
+- Automatic retain is off
+- Explicit tools write life memory when you ask
 
-Use this when project-specific memory would be noise but user preferences still matter.
+Use when you are not doing repo work.
 
-## Recall Only
+## Recall only
 
-Best for cautious adoption.
+Same bank topology as coding (or whatever you configure), but **automatic retain is off**.
 
-- Automatic recall stays enabled.
-- Automatic retain is disabled.
-- Explicit tools and import remain available.
+Use when you want injected memory and do not want this session written automatically.
 
-Use this when you want memory context but do not want the current session written automatically.
+## One-line chooser
+
+| If you want…                   | Pick                 |
+| ------------------------------ | -------------------- |
+| Normal coding memory (default) | **Coding**           |
+| Coding + personal life memory  | **Coding + Life**    |
+| This repo fully sealed         | **Isolated project** |
+| Personal memory only           | **Life only**        |
+| Read memory, don’t auto-save   | **Recall only**      |
+
+## Banks vs profiles
+
+- **Bank** = where memory lives (hard wall). See [Memory banks](/pi-hindsight/concepts/memory-banks/).
+- **Profile** = which banks this repo turns on.
+
+“Project Bank” in older docs means the coding (or isolated) bank path. “User / global bank” means the Life bank.
 
 ## Terminology note
 
-User-facing docs and setup use **User Bank** for cross-project memory. Older config, internal fields, and tool aliases may still say `global`; that alias remains supported for compatibility.
+Older config keys and tool aliases may still say `global` for the Life / User bank. That alias remains supported.

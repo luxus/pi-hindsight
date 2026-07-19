@@ -11,6 +11,7 @@ import {
   buildIgnoreRepoPatch,
   extractMentalModelNames,
   formatSetupBankStatusLine,
+  GUIDED_SETUP_PROFILE_LABELS,
   hasProjectHindsightConfig,
   importChoicesForSetup,
   maybeOfferHistoricalImportForSetup,
@@ -207,7 +208,7 @@ describe("guided setup", () => {
           input: vi.fn().mockResolvedValueOnce("project-bank"),
           select: vi
             .fn()
-            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce(GUIDED_SETUP_PROFILE_LABELS.coding)
             .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
           // Write config yes; skip mental models; skip import.
           confirm: vi
@@ -491,7 +492,7 @@ describe("guided setup", () => {
           input: vi.fn().mockResolvedValueOnce("project-bank"),
           select: vi
             .fn()
-            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce(GUIDED_SETUP_PROFILE_LABELS.coding)
             .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
           confirm,
         },
@@ -552,7 +553,7 @@ describe("guided setup", () => {
           input: vi.fn().mockResolvedValueOnce("project-bank"),
           select: vi
             .fn()
-            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce(GUIDED_SETUP_PROFILE_LABELS.coding)
             .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
           confirm,
         },
@@ -781,7 +782,7 @@ describe("guided setup", () => {
             .fn()
             // After key decline: Server still unreachable → offline
             .mockResolvedValueOnce("Continue offline (config only)")
-            .mockResolvedValueOnce("Coding (shared coding bank + project tags)")
+            .mockResolvedValueOnce(GUIDED_SETUP_PROFILE_LABELS.coding)
             .mockResolvedValueOnce("Coding (architecture, conventions, decisions)"),
           confirm,
         },

@@ -289,7 +289,7 @@ export function buildBaseConfigEditingFields(
       tab: "Banks",
       label: "Memory scope",
       description:
-        "Choose Project Only for strict isolation, Project + User for personal coding, User Only for cross-repo preference memory, or Recall Only to disable automatic retain.",
+        "Coding (project-only) is recommended: shared coding bank. Coding+Life (project+global) adds a personal bank. Isolated is a hard-wall escape hatch. Life-only / recall-only are special cases.",
       value: profile,
       defaultValue: defaultProfile,
       resetKey: "banks.profile",

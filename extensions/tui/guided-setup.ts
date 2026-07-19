@@ -35,6 +35,23 @@ export function setupProfileChoiceToMemoryProfile(choice: SetupProfileChoice): M
   return choice;
 }
 
+/** Guided-setup profile menu (first entry is the recommended default). */
+export const GUIDED_SETUP_PROFILE_LABELS = {
+  coding: "Coding — recommended (shared bank; repos separated by tags)",
+  codingLife: "Coding + Life (coding bank + personal/life bank)",
+  isolated: "Isolated project (hard wall bank for this repo only)",
+  lifeOnly: "Life only (personal bank; no coding bank)",
+  recallOnly: "Recall only (inject memory; do not auto-save)",
+} as const;
+
+const SETUP_PROFILE_BY_LABEL: Record<string, SetupProfileChoice> = {
+  [GUIDED_SETUP_PROFILE_LABELS.coding]: "project-only",
+  [GUIDED_SETUP_PROFILE_LABELS.codingLife]: "project-user",
+  [GUIDED_SETUP_PROFILE_LABELS.isolated]: "isolated-only",
+  [GUIDED_SETUP_PROFILE_LABELS.lifeOnly]: "user-only",
+  [GUIDED_SETUP_PROFILE_LABELS.recallOnly]: "recall-only",
+};
+
 function profileUsesProject(profile: SetupProfileChoice): boolean {
   return (
     profile === "project-user" ||
@@ -689,21 +706,16 @@ export async function runGuidedSetup(args: {
   const offline = connection.offline;
 
   const profile = await args.ctx.ui.select("Choose memory profile", [
-    "Coding (shared coding bank + project tags)",
-    "Coding + Life (coding bank + user bank)",
-    "Isolated project (hard wall bank per repo)",
-    "Life only (user bank)",
-    "Recall only",
+    GUIDED_SETUP_PROFILE_LABELS.coding,
+    GUIDED_SETUP_PROFILE_LABELS.codingLife,
+    GUIDED_SETUP_PROFILE_LABELS.isolated,
+    GUIDED_SETUP_PROFILE_LABELS.lifeOnly,
+    GUIDED_SETUP_PROFILE_LABELS.recallOnly,
   ]);
   if (!profile) return false;
 
-  const setupProfile = {
-    "Coding (shared coding bank + project tags)": "project-only",
-    "Coding + Life (coding bank + user bank)": "project-user",
-    "Isolated project (hard wall bank per repo)": "isolated-only",
-    "Life only (user bank)": "user-only",
-    "Recall only": "recall-only",
-  }[profile] as SetupProfileChoice;
+  const setupProfile = SETUP_PROFILE_BY_LABEL[profile];
+  if (!setupProfile) return false;
 
   const agentUseLabel = await args.ctx.ui.select("How do you use this Pi agent?", [
     "Coding (architecture, conventions, decisions)",
@@ -731,7 +743,7 @@ export async function runGuidedSetup(args: {
         title:
           setupProfile === "isolated-only"
             ? "Isolated project bank ID (optional; leave default for path-derived)"
-            : "Coding bank ID (shared across repos with project tags)",
+            : "Coding bank ID (recommended shared bank; saved globally for new repos)",
         fallback:
           config.banks.project.bankId ??
           (setupProfile === "isolated-only" ? args.deps.getProjectBankId() : "pi-coding"),

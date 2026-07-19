@@ -2,61 +2,79 @@
 title: "Memory Banks"
 ---
 
-A **Memory Bank** is an isolated Hindsight namespace. Banks are the main boundary that prevents unrelated memory from mixing.
+A **bank** is a hard wall in Hindsight: memory in one bank never mixes with another bank.
 
-## Project Bank
+Tags (for example `project:my-app`) only filter **inside** a bank. They do not cross bank walls.
 
-A **Project Bank** is selected for the current repository. It stores repository-specific memory such as:
+## Start here: Coding bank (recommended)
 
-- architecture decisions
-- bugs and fixes
-- project conventions
-- tools and libraries
-- import history
-- repo-local preferences
+Most people need **one coding bank** shared across normal repos.
 
-Project recall is scoped with repository tags so unrelated project memories do not leak in. In Git worktrees, Pi Hindsight resolves the main Git worktree root so linked worktrees of the same repository share the same Project Bank.
+|                              | Coding bank                                                         |
+| ---------------------------- | ------------------------------------------------------------------- |
+| **What it is**               | Shared engineering memory for your coding work                      |
+| **What goes in**             | Architecture, conventions, bugs, decisions, repo history            |
+| **How repos stay separate**  | Soft isolation with `project:<id>` tags (not a new bank per folder) |
+| **Who writes automatically** | Automatic retain after each agent turn                              |
+| **Where the id lives**       | Usually user/global config (guided setup prefills it for new repos) |
+| **Typical id**               | `pi-coding` (or any name you choose once)                           |
 
-## User Bank
+**Pick this unless** the repo is sensitive client work or must never share a bank.
 
-A **User Bank** is an optional cross-project bank for durable user-level memory such as:
+Config field: `banks.project.bankId` (legacy docs may still say “Project Bank” for this path).
 
-- stable preferences
-- recurring workflows
-- coding habits
-- assistant collaboration style
+## Optional: Life / User bank
 
-Guided setup configures the User Bank once in global Pi config for profiles that use user memory. Repository config then chooses whether the current project participates in user memory.
+A **second** bank for _you_, not for a repo.
 
-Automatic retain never writes to the User Bank, in any profile. Use explicit retain (the `hindsight_retain_global` tool or a command) when you want to write user memory.
+|                        | Life / User bank                                                  |
+| ---------------------- | ----------------------------------------------------------------- |
+| **What it is**         | Cross-project personal memory                                     |
+| **What goes in**       | Stable preferences, workflows, people, goals, collaboration style |
+| **Automatic retain?**  | **Never** — only explicit tools/commands                          |
+| **Where the id lives** | User/global Pi config                                             |
 
-## Legacy global naming
+Enable only when you want personal memory alongside coding. Guided setup profile: **Coding + Life**.
 
-Older config, tool aliases, and some internal fields may still say **global**. In user-facing docs, **User Bank** is the same cross-project memory concept. The `global` alias remains supported for compatibility.
+Older config and tools may still say `global` for this bank. Same idea.
 
-## Bank Alias
+## Escape hatch: Isolated bank
 
-A **Bank Alias** is a stable name that resolves to a real Hindsight bank ID:
+One **dedicated** bank for a single repo. Hard wall; no shared coding bank.
 
-- `project` resolves to the selected Project Bank.
-- `global` resolves to the configured User Bank.
+Use for client work, secrets, or “this repo must not share memory with anything else.”
 
-Aliases are useful in tools and documentation when the exact bank ID is not important.
+Guided setup profile: **Isolated project**. Path-derived bank id is fine if you leave the default.
+
+## Quick compare
+
+| Need                                  | Use                           |
+| ------------------------------------- | ----------------------------- |
+| Normal coding across many repos       | **Coding bank** (recommended) |
+| Coding + personal prefs/goals         | **Coding + Life**             |
+| This repo must be fully walled off    | **Isolated bank**             |
+| Personal memory only (no repo memory) | **Life only**                 |
+
+## Bank aliases in tools
+
+Stable names that resolve to real bank ids:
+
+- `project` → active coding bank (or isolated bank for this repo)
+- `global` / `user` → Life / User bank when configured
 
 ## Tags and metadata
 
-Use tags to filter and isolate memory. Use metadata for provenance.
+Use **tags** for scope. Use **metadata** only for provenance (links back to source).
 
-Examples:
+Common tags:
 
-- `source:pi` (always stamp a `source:` for the client that wrote the memory)
-- `project:<stable-id>` (coding bank repo scope; see [project identity](/pi-hindsight/concepts/project-identity/))
+- `source:pi` (always stamp which client wrote the memory)
+- `project:<stable-id>` (repo scope inside the coding bank)
 - `repo:<slug>-<hash>` (legacy dual-tag window)
 - `session:<session-id>`
-- `profile:coding`
 
-Do not rely on metadata for filtering behavior when scope isolation matters.
+Do not rely on metadata for filtering when isolation matters.
 
 ## Multi-client MCP
 
-Other AI tools can share the same banks via Hindsight’s **per-bank** MCP endpoint (`/mcp/<bankId>/`). Keep coding and life banks separate; always stamp `source:`; do not dump web chat into the coding bank. See [MCP multi-client bank wiring](/pi-hindsight/guides/mcp-multi-client/).
+Other tools can share the same banks via Hindsight’s per-bank MCP (`/mcp/<bankId>/`). Keep coding and life banks separate; always stamp `source:`; do not dump web chat into the coding bank. See [MCP multi-client bank wiring](/pi-hindsight/guides/mcp-multi-client/).
