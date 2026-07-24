@@ -36,10 +36,16 @@ function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   const home = mkdtempSync(join(tmpdir(), "pi-hindsight-home-"));
   const previous = process.env.HOME;
   process.env.HOME = home;
-  return fn(home).finally(() => {
+  const restore = () => {
     if (previous === undefined) delete process.env.HOME;
     else process.env.HOME = previous;
-  });
+  };
+  try {
+    return fn(home).finally(restore);
+  } catch (error) {
+    restore();
+    throw error;
+  }
 }
 
 describe("guided setup", () => {

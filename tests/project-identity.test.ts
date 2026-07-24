@@ -11,6 +11,15 @@ import {
 } from "../extensions/banks/banking.js";
 import type { ResolvedConfig, ScopeConfig } from "../extensions/types.js";
 
+const LOCAL_GIT_ENV_KEYS = [
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_INDEX_FILE",
+  "GIT_COMMON_DIR",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+] as const;
+
 function config(
   patch: Partial<Omit<ResolvedConfig, "scope">> & { scope?: Partial<ScopeConfig> } = {},
 ): ResolvedConfig {
@@ -21,12 +30,28 @@ function config(
   };
 }
 
+/** Git hooks/worktrees inject GIT_*; strip so nested repos resolve correctly. */
+function withoutLocalGitEnv<T>(fn: () => T): T {
+  const previous = new Map<string, string | undefined>();
+  for (const key of LOCAL_GIT_ENV_KEYS) {
+    previous.set(key, process.env[key]);
+    delete process.env[key];
+  }
+  try {
+    return fn();
+  } finally {
+    for (const key of LOCAL_GIT_ENV_KEYS) {
+      const value = previous.get(key);
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 function git(args: string[], cwd: string): void {
-  execFileSync("git", args, {
-    cwd,
-    stdio: "ignore",
-    env: { ...process.env, GIT_CONFIG_NOSYSTEM: "1", HOME: cwd },
-  });
+  const env = { ...process.env, GIT_CONFIG_NOSYSTEM: "1", HOME: cwd } as NodeJS.ProcessEnv;
+  for (const key of LOCAL_GIT_ENV_KEYS) delete env[key];
+  execFileSync("git", args, { cwd, stdio: "ignore", env });
 }
 
 describe("stable project identity", () => {
@@ -45,9 +70,11 @@ describe("stable project identity", () => {
   it("prefers an explicit pin over remote and basename", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-pin-"));
     mkdirSync(join(cwd, ".git"));
-    const identity = resolveProjectIdentity(
-      cwd,
-      config({ scope: { projectId: "FinalForm!", projectIdStrategy: "remote" } }),
+    const identity = withoutLocalGitEnv(() =>
+      resolveProjectIdentity(
+        cwd,
+        config({ scope: { projectId: "FinalForm!", projectIdStrategy: "remote" } }),
+      ),
     );
     expect(identity.basis).toBe("pin");
     expect(identity.projectId).toBe("finalform");
@@ -59,10 +86,10 @@ describe("stable project identity", () => {
     mkdirSync(repo);
     git(["init"], repo);
     git(["remote", "add", "origin", "git@github.com:luxus/my-app.git"], repo);
-    const identity = resolveProjectIdentity(repo, config());
+    const identity = withoutLocalGitEnv(() => resolveProjectIdentity(repo, config()));
     expect(identity.basis).toBe("remote");
     expect(identity.projectId).toBe("github-com-luxus-my-app");
-    const tags = recallScopeTags(repo, config());
+    const tags = withoutLocalGitEnv(() => recallScopeTags(repo, config()));
     expect(tags).toEqual(
       expect.arrayContaining([
         "project:github-com-luxus-my-app",
@@ -76,7 +103,7 @@ describe("stable project identity", () => {
     const repo = join(cwd, "solo-repo");
     mkdirSync(repo);
     git(["init"], repo);
-    const identity = resolveProjectIdentity(repo, config());
+    const identity = withoutLocalGitEnv(() => resolveProjectIdentity(repo, config()));
     expect(identity.basis).toBe("basename");
     expect(identity.projectId).toBe("solo-repo");
   }, 15_000);
@@ -87,9 +114,8 @@ describe("stable project identity", () => {
     mkdirSync(repo);
     git(["init"], repo);
     git(["remote", "add", "origin", "git@github.com:luxus/other.git"], repo);
-    const identity = resolveProjectIdentity(
-      repo,
-      config({ scope: { projectIdStrategy: "basename" } }),
+    const identity = withoutLocalGitEnv(() =>
+      resolveProjectIdentity(repo, config({ scope: { projectIdStrategy: "basename" } })),
     );
     expect(identity.basis).toBe("basename");
     expect(identity.projectId).toBe("named-folder");
