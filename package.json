@@ -80,7 +80,7 @@
     "@commitlint/config-conventional": "^21.0.1",
     "@earendil-works/pi-agent-core": "0.82.1",
     "@earendil-works/pi-coding-agent": "0.80.3",
-    "@earendil-works/pi-tui": "0.80.3",
+    "@earendil-works/pi-tui": "0.83.0",
     "@mermaid-js/layout-elk": "^0.2.1",
     "@types/node": "^25.9.1",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
