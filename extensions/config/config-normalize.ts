@@ -278,7 +278,7 @@ export function normalizeConfig(
         ...(projectBankId ? { bankId: projectBankId } : {}),
         derive: enumValue(
           config.banks?.project?.derive,
-          ["repo", "cwd", "manual"],
+          ["repo", "cwd", "manual", "basename"],
           DEFAULT_CONFIG.banks.project.derive,
         ),
         ...missionFields(config.banks?.project),
