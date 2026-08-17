@@ -44,7 +44,7 @@ One **dedicated** bank for a single repo. Hard wall; no shared coding bank.
 
 Use for client work, secrets, or “this repo must not share memory with anything else.”
 
-Guided setup profile: **Isolated project**. Path-derived bank id is fine if you leave the default.
+Guided setup profile: **Isolated project**. Path-derived hashed bank id is fine if you leave the default. Set `banks.project.derive` to `basename` only when this repo must share a folder-named bank with another Hindsight client.
 
 ## Quick compare
 
