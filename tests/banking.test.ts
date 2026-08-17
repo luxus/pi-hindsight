@@ -187,4 +187,37 @@ describe("domain coding bank roles", () => {
     expect(deriveProjectBankId("/any/repo", config)).toBe("kai-coding");
     expect(deriveProjectBankId("/other/repo", config)).toBe("kai-coding");
   });
+
+  it("uses the git-root folder name when derive is basename", () => {
+    const parent = mkdtempSync(join(tmpdir(), "pi-hindsight-basename-"));
+    const root = join(parent, "my_websites");
+    mkdirSync(root);
+    mkdirSync(join(root, ".git"));
+    const child = join(root, "apps", "web");
+    mkdirSync(child, { recursive: true });
+    const config = {
+      ...DEFAULT_CONFIG,
+      scope: { ...DEFAULT_CONFIG.scope, mode: "isolated-bank" as const },
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        project: { enabled: true, derive: "basename" as const },
+      },
+    };
+    withoutLocalGitEnv(() => {
+      expect(deriveProjectBankId(child, config)).toBe("my_websites");
+      expect(deriveProjectBankId(root, config)).toBe("my_websites");
+    });
+  });
+
+  it("keeps hashed bank ids for the default repo derive", () => {
+    const parent = mkdtempSync(join(tmpdir(), "pi-hindsight-hashed-"));
+    const root = join(parent, "my_websites");
+    mkdirSync(root);
+    mkdirSync(join(root, ".git"));
+    withoutLocalGitEnv(() => {
+      expect(deriveProjectBankId(root, DEFAULT_CONFIG)).toMatch(
+        /^pi-project-my-websites-[0-9a-f]{12}$/,
+      );
+    });
+  });
 });

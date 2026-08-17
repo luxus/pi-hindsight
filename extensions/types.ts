@@ -111,7 +111,13 @@ export interface ResolvedConfig {
     project: BankMissionSettings & {
       enabled: boolean;
       bankId?: string;
-      derive: "repo" | "cwd" | "manual";
+      /**
+       * How to pick a bank id when banks.project.bankId is unset.
+       * - repo/cwd: hashed `pi-project-<slug>-<pathHash>` (upstream default)
+       * - basename: git-root folder name, Claude/Grok compatible (`my_websites`)
+       * - manual: bankId is required; leftover hashed fallback if missing
+       */
+      derive: "repo" | "cwd" | "manual" | "basename";
     };
     user: BankMissionSettings & { enabled: boolean; bankId?: string };
     global: BankMissionSettings & { enabled: boolean; bankId?: string };
