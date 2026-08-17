@@ -54,6 +54,16 @@ When dual-tag can end: every active project memory you care about carries `proje
 | **`domain-tagged`** (default) | Shared coding bank (`banks.project.bankId`)    | `project:<id>` isolates repos |
 | **`isolated-bank`**           | Hard wall per repo (path-derived if no bankId) | project tags still written    |
 
+When `banks.project.bankId` is unset, `banks.project.derive` picks the isolated bank name:
+
+| `derive`                 | Bank id                                    |
+| ------------------------ | ------------------------------------------ |
+| `repo` / `cwd` (default) | hashed `pi-project-<slug>-<pathHash>`      |
+| `basename`               | git-root folder name as-is (`my_websites`) |
+| `manual`                 | requires `bankId`                          |
+
+`basename` is opt-in interoperability with clients that already use folder-named banks (for example Claude Code / Grok `dynamicBankId` + project granularity). It is not the recommended Coding profile. Two different repos with the same folder name share that bank.
+
 `banks.coding` aliases `banks.project`. `banks.life` aliases `banks.user`.
 
 ## Config
