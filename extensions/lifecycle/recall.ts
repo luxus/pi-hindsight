@@ -201,23 +201,33 @@ export async function recallForContext(args: {
         hints: args.cwd ? queryHints(args.cwd, args.config, scope) : [],
       });
       try {
-        const response = await withTimeout("hindsight recall", args.config.recall.timeoutMs, () =>
-          args.client.recall(scope.bankId, query, {
-            budget: args.config.recall.budget,
-            maxTokens: maxTokensForScope(args.config, scope),
-            types: args.config.recall.types,
-            preferObservations: args.config.recall.preferObservations,
-            ...(args.config.recall.includeSourceFacts
-              ? {
-                  includeSourceFacts: true,
-                  maxSourceFactsTokens: args.config.recall.maxSourceFactsTokens,
-                }
-              : {}),
-            ...(args.config.recall.queryTimestamp
-              ? { queryTimestamp: args.config.recall.queryTimestamp }
-              : {}),
-            ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
-          }),
+        // Forward the timeout's AbortSignal into the client call: the adapted
+        // client treats options.signal as a parent signal, so when this outer
+        // recall timeout fires the underlying fetch is aborted and the server
+        // sees a client disconnect and cancels the recall instead of running it
+        // to completion. Without this the outer timeout rejects the turn-side
+        // promise while the request keeps running up to the client-level timeout.
+        const response = await withTimeout(
+          "hindsight recall",
+          args.config.recall.timeoutMs,
+          (signal) =>
+            args.client.recall(scope.bankId, query, {
+              budget: args.config.recall.budget,
+              maxTokens: maxTokensForScope(args.config, scope),
+              types: args.config.recall.types,
+              preferObservations: args.config.recall.preferObservations,
+              ...(args.config.recall.includeSourceFacts
+                ? {
+                    includeSourceFacts: true,
+                    maxSourceFactsTokens: args.config.recall.maxSourceFactsTokens,
+                  }
+                : {}),
+              ...(args.config.recall.queryTimestamp
+                ? { queryTimestamp: args.config.recall.queryTimestamp }
+                : {}),
+              ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
+              signal,
+            }),
         );
         const results = filterRecallQuality(
           textFromRecallResponse(response),
