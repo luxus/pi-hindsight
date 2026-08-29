@@ -265,14 +265,19 @@ describe("guided setup", () => {
         setupProfile: "project-only",
         projectBankId: "project-bank",
       }),
-    ).toEqual(["Skip import", "Preview repo Pi sessions"]);
+    ).toEqual(["Skip import", "Preview repo Pi sessions", "Preview approved Pi session roots"]);
     expect(
       importChoicesForSetup({
         setupProfile: "project-user",
         projectBankId: "project-bank",
         globalBankId: "user-bank",
       }),
-    ).toEqual(["Skip import", "Preview repo Pi sessions", "Preview chat transcript"]);
+    ).toEqual([
+      "Skip import",
+      "Preview repo Pi sessions",
+      "Preview approved Pi session roots",
+      "Preview chat transcript",
+    ]);
   });
 
   it("previews repo session import after project setup before writing", async () => {
@@ -296,6 +301,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions,
+      importMultiRootProjectSessions: vi.fn(),
       importChatTranscript: vi.fn(),
     } as never;
 
@@ -317,6 +323,71 @@ describe("guided setup", () => {
     expect(importProjectSessions).toHaveBeenCalledTimes(1);
   });
 
+  it("previews user-approved session roots before writing with dryRunFirst", async () => {
+    const ctx = {
+      cwd: "/repo",
+      ui: {
+        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
+        select: vi.fn().mockResolvedValueOnce("Preview approved Pi session roots"),
+        input: vi
+          .fn()
+          .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c"),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importMultiRootProjectSessions = vi
+      .fn()
+      .mockResolvedValueOnce({
+        bankId: "project-bank",
+        summary: {
+          approvedRootCount: 3,
+          groupCount: 2,
+          validSessionCount: 4,
+          invalidSessionCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+          malformedLineCount: 0,
+        },
+      })
+      .mockResolvedValueOnce({
+        bankId: "project-bank",
+        summary: {
+          groupCount: 2,
+          importedGroupCount: 2,
+          failedGroupCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+        },
+      });
+    const operations = {
+      importProjectSessions: vi.fn(),
+      importMultiRootProjectSessions,
+      importChatTranscript: vi.fn(),
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "project-only",
+      cwd: "/repo",
+      projectBankId: "project-bank",
+    });
+
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(1, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      bank: "project-bank",
+      dryRun: true,
+      onProgress: expect.any(Function),
+    });
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(2, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      bank: "project-bank",
+      dryRun: false,
+      dryRunFirst: true,
+      onProgress: expect.any(Function),
+    });
+  });
+
   it("previews chat transcript import after user setup before writing", async () => {
     const ctx = {
       ui: {
@@ -336,6 +407,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions: vi.fn(),
+      importMultiRootProjectSessions: vi.fn(),
       importChatTranscript,
     } as never;
 

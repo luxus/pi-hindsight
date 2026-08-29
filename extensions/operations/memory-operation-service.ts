@@ -4,6 +4,7 @@ import {
   importMemoryProjectSessions,
   importMemorySession,
 } from "../imports/import-sessions.js";
+import { importMemoryMultiRootProjectSessions } from "../imports/import-multi-root.js";
 import { createBankTemplateOperations } from "./memory-bank-template-operations.js";
 import { createConfigOperations } from "./memory-config-operations.js";
 import { createControlOperations } from "./memory-control-operations.js";
@@ -50,6 +51,17 @@ function createImportOperations(deps: MemoryOperationsDeps) {
       onProgress?: ImportProgressReporter;
     }) {
       return importMemoryProjectSessions(args, deps);
+    },
+
+    async importMultiRootProjectSessions(args: {
+      approvedRoots: string[];
+      bank?: string;
+      dryRun?: boolean;
+      dryRunFirst?: boolean;
+      includeBranches?: ResolvedConfig["import"]["includeBranches"];
+      onProgress?: ImportProgressReporter;
+    }) {
+      return importMemoryMultiRootProjectSessions(args, deps);
     },
   };
 }

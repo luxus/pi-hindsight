@@ -286,6 +286,7 @@ export function importChoicesForSetup(args: {
   const choices = ["Skip import"];
   if (profileUsesProject(args.setupProfile) && args.projectBankId) {
     choices.push("Preview repo Pi sessions");
+    choices.push("Preview approved Pi session roots");
   }
   if (profileUsesUser(args.setupProfile) && args.globalBankId) {
     choices.push("Preview chat transcript");
@@ -301,6 +302,13 @@ function setupDocsHint(topic: string, path: string): string {
 
 function setupImportProgressMessage(event: ImportProgressEvent): string {
   return `Hindsight import progress: ${event.message}`;
+}
+
+function parseApprovedRootsInput(input: string): string[] {
+  return input
+    .split(/[\n,]+/)
+    .map((root) => root.trim())
+    .filter(Boolean);
 }
 
 function isNotFoundError(error: unknown): boolean {
@@ -651,6 +659,41 @@ export async function maybeOfferHistoricalImportForSetup(args: {
     });
     args.ctx.ui.notify(
       `Imported repo Pi sessions into ${result.bankId}: sessions=${result.sessionFiles.length}; documents=${result.documentCount}; messages=${result.messageCount}`,
+      "info",
+    );
+    return;
+  }
+
+  if (choice === "Preview approved Pi session roots") {
+    const input = await args.ctx.ui.input(
+      "Approved Pi session roots",
+      "Enter absolute roots separated by commas or new lines",
+    );
+    const approvedRoots = input ? parseApprovedRootsInput(input) : [];
+    if (approvedRoots.length === 0) return;
+    const onProgress = setupImportProgressReporter(args.ctx);
+    args.ctx.ui.notify("Preparing approved-root Pi session import preview...", "info");
+    const dryRun = await args.operations.importMultiRootProjectSessions({
+      approvedRoots,
+      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      dryRun: true,
+      onProgress,
+    });
+    const confirmed = await args.ctx.ui.confirm(
+      `Import approved Pi session roots into ${dryRun.bankId}?`,
+      `Dry run: roots=${dryRun.summary.approvedRootCount}; groups=${dryRun.summary.groupCount}; sessions=${dryRun.summary.validSessionCount}; documents=${dryRun.summary.documentCount}; messages=${dryRun.summary.messageCount}; invalid=${dryRun.summary.invalidSessionCount}; malformed=${dryRun.summary.malformedLineCount}`,
+    );
+    if (!confirmed) return;
+    args.ctx.ui.notify("Starting approved-root Pi session import write...", "info");
+    const result = await args.operations.importMultiRootProjectSessions({
+      approvedRoots,
+      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      dryRun: false,
+      dryRunFirst: true,
+      onProgress,
+    });
+    args.ctx.ui.notify(
+      `Imported approved Pi session roots into ${result.bankId}: groups=${result.summary.importedGroupCount}/${result.summary.groupCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; failed=${result.summary.failedGroupCount}`,
       "info",
     );
     return;

@@ -25,6 +25,7 @@ Pi Hindsight supports:
 - current Pi session
 - explicit Pi session JSONL file
 - repo-scoped Pi sessions from the current session directory
+- approved Pi session JSONL roots, grouped by each session header's canonical `cwd`
 - explicit chat transcript JSONL files for User memory
 
 Pi session imports and chat transcript imports are separate paths. They do not silently mix repo history with user conversation history.
@@ -38,6 +39,8 @@ Open `/hindsight` and press `i` (import always dry-runs before write). Guided se
 ```
 
 If the preview looks right, rerun without `--dry-run`. Non-dry-run imports announce the start and require confirmation because they write memory plus local checkpoint/manifest files.
+
+For broader backfills, choose the approved-roots import option and enter only roots you want scanned. The hub previews first; after confirmation the write path preflights every discovered project group again and starts real imports only if all preflights succeed.
 
 Use `--all-leaves` only when you intentionally want every fork leaf from a session file. Default import follows the current branch.
 
@@ -58,6 +61,8 @@ Use these numbers to catch noisy imports before writing memory.
 Project session discovery avoids broad history imports. It scans only the current session file's directory and keeps `.jsonl` files whose parsed `cwd` resolves to the current repo/cwd.
 
 Equivalent path forms are treated as the same project, including trailing separators, `.` segments, `..` traversal that resolves back to the repo, and resolved absolute paths.
+
+Approved-root discovery scans only the roots entered by the user, reads only a bounded JSONL prefix needed to parse the first nonblank session header, groups sessions by canonical `cwd`, and canonically deduplicates files reached through overlapping approved roots.
 
 ## Document IDs and rebuilds
 
