@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { isQueueLockRaceError } from "../extensions/queue/queue-lock.js";
+import { canonicalRetainJobJson } from "../extensions/queue/retain-before-enqueue.js";
 import {
   canCoalesceRetainJobs,
   coalesceRetainJob,
@@ -243,6 +244,27 @@ describe("retain queue", () => {
     expect(await readRetainQueue(path)).toHaveLength(3);
   });
 
+  it("canonicalizes retain job keys with deterministic code-point ordering", () => {
+    const canonical = canonicalRetainJobJson({
+      ...job,
+      item: {
+        ...job.item,
+        metadata: {
+          "\u{1f600}": "emoji",
+          "\ue000": "private-use",
+          a: "ascii",
+        },
+      },
+    });
+
+    expect(canonical.indexOf('"a": "ascii"')).toBeLessThan(
+      canonical.indexOf('"\ue000": "private-use"'),
+    );
+    expect(canonical.indexOf('"\ue000": "private-use"')).toBeLessThan(
+      canonical.indexOf('"\u{1f600}": "emoji"'),
+    );
+  });
+
   it("runs retain.beforeEnqueue with sanitized canonical job JSON before queue admission", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
     const inputPath = join(cwd, "stdin.json");
@@ -342,6 +364,89 @@ process.stdin.on("end", async () => {
       { m: 2 },
     ]);
     expect(await readRetainQueue(queuePath)).toEqual([existing]);
+  });
+
+  it("retries retain.beforeEnqueue outside the queue lock when the tail changes before admission", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    const existing: RetainJob = {
+      ...job,
+      item: { ...job.item, content: JSON.stringify([{ m: 1 }]) },
+    };
+    const incoming: RetainJob = {
+      ...job,
+      id: "2",
+      item: { ...job.item, content: JSON.stringify([{ m: 2 }]) },
+    };
+    const intervening: RetainJob = { ...job, id: "3", documentId: "doc-2" };
+    await enqueueRetainJob(path, existing);
+
+    let releaseFirstCheck!: () => void;
+    let firstCheckStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      firstCheckStarted = resolve;
+    });
+    const checkedContents: unknown[] = [];
+    const pending = enqueueRetainJobCoalesced(path, incoming, async (candidate) => {
+      checkedContents.push(JSON.parse(candidate.item.content));
+      if (checkedContents.length === 1) {
+        firstCheckStarted();
+        await new Promise<void>((resolve) => {
+          releaseFirstCheck = resolve;
+        });
+      }
+    });
+
+    await started;
+    await enqueueRetainJobCoalesced(path, intervening);
+    releaseFirstCheck();
+
+    await expect(pending).resolves.toEqual({ coalesced: false, currentLength: 3 });
+    expect(checkedContents).toEqual([[{ m: 1 }, { m: 2 }], [{ m: 2 }]]);
+    expect(await readRetainQueue(path)).toEqual([existing, intervening, incoming]);
+  });
+
+  it("rejects the final revalidated retain candidate without writing a stale checked candidate", async () => {
+    const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
+    const existing: RetainJob = {
+      ...job,
+      item: { ...job.item, content: JSON.stringify([{ m: 1 }]) },
+    };
+    const incoming: RetainJob = {
+      ...job,
+      id: "2",
+      item: { ...job.item, content: JSON.stringify([{ m: 2 }]) },
+    };
+    const intervening: RetainJob = { ...job, id: "3", documentId: "doc-2" };
+    await enqueueRetainJob(path, existing);
+
+    let releaseFirstCheck!: () => void;
+    let firstCheckStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      firstCheckStarted = resolve;
+    });
+    const checkedContents: unknown[] = [];
+    const pending = enqueueRetainJobCoalesced(path, incoming, async (candidate) => {
+      const content = JSON.parse(candidate.item.content);
+      checkedContents.push(content);
+      if (checkedContents.length === 1) {
+        firstCheckStarted();
+        await new Promise<void>((resolve) => {
+          releaseFirstCheck = resolve;
+        });
+        return;
+      }
+      if (JSON.stringify(content) === JSON.stringify([{ m: 2 }])) {
+        throw new Error("blocked final candidate");
+      }
+    });
+
+    await started;
+    await enqueueRetainJobCoalesced(path, intervening);
+    releaseFirstCheck();
+
+    await expect(pending).rejects.toThrow("blocked final candidate");
+    expect(checkedContents).toEqual([[{ m: 1 }, { m: 2 }], [{ m: 2 }]]);
+    expect(await readRetainQueue(path)).toEqual([existing, intervening]);
   });
 
   it("blocks queue admission on retain.beforeEnqueue timeout and spawn failure", async () => {

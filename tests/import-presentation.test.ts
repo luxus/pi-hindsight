@@ -102,6 +102,36 @@ describe("import presentation", () => {
     ).toContain("skipReasons=empty-curated-projection");
   });
 
+  it("renders queue admission counts with deterministic code-point ordering", () => {
+    expect(
+      importDocumentSummary({
+        documents: [
+          {
+            updateMode: "replace",
+            status: "pending",
+            rawMessageCount: 1,
+            projectedMessageCount: 1,
+            queueAdmission: "\u{1f600}" as "would-enqueue",
+          },
+          {
+            updateMode: "replace",
+            status: "pending",
+            rawMessageCount: 1,
+            projectedMessageCount: 1,
+            queueAdmission: "\ue000" as "would-enqueue",
+          },
+          {
+            updateMode: "replace",
+            status: "pending",
+            rawMessageCount: 1,
+            projectedMessageCount: 1,
+            queueAdmission: "a" as "would-enqueue",
+          },
+        ],
+      }),
+    ).toContain("admission=a:1,\ue000:1,\u{1f600}:1");
+  });
+
   it("aggregates complete dropped-tool totals before slicing preview output", () => {
     const documents = [0, 1].map((chunk) => ({
       updateMode: "replace",

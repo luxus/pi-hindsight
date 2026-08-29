@@ -42,6 +42,18 @@ export type ImportProjectPresentationResult = {
   imported?: Array<{ documents: ImportDocumentSummaryResult["documents"] }>;
 };
 
+function compareCodePoints(left: string, right: string): number {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const length = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPoint = leftPoints[index]!.codePointAt(0)!;
+    const rightPoint = rightPoints[index]!.codePointAt(0)!;
+    if (leftPoint !== rightPoint) return leftPoint - rightPoint;
+  }
+  return leftPoints.length - rightPoints.length;
+}
+
 function sumReasonCounts(
   documents: ImportDocumentSummaryResult["documents"],
 ): Record<string, number> {
@@ -172,7 +184,7 @@ function importDocumentQualitySummary(result: ImportDocumentSummaryResult): stri
     return counts;
   }, new Map<string, number>());
   const admissions = Array.from(admissionCounts)
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => compareCodePoints(left, right))
     .map(([admission, count]) => `${admission}:${count}`)
     .join(",");
   const forensicWarning = importModes.includes("forensic")

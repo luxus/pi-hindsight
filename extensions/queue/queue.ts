@@ -100,23 +100,51 @@ export async function enqueueRetainJobCoalesced(
   job: RetainJob,
   beforeAdmit?: (candidate: RetainJob) => Promise<void>,
 ): Promise<{ coalesced: boolean; currentLength: number }> {
-  return withQueueLock(path, async () => {
-    const store = retainQueueStore(path);
-    const parsed = await store.readTolerant();
-    const jobs = parsed.jobs;
-    const last = jobs[jobs.length - 1];
-    if (last && canCoalesceRetainJobs(last, job)) {
-      const candidate = coalesceRetainJob(last, job);
-      await beforeAdmit?.(candidate);
-      jobs[jobs.length - 1] = candidate;
-      await appendMalformedQueueLines(path, parsed.malformedLines);
-      await store.replace(jobs);
-      return { coalesced: true, currentLength: jobs.length };
-    }
-    await beforeAdmit?.(job);
-    await store.append([job]);
-    return { coalesced: false, currentLength: jobs.length + 1 };
-  });
+  if (!beforeAdmit) {
+    return withQueueLock(path, async () => {
+      const store = retainQueueStore(path);
+      const parsed = await store.readTolerant();
+      const jobs = parsed.jobs;
+      const last = jobs[jobs.length - 1];
+      if (last && canCoalesceRetainJobs(last, job)) {
+        const candidate = coalesceRetainJob(last, job);
+        jobs[jobs.length - 1] = candidate;
+        await appendMalformedQueueLines(path, parsed.malformedLines);
+        await store.replace(jobs);
+        return { coalesced: true, currentLength: jobs.length };
+      }
+      await store.append([job]);
+      return { coalesced: false, currentLength: jobs.length + 1 };
+    });
+  }
+
+  let checkedCandidateJson: string | undefined;
+  while (true) {
+    const decision = await withQueueLock(path, async () => {
+      const store = retainQueueStore(path);
+      const parsed = await store.readTolerant();
+      const jobs = parsed.jobs;
+      const last = jobs[jobs.length - 1];
+      const coalesced = Boolean(last && canCoalesceRetainJobs(last, job));
+      const candidate = coalesced ? coalesceRetainJob(last!, job) : job;
+      const candidateJson = JSON.stringify(candidate);
+      if (candidateJson !== checkedCandidateJson) {
+        return { candidate, candidateJson };
+      }
+      if (coalesced) {
+        jobs[jobs.length - 1] = candidate;
+        await appendMalformedQueueLines(path, parsed.malformedLines);
+        await store.replace(jobs);
+        return { result: { coalesced: true, currentLength: jobs.length } };
+      }
+      await store.append([candidate]);
+      return { result: { coalesced: false, currentLength: jobs.length + 1 } };
+    });
+
+    if ("result" in decision) return decision.result;
+    await beforeAdmit(decision.candidate);
+    checkedCandidateJson = decision.candidateJson;
+  }
 }
 
 export async function readRetainQueue(path: string): Promise<RetainJob[]> {
