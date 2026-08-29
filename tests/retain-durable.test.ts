@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
@@ -117,6 +117,34 @@ describe("durable explicit retain", () => {
     });
     expect(JSON.stringify(queued[0]?.item.metadata)).not.toContain("super-secret");
     expect(JSON.stringify(queued[0]?.item.metadata)).not.toContain("abcdefghijklmnopqrstuvwxyz");
+  });
+
+  it("blocks explicit retain before queue admission when retain.beforeEnqueue fails", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-retain-"));
+    const checker = join(cwd, "checker.mjs");
+    writeFileSync(checker, "process.exit(1);\n");
+    const config: ResolvedConfig = {
+      ...testConfig(),
+      retain: {
+        ...testConfig().retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+    const retain = client(async () => undefined);
+    const operations = createMemoryOperations({
+      getClient: () => retain,
+      getConfig: () => config,
+      getProjectBankId: () => "project-bank",
+    });
+
+    await expect(
+      operations.retainExplicit({
+        cwd,
+        content: "Durable fact",
+        context: "unit test explicit retain",
+      }),
+    ).rejects.toThrow("retain.beforeEnqueue blocked retain job before queue admission");
+    expect(existsSync(resolveQueuePath(cwd, config.retain.queuePath))).toBe(false);
   });
 
   it("passes configured observation scopes for explicit retain", async () => {

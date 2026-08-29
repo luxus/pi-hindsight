@@ -17,6 +17,11 @@ export type UpdateMode = "append" | "replace";
 //   This collapses many small per-run retain operations into few larger ones, cutting
 //   Hindsight extraction/consolidation and Postgres WAL/write amplification.
 export type RetainDelivery = "immediate" | "coalesced";
+export interface RetainBeforeEnqueueConfig {
+  command: string[];
+  timeoutMs: number;
+  malformed?: boolean;
+}
 export type RetainUserContent = "text";
 export type RetainAssistantContent = "text" | "toolCall" | "thinking";
 export type RetainToolResultContent = "error" | "summary" | "content";
@@ -189,6 +194,7 @@ export interface ResolvedConfig {
     shutdownFlushMaxJobs: number;
     shutdownFlushTimeoutMs: number;
     postRetainReflect: boolean;
+    beforeEnqueue?: RetainBeforeEnqueueConfig;
   };
   import: {
     mode: ImportMode;

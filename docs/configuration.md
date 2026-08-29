@@ -128,7 +128,11 @@ Bank missions are intentionally absent from this JSON example. Hindsight bank co
     "updateMode": "append",
     "shutdownFlushMaxJobs": 10,
     "shutdownFlushTimeoutMs": 2000,
-    "postRetainReflect": false
+    "postRetainReflect": false,
+    "beforeEnqueue": {
+      "command": ["/usr/local/bin/retain-check"],
+      "timeoutMs": 5000
+    }
   },
   "import": {
     "manifestPath": ".pi/hindsight/import-manifest.json",
@@ -163,3 +167,20 @@ top-k without score thresholds). When set, drop candidates whose returned `score
   tool calls).
 
 Behavior, why defaults stay off, and a suggested starting floor: [Memory behavior → Recall quality](memory-behavior.md#recall-quality).
+
+### `retain.beforeEnqueue` (optional)
+
+Runs a local argv command immediately before Retain Queue admission. The command is spawned without
+a shell and receives canonical, sanitized Retain Job JSON on stdin. Exit `0` allows the job into the
+queue; nonzero exit, timeout, spawn failure, or malformed config blocks before queue/Hindsight calls.
+
+```json
+{
+  "retain": {
+    "beforeEnqueue": {
+      "command": ["/usr/local/bin/retain-check"],
+      "timeoutMs": 5000
+    }
+  }
+}
+```
