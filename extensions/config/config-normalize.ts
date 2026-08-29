@@ -137,6 +137,20 @@ function toolNameFilter(
   };
 }
 
+function retainBeforeEnqueue(
+  value: unknown,
+): NonNullable<ResolvedConfig["retain"]["beforeEnqueue"]> {
+  if (!isRecord(value)) return { command: [], timeoutMs: 5_000, malformed: true };
+  const command =
+    Array.isArray(value.command) &&
+    value.command.length > 0 &&
+    value.command.every((item) => typeof item === "string" && item.length > 0)
+      ? value.command
+      : undefined;
+  const timeoutMs = positiveInt(value.timeoutMs, 5_000);
+  return command ? { command, timeoutMs } : { command: [], timeoutMs, malformed: true };
+}
+
 function scoreFloors(value: unknown): RecallMinScores | undefined {
   if (!isRecord(value)) return undefined;
   const floors: RecallMinScores = {};
@@ -479,6 +493,9 @@ export function normalizeConfig(
         config.retain?.postRetainReflect,
         DEFAULT_CONFIG.retain.postRetainReflect,
       ),
+      ...(config.retain?.beforeEnqueue !== undefined
+        ? { beforeEnqueue: retainBeforeEnqueue(config.retain.beforeEnqueue) }
+        : {}),
     },
     import: {
       mode: enumValue(

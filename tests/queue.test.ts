@@ -10,10 +10,13 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { isQueueLockRaceError } from "../extensions/queue/queue-lock.js";
 import {
   canCoalesceRetainJobs,
   coalesceRetainJob,
+  enqueueRetain,
+  enqueueRetainCoalesced,
   enqueueRetainJob,
   enqueueRetainJobCoalesced,
   flushRetainQueue,
@@ -71,6 +74,12 @@ const stressCases = [0, 1, 2, 3, 4];
 async function createQueueWithJob(id = "1"): Promise<string> {
   const path = join(mkdtempSync(join(tmpdir(), "pi-hindsight-q-")), "q.jsonl");
   await enqueueRetainJob(path, { ...job, id });
+  return path;
+}
+
+function writeChecker(dir: string, body: string): string {
+  const path = join(dir, "checker.mjs");
+  writeFileSync(path, body);
   return path;
 }
 
@@ -232,6 +241,160 @@ describe("retain queue", () => {
     });
     expect(replaceJob.coalesced).toBe(false);
     expect(await readRetainQueue(path)).toHaveLength(3);
+  });
+
+  it("runs retain.beforeEnqueue with sanitized canonical job JSON before queue admission", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    const inputPath = join(cwd, "stdin.json");
+    const checker = writeChecker(
+      cwd,
+      `
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => input += chunk);
+process.stdin.on("end", async () => {
+  const job = JSON.parse(input);
+  if (input !== JSON.stringify(job, null, 2) + "\\n") process.exit(2);
+  if (job.item.content.includes("sk-secret")) process.exit(3);
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(${JSON.stringify(inputPath)}, input);
+});
+`,
+    );
+    const config = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+
+    const result = await enqueueRetain(cwd, config, {
+      ...job,
+      item: { ...job.item, content: "token [REDACTED]", metadata: { api_key: "[REDACTED]" } },
+    });
+
+    expect(result.currentLength).toBe(1);
+    expect(readFileSync(inputPath, "utf8")).toContain('"documentId": "doc"');
+    expect(await readRetainQueue(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toHaveLength(1);
+  });
+
+  it("blocks queue admission on retain.beforeEnqueue nonzero exit without queue writes", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    const checker = writeChecker(cwd, "process.exit(42);\n");
+    const config = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+
+    await expect(enqueueRetain(cwd, config, job)).rejects.toThrow(
+      "retain.beforeEnqueue blocked retain job before queue admission",
+    );
+    expect(existsSync(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
+  });
+
+  it("checks the merged coalesced retain candidate and preserves existing queue content on rejection", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    const inputPath = join(cwd, "stdin.json");
+    const checker = writeChecker(
+      cwd,
+      `
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => input += chunk);
+process.stdin.on("end", async () => {
+  const job = JSON.parse(input);
+  const content = JSON.parse(job.item.content);
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(${JSON.stringify(inputPath)}, input);
+  process.exit(JSON.stringify(content) === JSON.stringify([{ m: 1 }, { m: 2 }]) ? 42 : 0);
+});
+`,
+    );
+    const config = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+    const queuePath = join(cwd, DEFAULT_CONFIG.retain.queuePath);
+    const existing: RetainJob = {
+      ...job,
+      item: { ...job.item, content: JSON.stringify([{ m: 1 }]) },
+    };
+    const incoming: RetainJob = {
+      ...job,
+      id: "2",
+      item: { ...job.item, content: JSON.stringify([{ m: 2 }]) },
+    };
+    await enqueueRetainJob(queuePath, existing);
+
+    await expect(enqueueRetainCoalesced(cwd, config, incoming)).rejects.toThrow(
+      "retain.beforeEnqueue blocked retain job before queue admission",
+    );
+
+    expect(JSON.parse(JSON.parse(readFileSync(inputPath, "utf8")).item.content)).toEqual([
+      { m: 1 },
+      { m: 2 },
+    ]);
+    expect(await readRetainQueue(queuePath)).toEqual([existing]);
+  });
+
+  it("blocks queue admission on retain.beforeEnqueue timeout and spawn failure", async () => {
+    const timeoutCwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    const slowChecker = writeChecker(timeoutCwd, "setTimeout(() => {}, 1000);\n");
+    await expect(
+      enqueueRetain(
+        timeoutCwd,
+        {
+          ...DEFAULT_CONFIG,
+          retain: {
+            ...DEFAULT_CONFIG.retain,
+            beforeEnqueue: { command: [process.execPath, slowChecker], timeoutMs: 20 },
+          },
+        },
+        job,
+      ),
+    ).rejects.toThrow("retain.beforeEnqueue timed out");
+    expect(existsSync(join(timeoutCwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
+
+    const spawnCwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    await expect(
+      enqueueRetain(
+        spawnCwd,
+        {
+          ...DEFAULT_CONFIG,
+          retain: {
+            ...DEFAULT_CONFIG.retain,
+            beforeEnqueue: { command: [join(spawnCwd, "missing-checker")], timeoutMs: 2_000 },
+          },
+        },
+        job,
+      ),
+    ).rejects.toThrow("retain.beforeEnqueue could not start");
+    expect(existsSync(join(spawnCwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
+  });
+
+  it("blocks queue admission when retain.beforeEnqueue config is malformed", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    await expect(
+      enqueueRetain(
+        cwd,
+        {
+          ...DEFAULT_CONFIG,
+          retain: {
+            ...DEFAULT_CONFIG.retain,
+            beforeEnqueue: { command: [], timeoutMs: 5_000, malformed: true },
+          },
+        },
+        job,
+      ),
+    ).rejects.toThrow("retain.beforeEnqueue is malformed");
+    expect(existsSync(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
   });
 
   it("refuses to coalesce into a job that has already failed delivery", async () => {

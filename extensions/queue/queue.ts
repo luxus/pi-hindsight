@@ -9,6 +9,7 @@ import type {
 } from "../types.js";
 import { deliverRetainJob, parseRetainOutcome, redactQueueError } from "./queue-delivery.js";
 import { JsonlQueueStore, type JsonlQueueFileSummary } from "./jsonl-queue-store.js";
+import { runRetainBeforeEnqueueCheck } from "./retain-before-enqueue.js";
 import { withQueueLock } from "./queue-lock.js";
 
 export { RETAIN_QUEUE_LOCK, isQueueLockOwnerStale, type QueueLockOwner } from "./queue-lock.js";
@@ -97,6 +98,7 @@ export function coalesceRetainJob(existing: RetainJob, incoming: RetainJob): Ret
 export async function enqueueRetainJobCoalesced(
   path: string,
   job: RetainJob,
+  beforeAdmit?: (candidate: RetainJob) => Promise<void>,
 ): Promise<{ coalesced: boolean; currentLength: number }> {
   return withQueueLock(path, async () => {
     const store = retainQueueStore(path);
@@ -104,11 +106,14 @@ export async function enqueueRetainJobCoalesced(
     const jobs = parsed.jobs;
     const last = jobs[jobs.length - 1];
     if (last && canCoalesceRetainJobs(last, job)) {
-      jobs[jobs.length - 1] = coalesceRetainJob(last, job);
+      const candidate = coalesceRetainJob(last, job);
+      await beforeAdmit?.(candidate);
+      jobs[jobs.length - 1] = candidate;
       await appendMalformedQueueLines(path, parsed.malformedLines);
       await store.replace(jobs);
       return { coalesced: true, currentLength: jobs.length };
     }
+    await beforeAdmit?.(job);
     await store.append([job]);
     return { coalesced: false, currentLength: jobs.length + 1 };
   });
@@ -352,6 +357,7 @@ export async function enqueueRetain(
   config: ResolvedConfig,
   job: RetainJob,
 ): Promise<EnqueueRetainJobResult> {
+  await runRetainBeforeEnqueueCheck(config, job);
   return enqueueRetainJobWithStats(retainQueuePath(cwd, config), job);
 }
 
@@ -360,7 +366,9 @@ export async function enqueueRetainCoalesced(
   config: ResolvedConfig,
   job: RetainJob,
 ): Promise<{ coalesced: boolean; currentLength: number }> {
-  return enqueueRetainJobCoalesced(retainQueuePath(cwd, config), job);
+  return enqueueRetainJobCoalesced(retainQueuePath(cwd, config), job, (candidate) =>
+    runRetainBeforeEnqueueCheck(config, candidate),
+  );
 }
 
 export async function flushRetain(

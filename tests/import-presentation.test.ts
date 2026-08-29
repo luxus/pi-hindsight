@@ -152,6 +152,7 @@ describe("import presentation", () => {
             estimatedChunkCount: 1,
             importMode: "curated" as const,
             importQualityProfile: "strict" as const,
+            queueAdmission: "would-enqueue" as const,
             droppedTools: [
               { name: "read", count: 1, bytes: 500 },
               { name: "bash", count: 1, bytes: 200 },
@@ -177,6 +178,7 @@ describe("import presentation", () => {
             estimatedChunkCount: 2,
             importMode: "curated" as const,
             importQualityProfile: "strict" as const,
+            queueAdmission: "quarantined" as const,
             droppedTools: [
               { name: "read", count: 2, bytes: 100 },
               { name: "grep", count: 1, bytes: 50 },
@@ -198,7 +200,7 @@ describe("import presentation", () => {
       imported,
     };
     const quality =
-      "mode=curated; profile=strict; projected=4/7 messages; droppedToolResults=3; keptToolErrors=2; estimatedChunks=3; bytes=500/1500; keptSignals=assistant:1,tool-errors:1; droppedNoise=successful-tools:3; reasons=tool-filter-excluded:3,assistant-text:1,tool-error-kept:1; topDroppedTools=read:3,bash:1,grep:1";
+      "mode=curated; profile=strict; projected=4/7 messages; droppedToolResults=3; keptToolErrors=2; estimatedChunks=3; bytes=500/1500; keptSignals=assistant:1,tool-errors:1; droppedNoise=successful-tools:3; reasons=tool-filter-excluded:3,assistant-text:1,tool-error-kept:1; topDroppedTools=read:3,bash:1,grep:1; admission=quarantined:1,would-enqueue:1";
 
     expect(renderProjectImportMessage({ ...base, dryRun: true })).toBe(
       `Project import preview: sessions=2/3; documents=2; messages=7; malformedLines=1; ${quality}; write=no`,

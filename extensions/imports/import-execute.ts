@@ -14,7 +14,8 @@ import { expandObservationScopes } from "../lifecycle/observation-scopes.js";
 import { hashImportContent, type ImportManifestEntry } from "./import-plan.js";
 import { importDocumentId, stableSessionId } from "../utils/session.js";
 import { isInjectedHindsightMemory, projectMessage, projectMessages } from "../utils/messages.js";
-import { redactSecrets } from "../utils/sanitize.js";
+import { redactError, redactSecrets } from "../utils/sanitize.js";
+import { runRetainBeforeEnqueueCheck } from "../queue/retain-before-enqueue.js";
 
 export interface ImportRetainIdentity {
   bankId: string;
@@ -644,7 +645,8 @@ export interface ImportDocumentPreview {
   updateMode: "append" | "replace";
   bankId: string;
   wouldWrite: boolean;
-  status: "pending" | "queued" | "completed" | "failed" | "skipped";
+  status: "pending" | "queued" | "completed" | "failed" | "skipped" | "quarantined";
+  queueAdmission?: "would-enqueue" | "quarantined";
   skipReason?: "already-imported" | "empty-curated-projection";
   error?: string;
 }
@@ -946,6 +948,84 @@ export function previewImportBranch(args: Omit<ImportRetainArgs, "client">): Imp
     document: { ...built.document, wouldWrite: false },
     manifestEntry: built.manifestEntry,
   }));
+}
+
+export async function previewImportBranchWithQueueAdmission(
+  args: Omit<ImportRetainArgs, "client">,
+): Promise<ImportRetainResult[]> {
+  const parentSessionId = resolvedParentSessionId(args.parsed, args.cwd);
+  const previews: ImportRetainResult[] = [];
+  for (const built of buildImportBranch(args)) {
+    const preview = { ...built.document, wouldWrite: false };
+    if (!built.document.wouldWrite || built.document.status === "skipped") {
+      previews.push({ document: preview, manifestEntry: built.manifestEntry });
+      continue;
+    }
+    const job = buildDurableRetainJob({
+      cwd: args.cwd,
+      config: args.config,
+      bankId: args.bankId,
+      content: built.content,
+      context: built.context,
+      documentId: built.document.documentId,
+      updateMode: built.document.updateMode,
+      tags: built.document.tags,
+      metadata: {
+        pi_session_file: args.sessionFile,
+        imported: "true",
+        cwd: args.cwd,
+        session_id: args.sessionId,
+        ...(parentSessionId ? { parent_session_id: parentSessionId } : {}),
+        ...(args.parsed.parentSessionFile
+          ? { parent_session_file: args.parsed.parentSessionFile }
+          : {}),
+        branch_leaf_id: built.document.leafId,
+        import_mode: args.config.import.mode,
+        ...(shouldSurfaceImportQualityProfile(args.config)
+          ? { import_quality_profile: args.config.import.qualityProfile }
+          : {}),
+        ...(built.document.projectionVersion
+          ? { projection_version: built.document.projectionVersion }
+          : {}),
+        ...(built.document.importProfile ? { import_profile: built.document.importProfile } : {}),
+        ...(built.document.chunkIndex !== undefined
+          ? { chunk_index: String(built.document.chunkIndex) }
+          : {}),
+        ...(built.document.messageRange
+          ? {
+              message_range_start: String(built.document.messageRange.start),
+              message_range_end: String(built.document.messageRange.end),
+            }
+          : {}),
+        content_hash: built.document.contentHash,
+        include_branches: args.config.import.includeBranches,
+        tool_results: args.config.import.toolResults,
+        ...(args.parsed.sessionTimestamp
+          ? { session_timestamp: args.parsed.sessionTimestamp }
+          : {}),
+      },
+      source: "import",
+      ...(built.observationScopes.length ? { observationScopes: built.observationScopes } : {}),
+    });
+    try {
+      await runRetainBeforeEnqueueCheck(args.config, job);
+      previews.push({
+        document: { ...preview, queueAdmission: "would-enqueue" as const },
+        manifestEntry: built.manifestEntry,
+      });
+    } catch (error) {
+      previews.push({
+        document: {
+          ...preview,
+          status: "quarantined" as const,
+          queueAdmission: "quarantined" as const,
+          error: redactError(error),
+        },
+        manifestEntry: built.manifestEntry,
+      });
+    }
+  }
+  return previews;
 }
 
 export async function retainImportBranch(

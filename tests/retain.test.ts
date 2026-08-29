@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
@@ -354,6 +354,32 @@ describe("enqueueRetainFromAgentEnd delivery modes", () => {
     expect(result.sent).toBe(1);
     expect(tracked.retainCalls).toBe(1);
     expect(await readQueuedRetains(cwd, config)).toHaveLength(0);
+  });
+
+  it("blocks automatic retain before queue admission when retain.beforeEnqueue fails", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-delivery-"));
+    const checker = join(cwd, "checker.mjs");
+    writeFileSync(checker, "process.exit(1);\n");
+    const tracked = trackingClient();
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+
+    await expect(
+      enqueueRetainFromAgentEnd({
+        event: { messages } as AgentEndEvent,
+        cwd,
+        config,
+        client: tracked.client,
+        bankId: "bank",
+      }),
+    ).rejects.toThrow("retain.beforeEnqueue blocked retain job before queue admission");
+    expect(tracked.retainCalls).toBe(0);
+    expect(existsSync(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
   });
 
   it("coalesced delivery enqueues without contacting the client and merges runs", async () => {
