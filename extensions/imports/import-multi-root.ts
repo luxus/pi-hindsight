@@ -145,6 +145,14 @@ function redactImportError(error: unknown): string {
   return redactSecrets(redactError(error));
 }
 
+function invalidApprovedRoot(root: string): MultiRootInvalidSession {
+  return {
+    sessionFile: redactSecrets(root),
+    reason: "unreadable",
+    error: "Approved root must be absolute.",
+  };
+}
+
 async function collectJsonlFiles(root: string): Promise<string[]> {
   const files: string[] = [];
   async function visit(dir: string): Promise<void> {
@@ -168,11 +176,16 @@ async function collectJsonlFiles(root: string): Promise<string[]> {
 export async function discoverMultiRootPiSessionHeaders(args: {
   approvedRoots: string[];
 }): Promise<MultiRootSessionDiscoveryResult> {
-  const approvedRoots = (await Promise.all(args.approvedRoots.map((root) => canonicalPath(root))))
+  const rootInputs = args.approvedRoots.map((root) => root.trim()).filter(Boolean);
+  const invalidSessions = rootInputs.filter((root) => !isAbsolute(root)).map(invalidApprovedRoot);
+  const approvedRoots = (
+    await Promise.all(
+      rootInputs.filter((root) => isAbsolute(root)).map((root) => canonicalPath(root)),
+    )
+  )
     .filter((root, index, roots) => roots.indexOf(root) === index)
     .sort();
   const validSessions: Array<{ cwd: string; session: PendingSessionHeader }> = [];
-  const invalidSessions: MultiRootInvalidSession[] = [];
   const seenSessionFiles = new Set<string>();
   let scannedFileCount = 0;
 
@@ -253,6 +266,16 @@ function rootsForGroup(discovery: MultiRootSessionDiscoveryResult, cwd: string):
       }),
     ),
   ].sort();
+}
+
+function sessionFilesForSearchRoot(group: MultiRootSessionGroup, searchRoot: string): string[] {
+  return group.sessions
+    .map((session) => session.sessionFile)
+    .filter((sessionFile) => {
+      const path = relative(searchRoot, sessionFile);
+      return path && !path.startsWith("..") && !isAbsolute(path);
+    })
+    .sort();
 }
 
 function aggregateDocumentCount(groups: MultiRootProjectImportGroupResult[]): number {
@@ -349,6 +372,7 @@ export async function importMultiRootProjectSessions(
           client: args.client,
           config: args.config,
           dryRun: delegateDryRun,
+          sessionFiles: sessionFilesForSearchRoot(group, searchDir),
           ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
           ...(args.onProgress ? { onProgress: args.onProgress } : {}),
         }),

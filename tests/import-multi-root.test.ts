@@ -27,14 +27,15 @@ function sessionJsonl(args: { id: string; cwd: string; content?: string }): stri
 }
 
 function projectResult(args: {
-  sessionFile: string;
+  sessionFile?: string;
+  sessionFiles?: string[];
   dryRun: boolean;
   documentCount?: number;
   messageCount?: number;
 }): ImportProjectSessionsResult {
   return {
-    sessionFiles: [args.sessionFile],
-    scanned: 1,
+    sessionFiles: args.sessionFiles ?? [args.sessionFile ?? ""],
+    scanned: args.sessionFiles?.length ?? 1,
     imported: [],
     messageCount: args.messageCount ?? 1,
     documentCount: args.documentCount ?? 1,
@@ -84,6 +85,111 @@ describe("multi-root Pi session import orchestration", () => {
     ]);
     expect(JSON.stringify(result)).not.toContain("outside root");
     expect(JSON.stringify(result)).not.toContain(outside);
+  });
+
+  it("delegates the exact recursively discovered nested session files for import", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const nested = join(root, "nested");
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    mkdirSync(nested);
+    const topLevel = join(root, "top.jsonl");
+    const nestedFile = join(nested, "nested.jsonl");
+    writeFileSync(topLevel, sessionJsonl({ id: "top", cwd: project }));
+    writeFileSync(nestedFile, sessionJsonl({ id: "nested", cwd: project }));
+    const canonicalProject = realpathSync(project);
+    const expectedSessionFiles = [realpathSync(nestedFile), realpathSync(topLevel)].sort();
+    const calls: Array<{
+      cwd: string;
+      searchDir: string;
+      sessionFiles?: string[];
+      dryRun?: boolean;
+    }> = [];
+    const delegate = vi.fn(
+      async (args: ImportProjectSessionsArgs & { sessionFiles?: string[] }) => {
+        calls.push({
+          cwd: args.cwd,
+          searchDir: args.searchDir ?? "",
+          ...(args.sessionFiles ? { sessionFiles: args.sessionFiles } : {}),
+          ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+        });
+        const sessionFiles = args.sessionFiles ?? [];
+        return projectResult({
+          sessionFiles,
+          dryRun: Boolean(args.dryRun),
+          documentCount: sessionFiles.length,
+          messageCount: sessionFiles.length,
+        });
+      },
+    );
+
+    const result = await importMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        bankId: "bank",
+        config: DEFAULT_CONFIG,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(calls).toEqual([
+      {
+        cwd: canonicalProject,
+        searchDir: realpathSync(root),
+        sessionFiles: expectedSessionFiles,
+        dryRun: false,
+      },
+    ]);
+    expect(result.discovery.groups[0]?.sessions.map((session) => session.sessionFile)).toEqual(
+      expectedSessionFiles,
+    );
+    expect(result.groups[0]?.importResults[0]?.sessionFiles).toEqual(expectedSessionFiles);
+    expect(result.summary).toMatchObject({
+      scannedFileCount: 2,
+      validSessionCount: 2,
+      documentCount: 2,
+      messageCount: 2,
+    });
+  });
+
+  it("rejects relative approved roots without resolving them against process cwd", async () => {
+    const cwd = process.cwd();
+    const processRoot = mkdtempSync(join(tmpdir(), "pi-hindsight-process-cwd-"));
+    const relativeRoot = "pi-hindsight-relative-root-sk-live-secret-root";
+    const cwdResolvedRoot = join(processRoot, relativeRoot);
+    mkdirSync(cwdResolvedRoot, { recursive: true });
+    writeFileSync(
+      join(cwdResolvedRoot, "session.jsonl"),
+      sessionJsonl({ id: "relative", cwd: processRoot }),
+    );
+    process.chdir(processRoot);
+    let result;
+    try {
+      result = await discoverMultiRootPiSessionHeaders({ approvedRoots: [relativeRoot] });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(result).toMatchObject({
+      approvedRoots: [],
+      scannedFileCount: 0,
+      validSessionCount: 0,
+      invalidSessionCount: 1,
+      groups: [],
+      invalidSessions: [
+        {
+          sessionFile: "pi-hindsight-relative-root-[REDACTED_API_KEY]",
+          reason: "unreadable",
+          error: "Approved root must be absolute.",
+        },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain(cwdResolvedRoot);
+    expect(JSON.stringify(result)).not.toContain("sk-live-secret-root");
   });
 
   it("delegates grouped roots through dry-run first and aggregates terminal outcomes", async () => {
