@@ -1,7 +1,7 @@
 import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { redactError, redactSecrets } from "../utils/sanitize.js";
@@ -141,6 +141,14 @@ async function canonicalPath(path: string): Promise<string> {
   }
 }
 
+function canonicalPathSync(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
 function parseSessionHeaderLine(line: string): SessionHeader | undefined {
   let parsed: unknown;
   try {
@@ -199,6 +207,47 @@ function uniqueTargetBankIds(targetBankIds: string[]): string[] {
     .filter((targetBankId, index, ids) => ids.indexOf(targetBankId) === index);
 }
 
+function isNotFoundError(error: unknown): boolean {
+  if (typeof error !== "object" || !error) return false;
+  const fields = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+  return (
+    fields.status === 404 ||
+    fields.statusCode === 404 ||
+    fields.code === 404 ||
+    fields.code === "404" ||
+    (typeof fields.message === "string" && /\b404\b|not found/i.test(fields.message))
+  );
+}
+
+async function validateTargetBankIds(
+  client: HindsightLikeClient,
+  targetBankIds: string[],
+): Promise<void> {
+  const uniqueBankIds = uniqueTargetBankIds(targetBankIds);
+  if (uniqueBankIds.length === 0) return;
+  if (!client.getBankProfile)
+    throw new Error("Cannot validate target Hindsight banks: getBankProfile unavailable.");
+  for (const bankId of uniqueBankIds) {
+    try {
+      const profile = await client.getBankProfile(bankId);
+      if (profile == null) throw new Error("empty bank profile response");
+    } catch (error) {
+      if (isNotFoundError(error))
+        throw new Error(`Target Hindsight bank is unavailable: ${redactSecrets(bankId)}`);
+      throw new Error(
+        `Failed to validate target Hindsight bank ${redactSecrets(bankId)}: ${redactImportError(
+          error,
+        )}`,
+      );
+    }
+  }
+}
+
 function importStatePathForBank(path: string, bankId: string): string {
   const hash = createHash("sha256").update(bankId).digest("hex").slice(0, 8);
   const label = bankId
@@ -247,8 +296,14 @@ export function buildMultiRootProjectImportPlan(args: {
   defaultBankId?: string;
 }): MultiRootProjectImportPlan {
   const mappingByCwd = new Map<string, string[]>();
+  const discoveredCwds = new Set(args.discovery.groups.map((group) => group.cwd));
   for (const mapping of args.mappings ?? []) {
-    mappingByCwd.set(mapping.cwd, uniqueTargetBankIds(mapping.targetBankIds));
+    const cwd = canonicalPathSync(mapping.cwd);
+    if (!discoveredCwds.has(cwd))
+      throw new Error(
+        `Submitted import mapping cwd ${redactSecrets(cwd)} does not match a discovered source group.`,
+      );
+    mappingByCwd.set(cwd, uniqueTargetBankIds(mapping.targetBankIds));
   }
   const groups = args.discovery.groups.map((group): MultiRootProjectImportPlanGroup => {
     const targetBankIds = uniqueTargetBankIds(
@@ -494,6 +549,10 @@ export async function importMultiRootProjectSessions(
   const groups: MultiRootProjectImportGroupResult[] = [];
   const dryRun = args.dryRun ?? false;
   const dryRunFirst = !dryRun && (args.dryRunFirst ?? false);
+  await validateTargetBankIds(
+    args.client,
+    plan.groups.flatMap((group) => group.targetBankIds),
+  );
 
   const delegateGroup = async (
     group: MultiRootSessionGroup,
@@ -630,47 +689,53 @@ export async function importMemoryMultiRootProjectSessions(
     onProgress?: ImportProgressReporter;
   },
   deps: ImportOperationDeps,
+  delegateDeps: { importProjectSessions?: ImportProjectSessionsDelegate } = {},
 ) {
   const config = deps.getConfig();
   const needsBankResolution =
     Boolean(args.bank) ||
     Boolean(
       args.importPlan?.mappings.some((mapping) =>
-        mapping.targetBankIds.some((targetBankId) => ["project", "global"].includes(targetBankId)),
+        mapping.targetBankIds.some((targetBankId) =>
+          ["project", "global", "user"].includes(targetBankId),
+        ),
       ),
     );
   const projectBankId = needsBankResolution ? deps.getProjectBankId() : "";
-  const bankId = args.bank
-    ? resolveOperationBank({
-        requestedBank: args.bank,
-        config,
-        projectBankId,
-      })
-    : undefined;
+  const resolveMultiRootOperationBank = (requestedBank: string) =>
+    requestedBank === "user"
+      ? resolveOperationBank({
+          requestedBank: "global",
+          config,
+          projectBankId,
+        })
+      : resolveOperationBank({
+          requestedBank,
+          config,
+          projectBankId,
+        });
+  const bankId = args.bank ? resolveMultiRootOperationBank(args.bank) : undefined;
   const importPlan = args.importPlan
     ? {
         mappings: args.importPlan.mappings.map((mapping) => ({
           cwd: mapping.cwd,
-          targetBankIds: mapping.targetBankIds.map((targetBankId) =>
-            resolveOperationBank({
-              requestedBank: targetBankId,
-              config,
-              projectBankId,
-            }),
-          ),
+          targetBankIds: mapping.targetBankIds.map(resolveMultiRootOperationBank),
         })),
       }
     : undefined;
-  const result = await importMultiRootProjectSessions({
-    approvedRoots: args.approvedRoots,
-    ...(bankId ? { bankId } : {}),
-    ...(importPlan ? { importPlan } : {}),
-    client: deps.getClient(),
-    config,
-    ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
-    ...(args.dryRunFirst !== undefined ? { dryRunFirst: args.dryRunFirst } : {}),
-    ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
-    ...(args.onProgress ? { onProgress: args.onProgress } : {}),
-  });
+  const result = await importMultiRootProjectSessions(
+    {
+      approvedRoots: args.approvedRoots,
+      ...(bankId ? { bankId } : {}),
+      ...(importPlan ? { importPlan } : {}),
+      client: deps.getClient(),
+      config,
+      ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+      ...(args.dryRunFirst !== undefined ? { dryRunFirst: args.dryRunFirst } : {}),
+      ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
+      ...(args.onProgress ? { onProgress: args.onProgress } : {}),
+    },
+    delegateDeps,
+  );
   return { ...(bankId ? { bankId } : {}), ...result };
 }

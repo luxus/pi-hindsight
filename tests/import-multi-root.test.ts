@@ -6,12 +6,14 @@ import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import {
   buildMultiRootProjectImportPlan,
   discoverMultiRootPiSessionHeaders,
+  importMemoryMultiRootProjectSessions,
   importMultiRootProjectSessions,
 } from "../extensions/imports/import-multi-root.js";
 import type {
   importProjectSessions,
   ImportProjectSessionsResult,
 } from "../extensions/imports/import-sessions.js";
+import type { HindsightLikeClient, ResolvedConfig } from "../extensions/types.js";
 
 type ImportProjectSessionsArgs = Parameters<typeof importProjectSessions>[0];
 
@@ -46,6 +48,15 @@ function projectResult(args: {
 }
 
 describe("multi-root Pi session import orchestration", () => {
+  function memoryClient(args: Partial<HindsightLikeClient> = {}): HindsightLikeClient {
+    return {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      ...args,
+    };
+  }
+
   it("discovers only valid session headers under approved roots and groups canonical cwd values", async () => {
     const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
     const unapproved = mkdtempSync(join(tmpdir(), "pi-hindsight-unapproved-root-"));
@@ -128,11 +139,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [root],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
       },
       { importProjectSessions: delegate },
     );
@@ -212,6 +219,203 @@ describe("multi-root Pi session import orchestration", () => {
     });
   });
 
+  it("canonicalizes reviewed mapping cwd values and rejects unknown source groups", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    const nested = join(project, "nested");
+    mkdirSync(nested);
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const discovery = await discoverMultiRootPiSessionHeaders({ approvedRoots: [root] });
+    const canonicalProject = realpathSync(project);
+
+    const relativeCwd = process.cwd();
+    process.chdir(nested);
+    let plan;
+    try {
+      plan = buildMultiRootProjectImportPlan({
+        discovery,
+        mappings: [{ cwd: "..", targetBankIds: ["coding-bank"] }],
+      });
+    } finally {
+      process.chdir(relativeCwd);
+    }
+
+    expect(plan.groups).toEqual([
+      expect.objectContaining({
+        cwd: canonicalProject,
+        targetBankIds: ["coding-bank"],
+        skipped: false,
+      }),
+    ]);
+    expect(
+      buildMultiRootProjectImportPlan({
+        discovery,
+        mappings: [{ cwd: `${project}/`, targetBankIds: ["archive-bank"] }],
+      }).groups,
+    ).toEqual([
+      expect.objectContaining({
+        cwd: canonicalProject,
+        targetBankIds: ["archive-bank"],
+        skipped: false,
+      }),
+    ]);
+    expect(() =>
+      buildMultiRootProjectImportPlan({
+        discovery,
+        mappings: [{ cwd: join(project, "typo"), targetBankIds: ["coding-bank"] }],
+      }),
+    ).toThrow(/does not match a discovered source group/);
+  });
+
+  it("rejects explicit target bank ids that are missing before delegating imports", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+    const getBankProfile = vi.fn(async (bankId: string) => {
+      if (bankId === "missing-bank") throw new Error("404 missing sk-live-secret-bank");
+      return { id: bankId };
+    });
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [
+              { cwd: project, targetBankIds: ["existing-bank", "missing-bank", "existing-bank"] },
+            ],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({ getBankProfile }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow("Target Hindsight bank is unavailable: missing-bank");
+
+    expect(getBankProfile).toHaveBeenCalledTimes(2);
+    expect(getBankProfile).toHaveBeenNthCalledWith(1, "existing-bank");
+    expect(getBankProfile).toHaveBeenNthCalledWith(2, "missing-bank");
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for explicit multi-bank plans when bank profile validation is unavailable", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [{ cwd: project, targetBankIds: ["existing-bank", "archive-bank"] }],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient(),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow("Cannot validate target Hindsight banks: getBankProfile unavailable.");
+
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
+  it("resolves project/global/user aliases before validating mapped target banks", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        user: { ...DEFAULT_CONFIG.banks.user, enabled: true, bankId: "user-bank" },
+      },
+    };
+    const getBankProfile = vi.fn(async (bankId: string) => ({ id: bankId }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({
+        sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"),
+        dryRun: Boolean(args.dryRun),
+      }),
+    );
+
+    await importMemoryMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        importPlan: {
+          mappings: [{ cwd: project, targetBankIds: ["project", "global", "user"] }],
+        },
+        dryRun: true,
+      },
+      {
+        getConfig: () => config,
+        getClient: () => memoryClient({ getBankProfile }),
+        getProjectBankId: () => "project-bank",
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(getBankProfile).toHaveBeenCalledWith("project-bank");
+    expect(getBankProfile).toHaveBeenCalledWith("user-bank");
+    expect(delegate.mock.calls.map(([args]) => args.bankId)).toEqual(["project-bank", "user-bank"]);
+  });
+
+  it("redacts target validation errors before surfacing them", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+
+    await expect(
+      importMultiRootProjectSessions({
+        approvedRoots: [root],
+        bankId: "bank",
+        config: DEFAULT_CONFIG,
+        client: memoryClient({
+          getBankProfile: async () => {
+            throw new Error("upstream rejected bearer sk-live-secret-target");
+          },
+        }),
+        dryRun: true,
+      }),
+    ).rejects.toThrow("upstream rejected bearer [REDACTED]");
+  });
+
+  it("rejects unknown mapping cwd before target validation or delegate import calls", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const getBankProfile = vi.fn(async (bankId: string) => ({ id: bankId }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [{ cwd: join(project, "unknown"), targetBankIds: ["existing-bank"] }],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({ getBankProfile }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow(/does not match a discovered source group/);
+
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
   it("executes unique reviewed group-to-bank pairs with dry-run-first all-or-nothing preflight", async () => {
     const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
     const projectA = mkdtempSync(join(tmpdir(), "pi-hindsight-project-a-"));
@@ -251,11 +455,7 @@ describe("multi-root Pi session import orchestration", () => {
           ],
         },
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
         dryRunFirst: true,
       },
       { importProjectSessions: delegate },
@@ -368,11 +568,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [rootA, rootB],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
         dryRunFirst: true,
       },
       { importProjectSessions: delegate },
@@ -430,11 +626,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [root],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
       },
       { importProjectSessions: delegate },
     );
@@ -477,11 +669,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [rootA, rootB],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
         dryRunFirst: true,
       },
       { importProjectSessions: delegate },
@@ -524,11 +712,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [rootA, rootB, missingRoot],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
         dryRunFirst: true,
       },
       { importProjectSessions: delegate },
@@ -569,11 +753,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [rootA, rootB],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
       },
       { importProjectSessions: delegate },
     );
@@ -654,11 +834,7 @@ describe("multi-root Pi session import orchestration", () => {
         approvedRoots: [root],
         bankId: "bank",
         config: DEFAULT_CONFIG,
-        client: {
-          retain: async () => undefined,
-          recall: async () => [],
-          reflect: async () => ({}),
-        },
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
         dryRun: true,
       },
       { importProjectSessions: delegate },
