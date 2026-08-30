@@ -303,6 +303,10 @@ export function buildMultiRootProjectImportPlan(args: {
       throw new Error(
         `Submitted import mapping cwd ${redactSecrets(cwd)} does not match a discovered source group.`,
       );
+    if (mappingByCwd.has(cwd))
+      throw new Error(
+        `Duplicate import mapping cwd ${redactSecrets(cwd)} maps to the same source group.`,
+      );
     mappingByCwd.set(cwd, uniqueTargetBankIds(mapping.targetBankIds));
   }
   const groups = args.discovery.groups.map((group): MultiRootProjectImportPlanGroup => {

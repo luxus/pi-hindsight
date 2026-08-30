@@ -416,6 +416,57 @@ describe("multi-root Pi session import orchestration", () => {
     expect(delegate).not.toHaveBeenCalled();
   });
 
+  it("rejects duplicate canonical mapping cwd values before target validation or delegate import calls", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-sk-live-secret-"));
+    const nested = join(project, "nested");
+    mkdirSync(nested);
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const getBankProfile = vi.fn(async (bankId: string) => ({ id: bankId }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [
+              { cwd: project, targetBankIds: ["first-bank"] },
+              { cwd: join(nested, ".."), targetBankIds: ["second-bank"] },
+            ],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({ getBankProfile }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow(/Duplicate import mapping cwd .* maps to the same source group/);
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [
+              { cwd: project, targetBankIds: ["first-bank"] },
+              { cwd: join(nested, ".."), targetBankIds: ["second-bank"] },
+            ],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({ getBankProfile }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.not.toThrow("sk-live-secret");
+
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
   it("executes unique reviewed group-to-bank pairs with dry-run-first all-or-nothing preflight", async () => {
     const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
     const projectA = mkdtempSync(join(tmpdir(), "pi-hindsight-project-a-"));
