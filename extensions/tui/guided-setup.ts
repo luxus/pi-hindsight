@@ -8,6 +8,7 @@ import {
   type MemoryOperationsDeps,
 } from "../operations/memory-operation-service.js";
 import { importDocumentSummary } from "../imports/import-presentation.js";
+import type { MultiRootProjectImportPlanMapping } from "../imports/import-multi-root.js";
 import type { ImportProgressEvent } from "../imports/import-sessions.js";
 import type { MemoryProfile, ProjectConfigPatchInput } from "../config/config-writer.js";
 import type { SetupProfileChoice } from "./setup-tui-types.js";
@@ -309,6 +310,56 @@ function parseApprovedRootsInput(input: string): string[] {
     .split(/[\n,]+/)
     .map((root) => root.trim())
     .filter(Boolean);
+}
+
+function parseApprovedRootMappingsInput(input: string): MultiRootProjectImportPlanMapping[] {
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [cwdPart, targetsPart = ""] = line.split("=");
+      const cwd = cwdPart?.trim() ?? "";
+      const targets = targetsPart.trim();
+      const targetBankIds =
+        targets.toLowerCase() === "skip"
+          ? []
+          : targets
+              .split(",")
+              .map((target) => target.trim())
+              .filter(Boolean)
+              .filter((target, index, targets) => targets.indexOf(target) === index);
+      return { cwd, targetBankIds };
+    })
+    .filter((mapping) => mapping.cwd);
+}
+
+function formatApprovedRootDiscoverySummary(
+  result: Awaited<ReturnType<MemoryOperations["importMultiRootProjectSessions"]>>,
+): string {
+  const invalid = result.plan.summary.invalidCategoryCounts;
+  const groups = result.plan.groups
+    .map((group) => {
+      const reasons = group.classificationReasons.length
+        ? ` (${group.classificationReasons.join(", ")})`
+        : "";
+      return `${group.cwd} [${group.classification}${reasons}; sessions=${group.sessionCount}; default=skip]`;
+    })
+    .join(" | ");
+  return `Dry run: roots=${result.summary.approvedRootCount}; groups=${result.summary.groupCount}; sessions=${result.summary.validSessionCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; invalid=${result.summary.invalidSessionCount} (invalid-header=${invalid["invalid-header"]}, unreadable=${invalid.unreadable}); malformed=${result.summary.malformedLineCount}; ${groups}`;
+}
+
+function formatApprovedRootPlanSummary(
+  result: Awaited<ReturnType<MemoryOperations["importMultiRootProjectSessions"]>>,
+): string {
+  const mapped = result.plan.groups
+    .map((group) =>
+      group.skipped
+        ? `${group.cwd} -> Skip (${group.skipReason ?? "skipped"})`
+        : `${group.cwd} -> ${group.targetBankIds.join(", ")}${group.fanOut ? " [fan-out]" : ""}`,
+    )
+    .join(" | ");
+  return `Plan: pairs=${result.plan.summary.mappingPairCount}; fan-out groups=${result.plan.summary.fanOutGroupCount}; skipped=${result.plan.summary.skippedGroupCount}; transient/stale=${result.plan.summary.transientGroupCount}; ${mapped}`;
 }
 
 function isNotFoundError(error: unknown): boolean {
@@ -675,25 +726,37 @@ export async function maybeOfferHistoricalImportForSetup(args: {
     args.ctx.ui.notify("Preparing approved-root Pi session import preview...", "info");
     const dryRun = await args.operations.importMultiRootProjectSessions({
       approvedRoots,
-      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      dryRun: true,
+      onProgress,
+    });
+    const mappingInput = await args.ctx.ui.input(
+      "Map source cwd groups to target banks",
+      `${formatApprovedRootDiscoverySummary(dryRun)}\nEnter one line per group: <source cwd>=<bank id>[, <bank id>] or <source cwd>=skip. No banks are inferred or created.`,
+    );
+    const mappings = mappingInput ? parseApprovedRootMappingsInput(mappingInput) : [];
+    if (mappings.length === 0) return;
+    args.ctx.ui.notify("Preflighting approved-root import plan...", "info");
+    const preflight = await args.operations.importMultiRootProjectSessions({
+      approvedRoots,
+      importPlan: { mappings },
       dryRun: true,
       onProgress,
     });
     const confirmed = await args.ctx.ui.confirm(
-      `Import approved Pi session roots into ${dryRun.bankId}?`,
-      `Dry run: roots=${dryRun.summary.approvedRootCount}; groups=${dryRun.summary.groupCount}; sessions=${dryRun.summary.validSessionCount}; documents=${dryRun.summary.documentCount}; messages=${dryRun.summary.messageCount}; invalid=${dryRun.summary.invalidSessionCount}; malformed=${dryRun.summary.malformedLineCount}`,
+      "Import approved Pi session roots with reviewed bank mapping?",
+      formatApprovedRootPlanSummary(preflight),
     );
     if (!confirmed) return;
     args.ctx.ui.notify("Starting approved-root Pi session import write...", "info");
     const result = await args.operations.importMultiRootProjectSessions({
       approvedRoots,
-      ...(args.projectBankId ? { bank: args.projectBankId } : {}),
+      importPlan: { mappings },
       dryRun: false,
       dryRunFirst: true,
       onProgress,
     });
     args.ctx.ui.notify(
-      `Imported approved Pi session roots into ${result.bankId}: groups=${result.summary.importedGroupCount}/${result.summary.groupCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; failed=${result.summary.failedGroupCount}`,
+      `Imported approved Pi session roots: pairs=${result.summary.importedPairCount}/${result.summary.mappingPairCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; failed=${result.summary.failedPairCount}`,
       "info",
     );
     return;

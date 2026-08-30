@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import {
+  buildMultiRootProjectImportPlan,
   discoverMultiRootPiSessionHeaders,
   importMultiRootProjectSessions,
 } from "../extensions/imports/import-multi-root.js";
@@ -154,6 +155,147 @@ describe("multi-root Pi session import orchestration", () => {
       documentCount: 2,
       messageCount: 2,
     });
+  });
+
+  it("builds reviewed plans with skipped default groups, deduplicated target banks, and fan-out counts", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const projectA = mkdtempSync(join(tmpdir(), "pi-hindsight-project-a-"));
+    const projectB = mkdtempSync(join(tmpdir(), "pi-hindsight-project-b-"));
+    writeFileSync(join(root, "a.jsonl"), sessionJsonl({ id: "a", cwd: projectA }));
+    writeFileSync(join(root, "b.jsonl"), sessionJsonl({ id: "b", cwd: projectB }));
+    writeFileSync(join(root, "invalid.jsonl"), "{not json}\n");
+    const discovery = await discoverMultiRootPiSessionHeaders({ approvedRoots: [root] });
+    const cwdA = realpathSync(projectA);
+    const cwdB = realpathSync(projectB);
+
+    const skipped = buildMultiRootProjectImportPlan({ discovery });
+    expect(skipped.summary).toMatchObject({
+      groupCount: 2,
+      skippedGroupCount: 2,
+      mappingPairCount: 0,
+      fanOutGroupCount: 0,
+      invalidCategoryCounts: { "invalid-header": 1, unreadable: 0 },
+    });
+    expect(
+      skipped.groups.map((group) => ({ cwd: group.cwd, targetBankIds: group.targetBankIds })),
+    ).toEqual([
+      { cwd: cwdA, targetBankIds: [] },
+      { cwd: cwdB, targetBankIds: [] },
+    ]);
+
+    const reviewed = buildMultiRootProjectImportPlan({
+      discovery,
+      mappings: [
+        { cwd: cwdA, targetBankIds: ["coding-bank", "archive-bank", "coding-bank"] },
+        { cwd: cwdB, targetBankIds: [] },
+      ],
+    });
+
+    expect(reviewed.groups).toEqual([
+      expect.objectContaining({
+        cwd: cwdA,
+        targetBankIds: ["coding-bank", "archive-bank"],
+        skipped: false,
+        fanOut: true,
+      }),
+      expect.objectContaining({
+        cwd: cwdB,
+        targetBankIds: [],
+        skipped: true,
+        skipReason: "No target bank selected.",
+      }),
+    ]);
+    expect(reviewed.summary).toMatchObject({
+      mappingPairCount: 2,
+      fanOutGroupCount: 1,
+      skippedGroupCount: 1,
+    });
+  });
+
+  it("executes unique reviewed group-to-bank pairs with dry-run-first all-or-nothing preflight", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const projectA = mkdtempSync(join(tmpdir(), "pi-hindsight-project-a-"));
+    const projectB = mkdtempSync(join(tmpdir(), "pi-hindsight-project-b-"));
+    writeFileSync(join(root, "a.jsonl"), sessionJsonl({ id: "a", cwd: projectA }));
+    writeFileSync(join(root, "b.jsonl"), sessionJsonl({ id: "b", cwd: projectB }));
+    const cwdA = realpathSync(projectA);
+    const cwdB = realpathSync(projectB);
+    const calls: Array<{
+      cwd: string;
+      bankId: string;
+      dryRun?: boolean;
+      manifestPath: string;
+      checkpointPath: string;
+    }> = [];
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) => {
+      calls.push({
+        cwd: args.cwd,
+        bankId: args.bankId,
+        manifestPath: args.config.import.manifestPath,
+        checkpointPath: args.config.import.checkpointPath,
+        ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
+      });
+      if (args.cwd === cwdB && args.bankId === "bad-bank" && args.dryRun) {
+        throw new Error("preflight failed for sk-live-secret-bank");
+      }
+      return projectResult({ dryRun: Boolean(args.dryRun) });
+    });
+
+    const result = await importMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        importPlan: {
+          mappings: [
+            { cwd: cwdA, targetBankIds: ["coding-bank", "archive-bank", "coding-bank"] },
+            { cwd: cwdB, targetBankIds: ["bad-bank"] },
+          ],
+        },
+        config: DEFAULT_CONFIG,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+        dryRunFirst: true,
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(calls).toEqual([
+      {
+        cwd: cwdA,
+        bankId: "coding-bank",
+        dryRun: true,
+        manifestPath: ".pi/hindsight/import-manifest.coding-bank-88395709.json",
+        checkpointPath: ".pi/hindsight/import-checkpoint.coding-bank-88395709.json",
+      },
+      {
+        cwd: cwdA,
+        bankId: "archive-bank",
+        dryRun: true,
+        manifestPath: ".pi/hindsight/import-manifest.archive-bank-8bcae765.json",
+        checkpointPath: ".pi/hindsight/import-checkpoint.archive-bank-8bcae765.json",
+      },
+      {
+        cwd: cwdB,
+        bankId: "bad-bank",
+        dryRun: true,
+        manifestPath: ".pi/hindsight/import-manifest.bad-bank-018da784.json",
+        checkpointPath: ".pi/hindsight/import-checkpoint.bad-bank-018da784.json",
+      },
+    ]);
+    expect(result.summary).toMatchObject({
+      mappingPairCount: 3,
+      fanOutGroupCount: 1,
+      importedPairCount: 0,
+      failedPairCount: 1,
+    });
+    expect(result.groups.map((group) => group.status)).toEqual([
+      "dry-run-completed",
+      "dry-run-completed",
+      "dry-run-failed",
+    ]);
+    expect(JSON.stringify(result)).not.toContain("sk-live-secret-bank");
   });
 
   it("rejects relative approved roots without resolving them against process cwd", async () => {

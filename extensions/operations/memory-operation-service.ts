@@ -15,6 +15,7 @@ import { createRetainOperations } from "./memory-retain-operations.js";
 import { createSessionOperations } from "./memory-session-operations.js";
 import type { ResolvedConfig } from "../types.js";
 import type { ImportProgressReporter } from "../imports/import-sessions.js";
+import type { MultiRootProjectImportPlanMapping } from "../imports/import-multi-root.js";
 
 export type { ConfigureMemoryArgs, MemoryOperationsDeps } from "./memory-operation-types.js";
 
@@ -56,6 +57,7 @@ function createImportOperations(deps: MemoryOperationsDeps) {
     async importMultiRootProjectSessions(args: {
       approvedRoots: string[];
       bank?: string;
+      importPlan?: { mappings: MultiRootProjectImportPlanMapping[] };
       dryRun?: boolean;
       dryRunFirst?: boolean;
       includeBranches?: ResolvedConfig["import"]["includeBranches"];

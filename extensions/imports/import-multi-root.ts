@@ -1,6 +1,9 @@
 import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { existsSync } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { redactError, redactSecrets } from "../utils/sanitize.js";
 import { resolveOperationBank } from "../banks/bank-selection.js";
 import {
@@ -49,6 +52,7 @@ export interface MultiRootSessionDiscoveryResult {
 
 export interface MultiRootProjectImportGroupResult {
   cwd: string;
+  targetBankId?: string;
   searchRoots: string[];
   status: MultiRootImportGroupStatus;
   dryRuns: ImportProjectSessionsResult[];
@@ -59,6 +63,7 @@ export interface MultiRootProjectImportGroupResult {
 export interface MultiRootProjectImportResult {
   dryRun: boolean;
   discovery: MultiRootSessionDiscoveryResult;
+  plan: MultiRootProjectImportPlan;
   groups: MultiRootProjectImportGroupResult[];
   summary: {
     approvedRootCount: number;
@@ -66,6 +71,12 @@ export interface MultiRootProjectImportResult {
     validSessionCount: number;
     invalidSessionCount: number;
     groupCount: number;
+    skippedGroupCount: number;
+    transientGroupCount: number;
+    mappingPairCount: number;
+    fanOutGroupCount: number;
+    importedPairCount: number;
+    failedPairCount: number;
     dryRunGroupCount: number;
     importedGroupCount: number;
     failedGroupCount: number;
@@ -73,6 +84,34 @@ export interface MultiRootProjectImportResult {
     messageCount: number;
     malformedLineCount: number;
     categoryCounts: MultiRootImportCategoryCounts;
+  };
+}
+
+export interface MultiRootProjectImportPlanMapping {
+  cwd: string;
+  targetBankIds: string[];
+}
+
+export interface MultiRootProjectImportPlanGroup {
+  cwd: string;
+  sessionCount: number;
+  targetBankIds: string[];
+  skipped: boolean;
+  skipReason?: string;
+  fanOut: boolean;
+  classification: "active" | "transient" | "stale";
+  classificationReasons: string[];
+}
+
+export interface MultiRootProjectImportPlan {
+  groups: MultiRootProjectImportPlanGroup[];
+  summary: {
+    groupCount: number;
+    skippedGroupCount: number;
+    transientGroupCount: number;
+    mappingPairCount: number;
+    fanOutGroupCount: number;
+    invalidCategoryCounts: Record<MultiRootInvalidSession["reason"], number>;
   };
 }
 
@@ -150,6 +189,92 @@ function invalidApprovedRoot(root: string): MultiRootInvalidSession {
     sessionFile: redactSecrets(root),
     reason: "unreadable",
     error: "Approved root must be absolute.",
+  };
+}
+
+function uniqueTargetBankIds(targetBankIds: string[]): string[] {
+  return targetBankIds
+    .map((targetBankId) => targetBankId.trim())
+    .filter(Boolean)
+    .filter((targetBankId, index, ids) => ids.indexOf(targetBankId) === index);
+}
+
+function importStatePathForBank(path: string, bankId: string): string {
+  const hash = createHash("sha256").update(bankId).digest("hex").slice(0, 8);
+  const label = bankId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  const suffix = `${label || "bank"}-${hash}`;
+  const extension = extname(path);
+  if (!extension) return `${path}.${suffix}`;
+  return `${path.slice(0, -extension.length)}.${suffix}${extension}`;
+}
+
+function invalidCategoryCounts(
+  invalidSessions: MultiRootInvalidSession[],
+): Record<MultiRootInvalidSession["reason"], number> {
+  const counts = { "invalid-header": 0, unreadable: 0 };
+  for (const invalidSession of invalidSessions) counts[invalidSession.reason] += 1;
+  return counts;
+}
+
+function classifySourceCwd(
+  cwd: string,
+): Pick<MultiRootProjectImportPlanGroup, "classification" | "classificationReasons"> {
+  const reasons: string[] = [];
+  if (!existsSync(cwd)) reasons.push("cwd-missing");
+  const normalized = cwd.replaceAll("\\", "/");
+  const tmpRoot = resolve(tmpdir()).replaceAll("\\", "/");
+  if (
+    normalized === tmpRoot ||
+    normalized.startsWith(`${tmpRoot}/`) ||
+    normalized.startsWith("/tmp/") ||
+    normalized.startsWith("/private/tmp/") ||
+    normalized.includes("/pi-hindsight-worktrees/")
+  ) {
+    reasons.push("temporary-worktree-path");
+  }
+  if (reasons.includes("cwd-missing"))
+    return { classification: "stale", classificationReasons: reasons };
+  if (reasons.length > 0) return { classification: "transient", classificationReasons: reasons };
+  return { classification: "active", classificationReasons: [] };
+}
+
+export function buildMultiRootProjectImportPlan(args: {
+  discovery: MultiRootSessionDiscoveryResult;
+  mappings?: MultiRootProjectImportPlanMapping[];
+  defaultBankId?: string;
+}): MultiRootProjectImportPlan {
+  const mappingByCwd = new Map<string, string[]>();
+  for (const mapping of args.mappings ?? []) {
+    mappingByCwd.set(mapping.cwd, uniqueTargetBankIds(mapping.targetBankIds));
+  }
+  const groups = args.discovery.groups.map((group): MultiRootProjectImportPlanGroup => {
+    const targetBankIds = uniqueTargetBankIds(
+      mappingByCwd.get(group.cwd) ?? (args.defaultBankId ? [args.defaultBankId] : []),
+    );
+    const classification = classifySourceCwd(group.cwd);
+    return {
+      cwd: group.cwd,
+      sessionCount: group.sessions.length,
+      targetBankIds,
+      skipped: targetBankIds.length === 0,
+      ...(targetBankIds.length === 0 ? { skipReason: "No target bank selected." } : {}),
+      fanOut: targetBankIds.length > 1,
+      ...classification,
+    };
+  });
+  return {
+    groups,
+    summary: {
+      groupCount: groups.length,
+      skippedGroupCount: groups.filter((group) => group.skipped).length,
+      transientGroupCount: groups.filter((group) => group.classification !== "active").length,
+      mappingPairCount: groups.reduce((count, group) => count + group.targetBankIds.length, 0),
+      fanOutGroupCount: groups.filter((group) => group.fanOut).length,
+      invalidCategoryCounts: invalidCategoryCounts(args.discovery.invalidSessions),
+    },
   };
 }
 
@@ -320,6 +445,7 @@ function multiRootImportCategoryCounts(
 
 function multiRootImportSummary(
   discovery: MultiRootSessionDiscoveryResult,
+  plan: MultiRootProjectImportPlan,
   groups: MultiRootProjectImportGroupResult[],
 ) {
   return {
@@ -328,6 +454,12 @@ function multiRootImportSummary(
     validSessionCount: discovery.validSessionCount,
     invalidSessionCount: discovery.invalidSessionCount,
     groupCount: discovery.groups.length,
+    skippedGroupCount: plan.summary.skippedGroupCount,
+    transientGroupCount: plan.summary.transientGroupCount,
+    mappingPairCount: plan.summary.mappingPairCount,
+    fanOutGroupCount: plan.summary.fanOutGroupCount,
+    importedPairCount: groups.filter((group) => group.status === "imported").length,
+    failedPairCount: groups.filter((group) => group.status.endsWith("failed")).length,
     dryRunGroupCount: groups.filter((group) => group.dryRuns.length > 0).length,
     importedGroupCount: groups.filter((group) => group.status === "imported").length,
     failedGroupCount: groups.filter((group) => group.status.endsWith("failed")).length,
@@ -341,7 +473,8 @@ function multiRootImportSummary(
 export async function importMultiRootProjectSessions(
   args: {
     approvedRoots: string[];
-    bankId: string;
+    bankId?: string;
+    importPlan?: { mappings: MultiRootProjectImportPlanMapping[] };
     client: HindsightLikeClient;
     config: ResolvedConfig;
     dryRun?: boolean;
@@ -353,12 +486,18 @@ export async function importMultiRootProjectSessions(
 ): Promise<MultiRootProjectImportResult> {
   const importProjectSessions = deps.importProjectSessions ?? defaultImportProjectSessions;
   const discovery = await discoverMultiRootPiSessionHeaders({ approvedRoots: args.approvedRoots });
+  const plan = buildMultiRootProjectImportPlan({
+    discovery,
+    ...(args.importPlan ? { mappings: args.importPlan.mappings } : {}),
+    ...(args.bankId ? { defaultBankId: args.bankId } : {}),
+  });
   const groups: MultiRootProjectImportGroupResult[] = [];
   const dryRun = args.dryRun ?? false;
   const dryRunFirst = !dryRun && (args.dryRunFirst ?? false);
 
   const delegateGroup = async (
     group: MultiRootSessionGroup,
+    targetBankId: string,
     searchRoots: string[],
     delegateDryRun: boolean,
   ): Promise<ImportProjectSessionsResult[]> => {
@@ -368,9 +507,19 @@ export async function importMultiRootProjectSessions(
         await importProjectSessions({
           cwd: group.cwd,
           searchDir,
-          bankId: args.bankId,
+          bankId: targetBankId,
           client: args.client,
-          config: args.config,
+          config: {
+            ...args.config,
+            import: {
+              ...args.config.import,
+              manifestPath: importStatePathForBank(args.config.import.manifestPath, targetBankId),
+              checkpointPath: importStatePathForBank(
+                args.config.import.checkpointPath,
+                targetBankId,
+              ),
+            },
+          },
           dryRun: delegateDryRun,
           sessionFiles: sessionFilesForSearchRoot(group, searchDir),
           ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
@@ -382,75 +531,91 @@ export async function importMultiRootProjectSessions(
   };
 
   if (dryRun || dryRunFirst) {
-    for (const group of discovery.groups) {
+    for (const planned of plan.groups.filter((group) => !group.skipped)) {
+      const group = discovery.groups.find((candidate) => candidate.cwd === planned.cwd);
+      if (!group) continue;
       const searchRoots = rootsForGroup(discovery, group.cwd);
-      try {
-        groups.push({
-          cwd: group.cwd,
-          searchRoots,
-          status: "dry-run-completed",
-          dryRuns: await delegateGroup(group, searchRoots, true),
-          importResults: [],
-        });
-      } catch (error) {
-        groups.push({
-          cwd: group.cwd,
-          searchRoots,
-          status: "dry-run-failed",
-          dryRuns: [],
-          importResults: [],
-          error: redactImportError(error),
-        });
+      for (const targetBankId of planned.targetBankIds) {
+        try {
+          groups.push({
+            cwd: group.cwd,
+            targetBankId,
+            searchRoots,
+            status: "dry-run-completed",
+            dryRuns: await delegateGroup(group, targetBankId, searchRoots, true),
+            importResults: [],
+          });
+        } catch (error) {
+          groups.push({
+            cwd: group.cwd,
+            targetBankId,
+            searchRoots,
+            status: "dry-run-failed",
+            dryRuns: [],
+            importResults: [],
+            error: redactImportError(error),
+          });
+        }
       }
     }
     if (dryRun || groups.some((group) => group.status === "dry-run-failed")) {
       return {
         dryRun,
         discovery,
+        plan,
         groups,
-        summary: multiRootImportSummary(discovery, groups),
+        summary: multiRootImportSummary(discovery, plan, groups),
       };
     }
   }
 
-  for (const group of discovery.groups) {
+  for (const planned of plan.groups.filter((group) => !group.skipped)) {
+    const group = discovery.groups.find((candidate) => candidate.cwd === planned.cwd);
+    if (!group) continue;
     const searchRoots = rootsForGroup(discovery, group.cwd);
-    const preflight = groups.find((candidate) => candidate.cwd === group.cwd);
-    const dryRuns: ImportProjectSessionsResult[] = preflight?.dryRuns ?? [];
-    const importResults: ImportProjectSessionsResult[] = [];
+    for (const targetBankId of planned.targetBankIds) {
+      const preflight = groups.find(
+        (candidate) => candidate.cwd === group.cwd && candidate.targetBankId === targetBankId,
+      );
+      const dryRuns: ImportProjectSessionsResult[] = preflight?.dryRuns ?? [];
+      const importResults: ImportProjectSessionsResult[] = [];
 
-    try {
-      importResults.push(...(await delegateGroup(group, searchRoots, false)));
-    } catch (error) {
-      const failedGroup = {
+      try {
+        importResults.push(...(await delegateGroup(group, targetBankId, searchRoots, false)));
+      } catch (error) {
+        const failedGroup = {
+          cwd: group.cwd,
+          targetBankId,
+          searchRoots,
+          status: "import-failed" as const,
+          dryRuns,
+          importResults,
+          error: redactImportError(error),
+        };
+        if (preflight) groups[groups.indexOf(preflight)] = failedGroup;
+        else groups.push(failedGroup);
+        continue;
+      }
+
+      const importedGroup = {
         cwd: group.cwd,
+        targetBankId,
         searchRoots,
-        status: "import-failed" as const,
+        status: "imported" as const,
         dryRuns,
         importResults,
-        error: redactImportError(error),
       };
-      if (preflight) groups[groups.indexOf(preflight)] = failedGroup;
-      else groups.push(failedGroup);
-      continue;
+      if (preflight) groups[groups.indexOf(preflight)] = importedGroup;
+      else groups.push(importedGroup);
     }
-
-    const importedGroup = {
-      cwd: group.cwd,
-      searchRoots,
-      status: "imported" as const,
-      dryRuns,
-      importResults,
-    };
-    if (preflight) groups[groups.indexOf(preflight)] = importedGroup;
-    else groups.push(importedGroup);
   }
 
   return {
     dryRun,
     discovery,
+    plan,
     groups,
-    summary: multiRootImportSummary(discovery, groups),
+    summary: multiRootImportSummary(discovery, plan, groups),
   };
 }
 
@@ -458,6 +623,7 @@ export async function importMemoryMultiRootProjectSessions(
   args: {
     approvedRoots: string[];
     bank?: string;
+    importPlan?: { mappings: MultiRootProjectImportPlanMapping[] };
     dryRun?: boolean;
     dryRunFirst?: boolean;
     includeBranches?: ResolvedConfig["import"]["includeBranches"];
@@ -465,20 +631,46 @@ export async function importMemoryMultiRootProjectSessions(
   },
   deps: ImportOperationDeps,
 ) {
-  const bankId = resolveOperationBank({
-    requestedBank: args.bank,
-    config: deps.getConfig(),
-    projectBankId: deps.getProjectBankId(),
-  });
+  const config = deps.getConfig();
+  const needsBankResolution =
+    Boolean(args.bank) ||
+    Boolean(
+      args.importPlan?.mappings.some((mapping) =>
+        mapping.targetBankIds.some((targetBankId) => ["project", "global"].includes(targetBankId)),
+      ),
+    );
+  const projectBankId = needsBankResolution ? deps.getProjectBankId() : "";
+  const bankId = args.bank
+    ? resolveOperationBank({
+        requestedBank: args.bank,
+        config,
+        projectBankId,
+      })
+    : undefined;
+  const importPlan = args.importPlan
+    ? {
+        mappings: args.importPlan.mappings.map((mapping) => ({
+          cwd: mapping.cwd,
+          targetBankIds: mapping.targetBankIds.map((targetBankId) =>
+            resolveOperationBank({
+              requestedBank: targetBankId,
+              config,
+              projectBankId,
+            }),
+          ),
+        })),
+      }
+    : undefined;
   const result = await importMultiRootProjectSessions({
     approvedRoots: args.approvedRoots,
-    bankId,
+    ...(bankId ? { bankId } : {}),
+    ...(importPlan ? { importPlan } : {}),
     client: deps.getClient(),
-    config: deps.getConfig(),
+    config,
     ...(args.dryRun !== undefined ? { dryRun: args.dryRun } : {}),
     ...(args.dryRunFirst !== undefined ? { dryRunFirst: args.dryRunFirst } : {}),
     ...(args.includeBranches ? { includeBranches: args.includeBranches } : {}),
     ...(args.onProgress ? { onProgress: args.onProgress } : {}),
   });
-  return { bankId, ...result };
+  return { ...(bankId ? { bankId } : {}), ...result };
 }

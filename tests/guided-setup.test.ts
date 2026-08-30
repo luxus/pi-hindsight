@@ -323,7 +323,7 @@ describe("guided setup", () => {
     expect(importProjectSessions).toHaveBeenCalledTimes(1);
   });
 
-  it("previews user-approved session roots before writing with dryRunFirst", async () => {
+  it("reviews user-approved session root mappings before writing with dryRunFirst", async () => {
     const ctx = {
       cwd: "/repo",
       ui: {
@@ -331,14 +331,53 @@ describe("guided setup", () => {
         select: vi.fn().mockResolvedValueOnce("Preview approved Pi session roots"),
         input: vi
           .fn()
-          .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c"),
+          .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c")
+          .mockResolvedValueOnce("/repo-a=coding-bank, archive-bank\n/repo-b=skip"),
         notify: vi.fn(),
       },
     } as never;
     const importMultiRootProjectSessions = vi
       .fn()
       .mockResolvedValueOnce({
-        bankId: "project-bank",
+        dryRun: true,
+        discovery: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              sessions: [{ sessionFile: "/sessions/root-a/a.jsonl", sessionId: "a" }],
+            },
+            {
+              cwd: "/repo-b",
+              sessions: [{ sessionFile: "/sessions/root-b/b.jsonl", sessionId: "b" }],
+            },
+          ],
+          invalidSessions: [],
+        },
+        plan: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              targetBankIds: [],
+              skipped: true,
+              classification: "active",
+              classificationReasons: [],
+            },
+            {
+              cwd: "/repo-b",
+              targetBankIds: [],
+              skipped: true,
+              classification: "active",
+              classificationReasons: [],
+            },
+          ],
+          summary: {
+            mappingPairCount: 0,
+            fanOutGroupCount: 0,
+            skippedGroupCount: 2,
+            transientGroupCount: 0,
+            invalidCategoryCounts: { "invalid-header": 0, unreadable: 0 },
+          },
+        },
         summary: {
           approvedRootCount: 3,
           groupCount: 2,
@@ -350,11 +389,51 @@ describe("guided setup", () => {
         },
       })
       .mockResolvedValueOnce({
-        bankId: "project-bank",
+        dryRun: true,
+        plan: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              targetBankIds: ["coding-bank", "archive-bank"],
+              skipped: false,
+              fanOut: true,
+            },
+            {
+              cwd: "/repo-b",
+              targetBankIds: [],
+              skipped: true,
+              skipReason: "No target bank selected.",
+            },
+          ],
+          summary: {
+            mappingPairCount: 2,
+            fanOutGroupCount: 1,
+            skippedGroupCount: 1,
+            transientGroupCount: 0,
+          },
+        },
         summary: {
           groupCount: 2,
           importedGroupCount: 2,
           failedGroupCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+        },
+      })
+      .mockResolvedValueOnce({
+        dryRun: false,
+        plan: {
+          summary: {
+            mappingPairCount: 2,
+            fanOutGroupCount: 1,
+            skippedGroupCount: 1,
+            transientGroupCount: 0,
+          },
+        },
+        summary: {
+          importedPairCount: 2,
+          mappingPairCount: 2,
+          failedPairCount: 0,
           documentCount: 5,
           messageCount: 10,
         },
@@ -375,13 +454,28 @@ describe("guided setup", () => {
 
     expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(1, {
       approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
-      bank: "project-bank",
       dryRun: true,
       onProgress: expect.any(Function),
     });
     expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(2, {
       approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
-      bank: "project-bank",
+      importPlan: {
+        mappings: [
+          { cwd: "/repo-a", targetBankIds: ["coding-bank", "archive-bank"] },
+          { cwd: "/repo-b", targetBankIds: [] },
+        ],
+      },
+      dryRun: true,
+      onProgress: expect.any(Function),
+    });
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(3, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      importPlan: {
+        mappings: [
+          { cwd: "/repo-a", targetBankIds: ["coding-bank", "archive-bank"] },
+          { cwd: "/repo-b", targetBankIds: [] },
+        ],
+      },
       dryRun: false,
       dryRunFirst: true,
       onProgress: expect.any(Function),
