@@ -12,9 +12,10 @@ Guided import:
 
 1. chooses the source type from the selected profile/template
 2. previews first
-3. shows counts and target bank
-4. asks before writing memory
-5. can refresh mental models after successful import
+3. shows counts and target bank for single-root imports
+4. requires reviewed source-cwd to target-bank mappings for approved-root imports
+5. asks before writing memory
+6. can refresh mental models after successful import
 
 Project/coding setup offers repo-scoped Pi session import. User/assistant setup offers chat transcript import into User memory.
 
@@ -25,6 +26,7 @@ Pi Hindsight supports:
 - current Pi session
 - explicit Pi session JSONL file
 - repo-scoped Pi sessions from the current session directory
+- approved Pi session JSONL roots, grouped by each session header's canonical `cwd`
 - explicit chat transcript JSONL files for User memory
 
 Pi session imports and chat transcript imports are separate paths. They do not silently mix repo history with user conversation history.
@@ -38,6 +40,16 @@ Open `/hindsight` and press `i` (import always dry-runs before write). Guided se
 ```
 
 If the preview looks right, rerun without `--dry-run`. Non-dry-run imports announce the start and require confirmation because they write memory plus local checkpoint/manifest files.
+
+For broader backfills, choose the approved-roots import option and enter only roots you want scanned. Discovery groups sessions by each canonical source `cwd`, reports invalid-header/unreadable counts, and marks missing or temporary worktree cwd groups as stale/transient. Every group defaults to **Skip**. Add target bank IDs explicitly with one mapping line per discovered group, for example:
+
+```text
+/repos/app=coding-bank
+/repos/archive=coding-bank, archive-bank
+/private/tmp/old-worktree=skip
+```
+
+Mapping CWDs are canonicalized with the same rules as discovery and must exactly match a discovered source group; typo or unknown groups reject the whole plan before confirmation. Target aliases `project`, `global`, and `user` resolve to configured bank IDs before planning. Every unique selected target bank is verified with Hindsight bank-profile lookup before any session-pair dry run or write. Missing banks, unavailable profile lookup, or validation errors reject the import without creating banks. When a group maps to multiple banks, the final plan marks that intentional fan-out. The write path preflights every selected `(source cwd, target bank)` pair again and starts real imports only if all preflights succeed.
 
 Use `--all-leaves` only when you intentionally want every fork leaf from a session file. Default import follows the current branch.
 
@@ -58,6 +70,8 @@ Use these numbers to catch noisy imports before writing memory.
 Project session discovery avoids broad history imports. It scans only the current session file's directory and keeps `.jsonl` files whose parsed `cwd` resolves to the current repo/cwd.
 
 Equivalent path forms are treated as the same project, including trailing separators, `.` segments, `..` traversal that resolves back to the repo, and resolved absolute paths.
+
+Approved-root discovery scans only the roots entered by the user, reads only a bounded JSONL prefix needed to parse the first nonblank session header, groups sessions by canonical `cwd`, classifies missing or known temporary worktree cwd groups as stale/transient, and canonically deduplicates files reached through overlapping approved roots. Skipped groups remain visible in the reviewed plan; selected groups are explicit and must map to verified existing target banks.
 
 ## Document IDs and rebuilds
 

@@ -129,6 +129,18 @@ describe("session memory ops used by the TUI hub", () => {
   });
 });
 
+describe("import ops used by the TUI hub", () => {
+  it("exposes multi-root project import through shared operations", () => {
+    const operations = createMemoryOperations({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
+
+    expect("importMultiRootProjectSessions" in operations).toBe(true);
+  });
+});
+
 describe("mental model template ops used by the TUI hub", () => {
   it("lists agent-use templates and dry-run gates apply", async () => {
     const importBankTemplate = vi.fn(async (_bankId, _manifest, options) => ({

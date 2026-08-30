@@ -14,19 +14,19 @@ Pi Hindsight is **TUI-first**. Public slash commands:
 
 ### Hub keys
 
-| Key | Action                                                                |
-| --- | --------------------------------------------------------------------- |
-| `g` | Guided setup (profile, agent use, banks, optional templates + import) |
-| `m` | Session mode: `normal` / `read-only` / `ignored`                      |
-| `x` | Next-opt-out: skip automatic retain for the next agent run            |
-| `f` | Flush retain queue                                                    |
-| `o` | Doctor diagnostics report (includes status tones)                     |
-| `n` | Write `.pi/hindsight.json` with the selected project bank             |
-| `d` | Deployment / connection helpers                                       |
-| `i` | Historical import (dry-run first)                                     |
-| `t` | Apply starter bank template / mental-model set (dry-run first)        |
-| `a` | Toggle advanced settings (prefer agent tools for day-to-day edits)    |
-| `q` | Close                                                                 |
+| Key | Action                                                                 |
+| --- | ---------------------------------------------------------------------- |
+| `g` | Guided setup (profile, agent use, banks, optional templates + import)  |
+| `m` | Session mode: `normal` / `read-only` / `ignored`                       |
+| `x` | Next-opt-out: skip automatic retain for the next agent run             |
+| `f` | Flush retain queue                                                     |
+| `o` | Doctor diagnostics report (includes status tones)                      |
+| `n` | Write `.pi/hindsight.json` with the selected project bank              |
+| `d` | Deployment / connection helpers                                        |
+| `i` | Historical import, including approved Pi session roots (dry-run first) |
+| `t` | Apply starter bank template / mental-model set (dry-run first)         |
+| `a` | Toggle advanced settings (prefer agent tools for day-to-day edits)     |
+| `q` | Close                                                                  |
 
 Day-to-day mission, mental-model, knowledge-page, and config edits: prefer agent control-plane tools (`hindsight_status`, `hindsight_config`, `hindsight_bank`, `hindsight_mental_model`, `hindsight_knowledge`); the advanced TUI farm is an escape hatch, not the primary surface.
 

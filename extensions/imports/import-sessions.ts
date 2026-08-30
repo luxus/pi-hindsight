@@ -754,6 +754,7 @@ export async function importProjectSessions(args: {
   cwd: string;
   currentSessionFile?: string;
   searchDir?: string;
+  sessionFiles?: string[];
   bankId: string;
   client: HindsightLikeClient;
   config: ResolvedConfig;
@@ -762,11 +763,14 @@ export async function importProjectSessions(args: {
   onProgress?: ImportProgressReporter;
 }): Promise<ImportProjectSessionsResult> {
   args.onProgress?.({ phase: "discovering", message: "Scanning project session files" });
-  const discovery = await discoverProjectSessionFiles({
-    cwd: args.cwd,
-    ...(args.currentSessionFile ? { currentSessionFile: args.currentSessionFile } : {}),
-    ...(args.searchDir ? { searchDir: args.searchDir } : {}),
-  });
+  const discovery =
+    args.sessionFiles !== undefined
+      ? { sessionFiles: [...args.sessionFiles].sort(), scanned: args.sessionFiles.length }
+      : await discoverProjectSessionFiles({
+          cwd: args.cwd,
+          ...(args.currentSessionFile ? { currentSessionFile: args.currentSessionFile } : {}),
+          ...(args.searchDir ? { searchDir: args.searchDir } : {}),
+        });
   args.onProgress?.({
     phase: "discovered",
     message: `Found ${discovery.sessionFiles.length} project session${discovery.sessionFiles.length === 1 ? "" : "s"} after scanning ${discovery.scanned} file${discovery.scanned === 1 ? "" : "s"}`,

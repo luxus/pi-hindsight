@@ -4,6 +4,7 @@ import {
   importMemoryProjectSessions,
   importMemorySession,
 } from "../imports/import-sessions.js";
+import { importMemoryMultiRootProjectSessions } from "../imports/import-multi-root.js";
 import { createBankTemplateOperations } from "./memory-bank-template-operations.js";
 import { createConfigOperations } from "./memory-config-operations.js";
 import { createControlOperations } from "./memory-control-operations.js";
@@ -14,6 +15,7 @@ import { createRetainOperations } from "./memory-retain-operations.js";
 import { createSessionOperations } from "./memory-session-operations.js";
 import type { ResolvedConfig } from "../types.js";
 import type { ImportProgressReporter } from "../imports/import-sessions.js";
+import type { MultiRootProjectImportPlanMapping } from "../imports/import-multi-root.js";
 
 export type { ConfigureMemoryArgs, MemoryOperationsDeps } from "./memory-operation-types.js";
 
@@ -50,6 +52,18 @@ function createImportOperations(deps: MemoryOperationsDeps) {
       onProgress?: ImportProgressReporter;
     }) {
       return importMemoryProjectSessions(args, deps);
+    },
+
+    async importMultiRootProjectSessions(args: {
+      approvedRoots: string[];
+      bank?: string;
+      importPlan?: { mappings: MultiRootProjectImportPlanMapping[] };
+      dryRun?: boolean;
+      dryRunFirst?: boolean;
+      includeBranches?: ResolvedConfig["import"]["includeBranches"];
+      onProgress?: ImportProgressReporter;
+    }) {
+      return importMemoryMultiRootProjectSessions(args, deps);
     },
   };
 }

@@ -265,14 +265,19 @@ describe("guided setup", () => {
         setupProfile: "project-only",
         projectBankId: "project-bank",
       }),
-    ).toEqual(["Skip import", "Preview repo Pi sessions"]);
+    ).toEqual(["Skip import", "Preview repo Pi sessions", "Preview approved Pi session roots"]);
     expect(
       importChoicesForSetup({
         setupProfile: "project-user",
         projectBankId: "project-bank",
         globalBankId: "user-bank",
       }),
-    ).toEqual(["Skip import", "Preview repo Pi sessions", "Preview chat transcript"]);
+    ).toEqual([
+      "Skip import",
+      "Preview repo Pi sessions",
+      "Preview approved Pi session roots",
+      "Preview chat transcript",
+    ]);
   });
 
   it("previews repo session import after project setup before writing", async () => {
@@ -296,6 +301,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions,
+      importMultiRootProjectSessions: vi.fn(),
       importChatTranscript: vi.fn(),
     } as never;
 
@@ -317,6 +323,165 @@ describe("guided setup", () => {
     expect(importProjectSessions).toHaveBeenCalledTimes(1);
   });
 
+  it("reviews user-approved session root mappings before writing with dryRunFirst", async () => {
+    const ctx = {
+      cwd: "/repo",
+      ui: {
+        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
+        select: vi.fn().mockResolvedValueOnce("Preview approved Pi session roots"),
+        input: vi
+          .fn()
+          .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c")
+          .mockResolvedValueOnce("/repo-a=coding-bank, archive-bank\n/repo-b=skip"),
+        notify: vi.fn(),
+      },
+    } as never;
+    const importMultiRootProjectSessions = vi
+      .fn()
+      .mockResolvedValueOnce({
+        dryRun: true,
+        discovery: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              sessions: [{ sessionFile: "/sessions/root-a/a.jsonl", sessionId: "a" }],
+            },
+            {
+              cwd: "/repo-b",
+              sessions: [{ sessionFile: "/sessions/root-b/b.jsonl", sessionId: "b" }],
+            },
+          ],
+          invalidSessions: [],
+        },
+        plan: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              targetBankIds: [],
+              skipped: true,
+              classification: "active",
+              classificationReasons: [],
+            },
+            {
+              cwd: "/repo-b",
+              targetBankIds: [],
+              skipped: true,
+              classification: "active",
+              classificationReasons: [],
+            },
+          ],
+          summary: {
+            mappingPairCount: 0,
+            fanOutGroupCount: 0,
+            skippedGroupCount: 2,
+            transientGroupCount: 0,
+            invalidCategoryCounts: { "invalid-header": 0, unreadable: 0 },
+          },
+        },
+        summary: {
+          approvedRootCount: 3,
+          groupCount: 2,
+          validSessionCount: 4,
+          invalidSessionCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+          malformedLineCount: 0,
+        },
+      })
+      .mockResolvedValueOnce({
+        dryRun: true,
+        plan: {
+          groups: [
+            {
+              cwd: "/repo-a",
+              targetBankIds: ["coding-bank", "archive-bank"],
+              skipped: false,
+              fanOut: true,
+            },
+            {
+              cwd: "/repo-b",
+              targetBankIds: [],
+              skipped: true,
+              skipReason: "No target bank selected.",
+            },
+          ],
+          summary: {
+            mappingPairCount: 2,
+            fanOutGroupCount: 1,
+            skippedGroupCount: 1,
+            transientGroupCount: 0,
+          },
+        },
+        summary: {
+          groupCount: 2,
+          importedGroupCount: 2,
+          failedGroupCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+        },
+      })
+      .mockResolvedValueOnce({
+        dryRun: false,
+        plan: {
+          summary: {
+            mappingPairCount: 2,
+            fanOutGroupCount: 1,
+            skippedGroupCount: 1,
+            transientGroupCount: 0,
+          },
+        },
+        summary: {
+          importedPairCount: 2,
+          mappingPairCount: 2,
+          failedPairCount: 0,
+          documentCount: 5,
+          messageCount: 10,
+        },
+      });
+    const operations = {
+      importProjectSessions: vi.fn(),
+      importMultiRootProjectSessions,
+      importChatTranscript: vi.fn(),
+    } as never;
+
+    await maybeOfferHistoricalImportForSetup({
+      ctx,
+      operations,
+      setupProfile: "project-only",
+      cwd: "/repo",
+      projectBankId: "project-bank",
+    });
+
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(1, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      dryRun: true,
+      onProgress: expect.any(Function),
+    });
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(2, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      importPlan: {
+        mappings: [
+          { cwd: "/repo-a", targetBankIds: ["coding-bank", "archive-bank"] },
+          { cwd: "/repo-b", targetBankIds: [] },
+        ],
+      },
+      dryRun: true,
+      onProgress: expect.any(Function),
+    });
+    expect(importMultiRootProjectSessions).toHaveBeenNthCalledWith(3, {
+      approvedRoots: ["/sessions/root-a", "/sessions/root-b", "/sessions/root-c"],
+      importPlan: {
+        mappings: [
+          { cwd: "/repo-a", targetBankIds: ["coding-bank", "archive-bank"] },
+          { cwd: "/repo-b", targetBankIds: [] },
+        ],
+      },
+      dryRun: false,
+      dryRunFirst: true,
+      onProgress: expect.any(Function),
+    });
+  });
+
   it("previews chat transcript import after user setup before writing", async () => {
     const ctx = {
       ui: {
@@ -336,6 +501,7 @@ describe("guided setup", () => {
     });
     const operations = {
       importProjectSessions: vi.fn(),
+      importMultiRootProjectSessions: vi.fn(),
       importChatTranscript,
     } as never;
 
