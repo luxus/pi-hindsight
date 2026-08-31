@@ -114,6 +114,20 @@ The run prints and saves a JSON report (path is logged; override with `PI_HINDSI
 
 The benchmark is gated like live smoke: it skips unless `HINDSIGHT_INTEGRATION_ENABLED=true`, and runs in the label-gated `Hindsight Integration` lane (labels `ci:live-smoke` or `memory-path`). Compare reports across runs to catch regressions from refactors or Hindsight upgrades.
 
+## Startup benchmark
+
+Measure Pi readiness with and without this extension using fresh temporary config directories and offline RPC mode:
+
+```bash
+npm run bench:startup
+```
+
+Set `PI_STARTUP_BENCH_RUNS` or `PI_STARTUP_BENCH_WARMUPS` to change the sample counts. Pass an extension entrypoint after `--` to compare another build:
+
+```bash
+npm run bench:startup -- ./extensions/index.ts
+```
+
 ## Source-of-truth order
 
 1. Official Hindsight docs and API behavior

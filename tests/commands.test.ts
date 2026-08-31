@@ -27,17 +27,18 @@ function client(overrides: Partial<HindsightLikeClient> = {}): HindsightLikeClie
 describe("hindsight public command surface", () => {
   it("registers only the /hindsight TUI hub command", () => {
     const commands = new Map<string, RegisteredTestCommand>();
+    const catalog = createOperationCatalog({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
     registerCommands(
       {
         registerCommand: (name: string, command: RegisteredTestCommand) => {
           commands.set(name, command);
         },
       } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
+      catalog,
     );
 
     expect([...commands.keys()].sort()).toEqual(["hindsight", "hindsight:next-opt-out"]);
@@ -83,17 +84,18 @@ describe("hindsight public command surface", () => {
     const sessionFile = join(cwd, "session.jsonl");
     writeFileSync(sessionFile, "");
     const commands = new Map<string, RegisteredTestCommand>();
+    const catalog = createOperationCatalog({
+      getClient: () => client(),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "bank",
+    });
     registerCommands(
       {
         registerCommand: (name: string, command: RegisteredTestCommand) => {
           commands.set(name, command);
         },
       } as any,
-      {
-        getClient: () => client(),
-        getConfig: () => DEFAULT_CONFIG,
-        getProjectBankId: () => "bank",
-      },
+      catalog,
     );
     const ctx = {
       cwd,
