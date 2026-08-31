@@ -55,6 +55,7 @@
     "test": "vitest run",
     "smoke:hindsight": "tsx scripts/smoke-hindsight.ts",
     "bench:memory": "tsx scripts/bench-memory.ts",
+    "bench:startup": "node scripts/bench-startup.mjs",
     "changelog": "node scripts/generate-changelog.mjs",
     "version": "npm run changelog && npm run format:fix && git add CHANGELOG.md",
     "test:coverage": "vitest run --coverage",
