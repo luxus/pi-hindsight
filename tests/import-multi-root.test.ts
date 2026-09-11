@@ -99,6 +99,19 @@ describe("multi-root Pi session import orchestration", () => {
     expect(JSON.stringify(result)).not.toContain(outside);
   });
 
+  it("redacts an unreadable approved root path", async () => {
+    const parent = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const secretRoot = join(parent, "API_KEY=supersecret");
+    writeFileSync(secretRoot, "not a directory");
+
+    const result = await discoverMultiRootPiSessionHeaders({ approvedRoots: [secretRoot] });
+
+    expect(result.invalidSessions).toHaveLength(1);
+    expect(result.invalidSessions[0]).toMatchObject({ reason: "unreadable" });
+    expect(result.invalidSessions[0]?.sessionFile).not.toContain("supersecret");
+    expect(result.invalidSessions[0]?.sessionFile).toContain("[REDACTED]");
+  });
+
   it("delegates the exact recursively discovered nested session files for import", async () => {
     const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
     const nested = join(root, "nested");

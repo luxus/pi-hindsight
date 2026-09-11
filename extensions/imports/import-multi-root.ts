@@ -379,7 +379,7 @@ export async function discoverMultiRootPiSessionHeaders(args: {
       files = await collectJsonlFiles(root);
     } catch (error) {
       invalidSessions.push({
-        sessionFile: root,
+        sessionFile: redactSecrets(root),
         reason: "unreadable",
         error: redactImportError(error),
       });
