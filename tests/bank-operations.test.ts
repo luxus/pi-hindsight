@@ -6,6 +6,7 @@ function client(
   args: {
     createBank?: HindsightLikeClient["createBank"];
     getBankProfile?: HindsightLikeClient["getBankProfile"];
+    getBankConfig?: HindsightLikeClient["getBankConfig"];
   } = {},
 ): HindsightLikeClient {
   return {
@@ -18,6 +19,7 @@ function client(
       vi.fn(async () => {
         throw new Error("not found");
       }),
+    ...(args.getBankConfig !== undefined ? { getBankConfig: args.getBankConfig } : {}),
   };
 }
 
@@ -193,6 +195,65 @@ describe("bank operations", () => {
     await expect(
       ensureProjectBank(client({ createBank, getBankProfile }), "project-bank"),
     ).rejects.toThrow("status 500");
+
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("does not create bank when profile returns 410 and config confirms bank exists", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      const err = new Error(
+        'getBankProfile failed: "The bank profile endpoints have been removed."',
+      );
+      (err as NodeJS.ErrnoException & { statusCode?: number }).statusCode = 410;
+      throw err;
+    });
+    const getBankConfig = vi.fn(async () => ({ bankId: "project-bank" }));
+
+    await ensureProjectBank(client({ createBank, getBankProfile, getBankConfig }), "project-bank");
+
+    expect(getBankConfig).toHaveBeenCalledWith("project-bank");
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("creates bank when profile returns 410 and config confirms bank does not exist", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      const err = Object.assign(new Error("Gone"), { status: 410 });
+      throw err;
+    });
+    const getBankConfig = vi.fn(async () => {
+      throw new Error("Hindsight request failed with status 404");
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, getBankConfig }), "project-bank");
+
+    expect(getBankConfig).toHaveBeenCalledWith("project-bank");
+    expect(createBank).toHaveBeenCalledWith("project-bank", expect.any(Object));
+  });
+
+  it("does not create bank when profile returns 410 and config is unavailable", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      throw new Error("bank profile endpoints have been removed");
+    });
+    // no getBankConfig on client — falls back to assume-exists
+    await ensureProjectBank(client({ createBank, getBankProfile }), "project-bank");
+
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("does not create bank when profile returns 410 and config check errors with non-404", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      const err = Object.assign(new Error("Gone"), { status: 410 });
+      throw err;
+    });
+    const getBankConfig = vi.fn(async () => {
+      throw new Error("Hindsight request failed with status 503");
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, getBankConfig }), "project-bank");
 
     expect(createBank).not.toHaveBeenCalled();
   });

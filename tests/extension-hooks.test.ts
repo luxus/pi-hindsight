@@ -72,9 +72,16 @@ vi.mock("../extensions/banks/bank-operations.js", async (importOriginal) => {
 
 describe("extension hooks", () => {
   const originalHome = process.env.HOME;
+  const originalProjectBankId = process.env.PI_HINDSIGHT_PROJECT_BANK_ID;
+  const originalUserBankId = process.env.PI_HINDSIGHT_USER_BANK_ID;
+  const originalGlobalBankId = process.env.PI_HINDSIGHT_GLOBAL_BANK_ID;
 
   beforeEach(() => {
     process.env.HOME = mkdtempSync(join(tmpdir(), "pi-hindsight-home-"));
+    // Prevent ambient env bank-ID overrides from shadowing fixture bank IDs.
+    delete process.env.PI_HINDSIGHT_PROJECT_BANK_ID;
+    delete process.env.PI_HINDSIGHT_USER_BANK_ID;
+    delete process.env.PI_HINDSIGHT_GLOBAL_BANK_ID;
     vi.useRealTimers();
     vi.clearAllMocks();
     mocked.client.recall.mockImplementation(async (..._args: unknown[]) => ({
@@ -86,11 +93,14 @@ describe("extension hooks", () => {
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
-    if (originalHome === undefined) {
-      delete process.env.HOME;
-    } else {
-      process.env.HOME = originalHome;
-    }
+    if (originalHome === undefined) delete process.env.HOME;
+    else process.env.HOME = originalHome;
+    if (originalProjectBankId === undefined) delete process.env.PI_HINDSIGHT_PROJECT_BANK_ID;
+    else process.env.PI_HINDSIGHT_PROJECT_BANK_ID = originalProjectBankId;
+    if (originalUserBankId === undefined) delete process.env.PI_HINDSIGHT_USER_BANK_ID;
+    else process.env.PI_HINDSIGHT_USER_BANK_ID = originalUserBankId;
+    if (originalGlobalBankId === undefined) delete process.env.PI_HINDSIGHT_GLOBAL_BANK_ID;
+    else process.env.PI_HINDSIGHT_GLOBAL_BANK_ID = originalGlobalBankId;
   });
 
   it("skips bank ensure and recall when setup is incomplete", async () => {

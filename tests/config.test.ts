@@ -15,6 +15,20 @@ function tmp() {
   return mkdtempSync(join(tmpdir(), "pi-hindsight-"));
 }
 
+/** Strip env vars that override bank IDs so fixture values are observable in tests. */
+function cleanEnv(overrides?: Record<string, string>): NodeJS.ProcessEnv {
+  const {
+    PI_HINDSIGHT_PROJECT_BANK_ID,
+    PI_HINDSIGHT_USER_BANK_ID,
+    PI_HINDSIGHT_GLOBAL_BANK_ID,
+    ...rest
+  } = process.env;
+  void PI_HINDSIGHT_PROJECT_BANK_ID;
+  void PI_HINDSIGHT_USER_BANK_ID;
+  void PI_HINDSIGHT_GLOBAL_BANK_ID;
+  return { ...rest, ...overrides };
+}
+
 describe("resolveConfig", () => {
   it("applies project config then env overrides", () => {
     const cwd = tmp();
@@ -243,7 +257,7 @@ describe("resolveConfig", () => {
       }),
     );
 
-    const config = resolveConfig(cwd);
+    const config = resolveConfig(cwd, cleanEnv());
     const migrated = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
     const backups = readdirSync(join(cwd, ".pi")).filter((name) =>
       name.startsWith("hindsight.json.bak-"),
@@ -282,7 +296,7 @@ describe("resolveConfig", () => {
       }),
     );
 
-    const config = resolveConfig(cwd);
+    const config = resolveConfig(cwd, cleanEnv());
     const migrated = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 
     expect(config.banks.user).toMatchObject({
@@ -530,7 +544,7 @@ describe("resolveConfig", () => {
       }),
     );
     const home = tmp();
-    const config = resolveConfig(cwd, { ...process.env, HOME: home });
+    const config = resolveConfig(cwd, cleanEnv({ HOME: home }));
     expect(config.banks.project.bankId).toBe("coding-bank");
     expect(config.banks.user.bankId).toBe("life-bank");
     expect(config.banks.user.enabled).toBe(true);

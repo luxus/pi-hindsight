@@ -100,6 +100,39 @@ function isNotFoundError(error: unknown): boolean {
   );
 }
 
+function isGoneError(error: unknown): boolean {
+  if (typeof error !== "object" || !error) return false;
+  const fields = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+  // HTTP 410 Gone: profile/background endpoints removed in Hindsight v0.10.0 (#4127)
+  return (
+    fields.status === 410 ||
+    fields.statusCode === 410 ||
+    fields.code === 410 ||
+    fields.code === "410" ||
+    (typeof fields.message === "string" &&
+      /\b410\b|gone|bank profile endpoints have been removed/i.test(fields.message))
+  );
+}
+
+async function bankExistsViaConfig(client: HindsightLikeClient, bankId: string): Promise<boolean> {
+  // Fall back to /config endpoint (Hindsight v0.10.0+ replacement for /profile).
+  // When config is also unavailable, assume bank exists (conservative: avoids spurious creates).
+  if (!client.getBankConfig) return true;
+  try {
+    await client.getBankConfig(bankId);
+    return true;
+  } catch (configError) {
+    if (isNotFoundError(configError)) return false;
+    // Unknown config error — assume bank exists to avoid duplicate-create noise
+    return true;
+  }
+}
+
 async function bankNeedsCreate(client: HindsightLikeClient, bankId: string): Promise<boolean> {
   if (!client.getBankProfile) return false;
   try {
@@ -107,6 +140,9 @@ async function bankNeedsCreate(client: HindsightLikeClient, bankId: string): Pro
     return false;
   } catch (error) {
     if (isNotFoundError(error)) return true;
+    // HTTP 410 Gone: profile endpoint removed in Hindsight v0.10.0 (#4127).
+    // Fall back to /config endpoint which serves the same existence-check purpose.
+    if (isGoneError(error)) return !(await bankExistsViaConfig(client, bankId));
     throw error;
   }
 }
