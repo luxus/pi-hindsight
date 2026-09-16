@@ -86,6 +86,12 @@ export interface ScopeConfig {
    * Not cross-bank; only untagged observations inside the same coding bank.
    */
   includeSharedObservations: boolean;
+  /**
+   * User/life bank recall tags (`any_strict`) for automatic inject and tools.
+   * Default `["source:pi", "harness:pi"]`: source memories carry `source:pi`,
+   * while observations inherit observation-scope tags such as `harness:pi`.
+   */
+  userScopeTags: string[];
 }
 
 export interface ResolvedConfig {

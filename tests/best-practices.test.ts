@@ -124,7 +124,7 @@ describe("Hindsight best-practice invariants", () => {
 
     const scopes = selectMemoryScopes(cwd, config);
 
-    expect(scopeTagsForBank(cwd, config, "pi-global")).toEqual(["source:pi"]);
+    expect(scopeTagsForBank(cwd, config, "pi-global")).toEqual(["source:pi", "harness:pi"]);
     expect(scopeTagsForBank(cwd, config, scopes[0]!.bankId)).toEqual([
       expect.stringMatching(/^project:/),
       expect.stringMatching(/^repo:/),
@@ -166,7 +166,7 @@ describe("Hindsight best-practice invariants", () => {
       expect.objectContaining({
         kind: "global",
         bankId: "pi-global",
-        tagGroups: [{ tags: ["source:pi"], match: "any_strict" }],
+        tagGroups: [{ tags: ["source:pi", "harness:pi"], match: "any_strict" }],
       }),
     ]);
     expect(JSON.stringify(scopes)).not.toContain("metadata");
@@ -270,7 +270,7 @@ describe("Hindsight best-practice invariants", () => {
       },
     ]);
     // Life/user bank does not inherit the coding-bank shared opt-in.
-    expect(global?.tagGroups).toEqual([{ tags: ["source:pi"], match: "any_strict" }]);
+    expect(global?.tagGroups).toEqual([{ tags: ["source:pi", "harness:pi"], match: "any_strict" }]);
   });
 
   it("uses deterministic replace documents for historical imports", async () => {
@@ -335,5 +335,29 @@ describe("Hindsight best-practice invariants", () => {
       ]),
     });
     expect(first.documents[0]?.contentHash).toBe(second.documents[0]?.contentHash);
+  });
+
+  it("reads user-bank recall tags from scope.userScopeTags so observations match", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-user-scope-tags-"));
+    mkdirSync(join(cwd, ".git"));
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "pi-global" } },
+    };
+
+    expect(config.scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
+    expect(scopeTagsForBank(cwd, config, "pi-global")).toEqual(["source:pi", "harness:pi"]);
+    expect(
+      selectMemoryScopes(cwd, config).find((scope) => scope.kind === "global")?.tagGroups,
+    ).toEqual([{ tags: ["source:pi", "harness:pi"], match: "any_strict" }]);
+
+    const custom: ResolvedConfig = {
+      ...config,
+      scope: { ...config.scope, userScopeTags: ["harness:pi", "source:custom"] },
+    };
+    expect(scopeTagsForBank(cwd, custom, "pi-global")).toEqual(["harness:pi", "source:custom"]);
+    expect(
+      selectMemoryScopes(cwd, custom).find((scope) => scope.kind === "global")?.tagGroups,
+    ).toEqual([{ tags: ["harness:pi", "source:custom"], match: "any_strict" }]);
   });
 });

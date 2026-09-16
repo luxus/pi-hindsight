@@ -469,6 +469,7 @@ describe("resolveConfig", () => {
     expect(config.recall.types).toEqual(["observation"]);
     expect(config.observations.enabled).toBe(true);
     expect(config.observations.scopes).toEqual([["harness:pi"], ["project:{projectId}"]]);
+    expect(config.scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
     expect(config.recall.contextTurns).toBe(2);
     expect(config.recall.roles).toEqual(["user", "assistant"]);
     expect(config.recall.maxQueryChars).toBe(800);
@@ -535,5 +536,30 @@ describe("resolveConfig", () => {
     expect(config.banks.user.bankId).toBe("life-bank");
     expect(config.banks.user.enabled).toBe(true);
     expect(config.scope.mode).toBe("domain-tagged");
+  });
+
+  it("normalizes scope.userScopeTags for user-bank observation recall", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        scope: { userScopeTags: ["harness:pi", "source:pi", "source:pi", ""] },
+      }),
+    );
+    const configured = resolveConfig(cwd);
+    expect(configured.scope.userScopeTags).toEqual(["harness:pi", "source:pi"]);
+
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ scope: { userScopeTags: [] } }),
+    );
+    expect(resolveConfig(cwd).scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
+
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ scope: { userScopeTags: "harness:pi" } }),
+    );
+    expect(resolveConfig(cwd).scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
   });
 });
