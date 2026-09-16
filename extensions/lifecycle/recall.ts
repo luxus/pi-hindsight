@@ -1,3 +1,12 @@
+import {
+  emitRetrieval,
+  telemetryEvent,
+  telemetryFailure,
+  retrievalId,
+  resultTelemetry,
+  resultIds,
+  type RetrievalObserver,
+} from "./retrieval-telemetry.js";
 import { basename } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import {
@@ -29,7 +38,7 @@ function sourceFactText(value: unknown): string | undefined {
   return typeof text === "string" && text.trim() ? text : undefined;
 }
 
-function textFromRecallResponse(response: unknown): RecallResultItem[] {
+export function textFromRecallResponse(response: unknown): RecallResultItem[] {
   const record = response as Record<string, unknown>;
   const raw = Array.isArray(record.results)
     ? record.results
@@ -178,6 +187,8 @@ export async function recallForContext(args: {
   scopes: RecallScope[];
   messages: AgentMessage[];
   cwd?: string;
+  observer?: RetrievalObserver | undefined;
+  contextId?: string | undefined;
 }): Promise<{
   rendered: string;
   blocks: RecallBlock[];
@@ -195,6 +206,27 @@ export async function recallForContext(args: {
       includeDate: args.config.recall.includeDateInQuery,
       hints: args.cwd ? queryHints(args.cwd, args.config, scope) : [],
     });
+    const started = Date.now();
+    const id = args.observer ? retrievalId() : undefined;
+    const emit = (fields: Record<string, unknown>) =>
+      emitRetrieval(args.observer, () =>
+        telemetryEvent(started, {
+          phase: "retrieval",
+          mode: "automatic",
+          cache: "miss",
+          status: "success",
+          retrievalId: id,
+          contextId: args.contextId,
+          bankId: scope.bankId,
+          kind: scope.kind,
+          query,
+          budget: args.config.recall.budget,
+          maxTokens: maxTokensForScope(args.config, scope),
+          timeoutMs: args.config.recall.timeoutMs,
+          ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
+          ...fields,
+        }),
+      );
     try {
       const response = await withTimeout("hindsight recall", args.config.recall.timeoutMs, () =>
         args.client.recall(scope.bankId, query, {
@@ -214,10 +246,19 @@ export async function recallForContext(args: {
           ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
         }),
       );
-      const results = filterRecallQuality(
-        textFromRecallResponse(response),
-        args.config.recall.minScores,
-      ).items;
+      const raw = textFromRecallResponse(response);
+      const results = filterRecallQuality(raw, args.config.recall.minScores).items;
+      if (args.observer) {
+        const injected = results.slice(0, args.config.recall.topK);
+        emit({
+          ...resultTelemetry(raw),
+          keptIds: resultIds(results),
+          keptCount: results.length,
+          injectedIds: resultIds(injected),
+          injectedCount: injected.length,
+          status: results.length ? "success" : "empty",
+        });
+      }
       blocks.push({
         bankId: scope.bankId,
         query,
@@ -226,6 +267,7 @@ export async function recallForContext(args: {
         rendered: "",
       });
     } catch (error) {
+      emit(telemetryFailure(error));
       failures.push({
         bankId: scope.bankId,
         query,

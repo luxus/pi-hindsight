@@ -22,6 +22,7 @@ import {
   type ImportRetainResult,
   isImportRetainQueuedError,
   previewImportBranch,
+  previewImportBranchWithQueueAdmission,
   retainImportBranch,
 } from "./import-execute.js";
 import { importDocumentId } from "../utils/session.js";
@@ -138,7 +139,9 @@ export async function executeImportPlan(args: {
       message: `Projecting branch ${branch.leafId}`,
       sessionFile,
     });
-    const previews = previewImportBranch(common);
+    const previews = args.dryRun
+      ? await previewImportBranchWithQueueAdmission(common)
+      : previewImportBranch(common);
     for (const [index, preview] of previews.entries()) {
       args.onProgress?.({
         phase: args.dryRun ? "previewing" : "retaining",

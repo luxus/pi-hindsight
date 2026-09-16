@@ -166,17 +166,24 @@ export function legacyRepoScopeTag(legacyKey: string): string {
   return `repo:${legacyKey}`;
 }
 
+/** Folder name as Claude/Grok dynamic project banks use it (no slug, keep underscores). */
+export function folderBankId(path: string): string {
+  return basename(path).trim() || "default";
+}
+
 /**
  * Resolve the coding-role bank id.
  * - Explicit banks.project.bankId always wins (domain coding bank or isolated override).
  * - isolated-bank mode (or legacy path when no bankId): path/cwd-derived bank.
  * - domain-tagged without bankId: still path-derived for upgrade safety; setup should set bankId.
+ * - derive "basename": git-root folder name so Pi shares banks with Claude/Grok.
  */
 export function deriveProjectBankId(cwd: string, config: ResolvedConfig): string {
   if (config.banks.project.bankId) return config.banks.project.bankId;
   // Domain-tagged + explicit bankId is the preferred shared coding bank path.
   // Without bankId, keep path-derived identity so upgrades do not silently merge banks.
   const basis = config.banks.project.derive === "cwd" ? resolve(cwd) : findRepoRoot(cwd);
+  if (config.banks.project.derive === "basename") return folderBankId(basis);
   return `pi-project-${slug(basename(basis))}-${hash(basis)}`;
 }
 

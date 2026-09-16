@@ -52,7 +52,7 @@ export function createMemoryIdentity(
     liveDocumentId: liveDocumentId(sessionFile, cwd),
     baseTags: baseTags(cwd, sessionId, config),
     projectRecallTags: recallScopeTags(cwd, config),
-    globalRecallTags: ["source:pi"],
+    globalRecallTags: uniqueTags(config.scope.userScopeTags),
   };
 }
 

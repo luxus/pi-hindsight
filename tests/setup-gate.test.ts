@@ -54,6 +54,32 @@ describe("setup gate", () => {
     expect(requiresExplicitCodingBankId(config())).toBe(true);
   });
 
+  it("still requires coding bankId in domain-tagged mode when derive is basename", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-basename-"));
+    expect(
+      isMemorySetupComplete(
+        config({
+          setupComplete: true,
+          banks: {
+            ...DEFAULT_CONFIG.banks,
+            project: { enabled: true, derive: "basename" },
+          },
+        }),
+        cwd,
+      ),
+    ).toBe(false);
+    expect(
+      requiresExplicitCodingBankId(
+        config({
+          banks: {
+            ...DEFAULT_CONFIG.banks,
+            project: { enabled: true, derive: "basename" },
+          },
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it("accepts setupComplete with explicit project bankId", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-setup-flag-bank-"));
     expect(

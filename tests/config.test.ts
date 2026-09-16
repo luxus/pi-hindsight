@@ -39,6 +39,23 @@ describe("resolveConfig", () => {
     expect(config.banks.project.retainMission).toBe("Project retain mission");
   });
 
+  it("accepts opt-in basename derive without changing the default", () => {
+    const cwd = tmp();
+    const defaults = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(defaults.banks.project.derive).toBe("repo");
+    expect(defaults.scope.mode).toBe("domain-tagged");
+
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ banks: { project: { derive: "basename" } } }),
+    );
+    const configured = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(configured.banks.project.derive).toBe("basename");
+    expect(configured.banks.project.bankId).toBeUndefined();
+    expect(configured.scope.mode).toBe("domain-tagged");
+  });
+
   it("defaults to conservative source-facts recall and normalizes overrides", () => {
     const cwd = tmp();
     const defaults = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
@@ -444,6 +461,7 @@ describe("resolveConfig", () => {
         globalRetain: { mode: "nonsense" },
         retain: {
           queuePath: "",
+          beforeEnqueue: { command: [], timeoutMs: 0 },
           flushIntervalMs: -1,
           entities: [{ text: "ok" }, { text: 42 }],
           periodicFlushMaxJobs: -1,
@@ -469,6 +487,7 @@ describe("resolveConfig", () => {
     expect(config.recall.types).toEqual(["observation"]);
     expect(config.observations.enabled).toBe(true);
     expect(config.observations.scopes).toEqual([["harness:pi"], ["project:{projectId}"]]);
+    expect(config.scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
     expect(config.recall.contextTurns).toBe(2);
     expect(config.recall.roles).toEqual(["user", "assistant"]);
     expect(config.recall.maxQueryChars).toBe(800);
@@ -497,6 +516,11 @@ describe("resolveConfig", () => {
     expect(config.retain.toolFilter.toolResult.exclude).toContain("read");
     expect(config.retain.strip.message).toContain("usage");
     expect(config.retain.queuePath).toBe(".pi/hindsight/retain-queue.jsonl");
+    expect(config.retain.beforeEnqueue).toEqual({
+      command: [],
+      timeoutMs: 5_000,
+      malformed: true,
+    });
     expect(config.retain.flushIntervalMs).toBe(0);
     expect(config.retain.entities).toEqual([]);
     expect(config.retain.periodicFlushMaxJobs).toBe(1);
@@ -517,6 +541,24 @@ describe("resolveConfig", () => {
     expect(config.notifications.retain).toBe(true);
   });
 
+  it("normalizes retain.beforeEnqueue argv command and timeout", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        retain: {
+          beforeEnqueue: { command: ["/usr/bin/env", "node", "checker.mjs"], timeoutMs: 1234 },
+        },
+      }),
+    );
+
+    expect(resolveConfig(cwd).retain.beforeEnqueue).toEqual({
+      command: ["/usr/bin/env", "node", "checker.mjs"],
+      timeoutMs: 1234,
+    });
+  });
+
   it("accepts banks.coding and banks.life aliases", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"), { recursive: true });
@@ -535,5 +577,30 @@ describe("resolveConfig", () => {
     expect(config.banks.user.bankId).toBe("life-bank");
     expect(config.banks.user.enabled).toBe(true);
     expect(config.scope.mode).toBe("domain-tagged");
+  });
+
+  it("normalizes scope.userScopeTags for user-bank observation recall", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        scope: { userScopeTags: ["harness:pi", "source:pi", "source:pi", ""] },
+      }),
+    );
+    const configured = resolveConfig(cwd);
+    expect(configured.scope.userScopeTags).toEqual(["harness:pi", "source:pi"]);
+
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ scope: { userScopeTags: [] } }),
+    );
+    expect(resolveConfig(cwd).scope.userScopeTags).toEqual([]);
+
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ scope: { userScopeTags: "harness:pi" } }),
+    );
+    expect(resolveConfig(cwd).scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
   });
 });
