@@ -23,7 +23,7 @@ import {
 import { isInjectedHindsightMemory, projectMessageText } from "../utils/messages.js";
 import { createMemoryIdentity } from "../operations/memory-identity.js";
 import { redactError } from "../utils/sanitize.js";
-import { withTimeout } from "../client/timeout.js";
+import { withTimeout, isAbortError, throwIfAborted } from "../client/timeout.js";
 import { loadMentalModelsForScopes } from "./mental-models.js";
 
 export interface RecallScope {
@@ -189,12 +189,14 @@ export async function recallForContext(args: {
   cwd?: string;
   observer?: RetrievalObserver | undefined;
   contextId?: string | undefined;
+  signal?: AbortSignal;
 }): Promise<{
   rendered: string;
   blocks: RecallBlock[];
   failed: number;
   failures: RecallFailure[];
 }> {
+  throwIfAborted(args.signal, "hindsight recall");
   const blocks: RecallBlock[] = [];
   const failures: RecallFailure[] = [];
   // Scope recalls run concurrently: with two banks (project + user) a sequential
@@ -239,6 +241,7 @@ export async function recallForContext(args: {
         // sees a client disconnect and cancels the recall instead of running it
         // to completion. Without this the outer timeout rejects the turn-side
         // promise while the request keeps running up to the client-level timeout.
+        // Pi's Esc abort is also forwarded as withTimeout's parentSignal.
         const response = await withTimeout(
           "hindsight recall",
           args.config.recall.timeoutMs,
@@ -260,6 +263,7 @@ export async function recallForContext(args: {
               ...(scope.tagGroups?.length ? { tagGroups: scope.tagGroups } : {}),
               signal,
             }),
+          args.signal,
         );
         const raw = textFromRecallResponse(response);
         const results = filterRecallQuality(raw, args.config.recall.minScores).items;
@@ -285,6 +289,9 @@ export async function recallForContext(args: {
           },
         };
       } catch (error) {
+        if (isAbortError(error) || args.signal?.aborted) {
+          return { ok: "aborted" as const, error };
+        }
         emit(telemetryFailure(error));
         return {
           ok: false as const,
@@ -299,10 +306,13 @@ export async function recallForContext(args: {
       }
     }),
   );
+  const aborted = scopeOutcomes.find((outcome) => outcome.ok === "aborted");
+  if (aborted) throw aborted.error;
   for (const outcome of scopeOutcomes) {
-    if (outcome.ok) blocks.push(outcome.block);
-    else failures.push(outcome.failure);
+    if (outcome.ok === true) blocks.push(outcome.block);
+    else if (outcome.ok === false) failures.push(outcome.failure);
   }
+  throwIfAborted(args.signal, "hindsight recall");
   const recallRendered = renderRecallBlocks(blocks, args.config.recall.topK);
   const cwd = args.cwd ?? process.cwd();
   const identity = createMemoryIdentity(cwd, args.config);
@@ -312,7 +322,9 @@ export async function recallForContext(args: {
     bankIds: args.scopes.map((scope) => scope.bankId),
     bankKinds: args.scopes.map((scope) => (scope.kind === "global" ? "user" : "project")),
     projectId: identity.projectId,
+    ...(args.signal ? { signal: args.signal } : {}),
   });
+  throwIfAborted(args.signal, "hindsight recall");
   const rendered = [mental.rendered, recallRendered].filter(Boolean).join("\n\n");
   return {
     rendered,

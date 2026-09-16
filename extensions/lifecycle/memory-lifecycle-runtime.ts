@@ -10,12 +10,15 @@ export type RuntimeCtx = {
     notify(message: string, level?: string): void;
   };
   sessionManager?: { getSessionFile?: () => string | undefined };
+  /** Pi agent abort signal for the active turn, when the context hook provides one. */
+  signal?: AbortSignal | undefined;
 };
 
 export type RuntimeSnapshot = {
   cwd: string;
   ui: RuntimeCtx["ui"];
   sessionFile?: string;
+  signal?: AbortSignal | undefined;
 };
 
 export type ContextEvent = { messages: AgentMessage[] };
@@ -26,7 +29,13 @@ export function snapshotRuntime(ctx: RuntimeCtx): RuntimeSnapshot | undefined {
     const cwd = ctx.cwd;
     const ui = ctx.ui;
     const sessionFile = getSessionFile(ctx);
-    return { cwd, ui, ...(sessionFile ? { sessionFile } : {}) };
+    const signal = ctx.signal;
+    return {
+      cwd,
+      ui,
+      ...(sessionFile ? { sessionFile } : {}),
+      ...(signal ? { signal } : {}),
+    };
   } catch {
     return undefined;
   }

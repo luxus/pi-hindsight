@@ -8,6 +8,7 @@ import {
   type RetrievalTelemetry,
 } from "./retrieval-telemetry.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { isAbortError } from "../client/timeout.js";
 import { recallForContext } from "./recall.js";
 import { redactError } from "../utils/sanitize.js";
 import { writeLastRecallSnapshot } from "./recall-visibility.js";
@@ -22,7 +23,7 @@ import type { ContextEvent, ContextPatch, RuntimeSnapshot } from "./memory-lifec
 
 export type RecallStatusActivity = Extract<
   HindsightActivity,
-  "recalling" | "recalled" | "recall-empty" | "recall-failed"
+  "idle" | "recalling" | "recalled" | "recall-empty" | "recall-failed"
 >;
 
 export interface RecallTurnPolicy {
@@ -177,6 +178,10 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
       cacheStatus = recallResult ? "hit" : "miss";
 
       try {
+        if (runtime.signal?.aborted) {
+          deps.setMemoryStatus(runtime, "idle");
+          return skip("aborted");
+        }
         if (recallResult && deps.observer) {
           for (const origin of origins.get(recallResult) ?? []) {
             emitRetrieval(observe, () =>
@@ -205,10 +210,19 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
             messages: event.messages,
             cwd: runtime.cwd,
             ...(deps.observer ? { observer: observe, contextId } : {}),
+            ...(runtime.signal ? { signal: runtime.signal } : {}),
           });
+          if (runtime.signal?.aborted) {
+            deps.setMemoryStatus(runtime, "idle");
+            return skip("aborted");
+          }
           recallResult = { ...fetched, timestamp: Date.now() };
           if (deps.observer) origins.set(recallResult, retrievals.slice());
           cache.set(cacheKey, recallResult);
+        }
+        if (runtime.signal?.aborted) {
+          deps.setMemoryStatus(runtime, "idle");
+          return skip("aborted");
         }
         const { rendered, blocks, failed, failures, timestamp } = recallResult;
         const memoryCount = blocks.reduce((count, block) => count + block.memoryCount, 0);
@@ -233,20 +247,30 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
           (rendered || failed === 0 || config.recall.storeLastRecallFailures)
         ) {
           try {
-            await writeLastRecallSnapshot(runtime.cwd, config.recall.lastRecallPath, {
-              query: blocks[0]?.query ?? failures[0]?.query ?? "",
-              rendered,
-              blocks,
-              failed,
-              ...(failures.length ? { failures } : {}),
-            });
+            await writeLastRecallSnapshot(
+              runtime.cwd,
+              config.recall.lastRecallPath,
+              {
+                query: blocks[0]?.query ?? failures[0]?.query ?? "",
+                rendered,
+                blocks,
+                failed,
+                ...(failures.length ? { failures } : {}),
+              },
+              runtime.signal,
+            );
           } catch (error) {
+            if (isAbortError(error) || runtime.signal?.aborted) throw error;
             deps.notify(
               runtime,
               `Hindsight last recall snapshot write failed: ${redactError(error)}`,
               "warning",
             );
           }
+        }
+        if (runtime.signal?.aborted) {
+          deps.setMemoryStatus(runtime, "idle");
+          return skip("aborted");
         }
         if (!rendered) {
           injection(
@@ -270,6 +294,10 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
         injection(patch ? "success" : "skipped", patch ? rendered : "", { failedScopes: failed });
         return patch;
       } catch (error) {
+        if (isAbortError(error) || runtime.signal?.aborted) {
+          deps.setMemoryStatus(runtime, "idle");
+          return skip("aborted");
+        }
         injection("error", "", telemetryFailure(error));
         deps.setMemoryStatus(runtime, "recall-failed");
         // Recall runs every turn, so this stays debug-gated behind the same opt-in flags that

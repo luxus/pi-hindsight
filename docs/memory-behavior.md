@@ -10,6 +10,8 @@ The injected block is not written to the Pi transcript by this extension and is 
 
 Automatic recall caches that block for `recall.cacheTtlMs` (default 60s). The cache key is the active bank IDs plus the last user message's content identity, not transcript length, so auto-continue retries that append an identical nudge reuse the first-seen result and timestamp. A new last user message, a bank-id change, or TTL expiry fetches again.
 
+If the user presses Esc during automatic recall, Pi's abort signal cancels in-flight Hindsight recall and mental-model loading. The context hook returns no patch: recalled memory is not injected, last-recall sidecars are not written, memory status returns to idle, and the cancellation is not reported as an extension error.
+
 Defaults:
 
 - `recall.types: ["observation"]`
@@ -116,7 +118,7 @@ Set `recall.storeLastRecall: true` to write a local visibility snapshot under `.
 
 Snapshots can contain recalled memory and query excerpts. Enable them only when local disk visibility is acceptable. Snapshots are not inserted into provider context or automatic retain.
 
-Inspect snapshots on disk under the configured `recall.lastRecallPath` (default `.pi/hindsight/last-recall.json`). There is no public slash command for last-recall; the snapshot is a debug sidecar only.
+Inspect snapshots on disk under the configured `recall.lastRecallPath` (default `.pi/hindsight/last-recall.json`). There is no public slash command for last-recall; the snapshot is a debug sidecar only. Cancelled (Esc) recalls do not write success or failure snapshots; an in-progress temp write is discarded so an existing snapshot stays in place.
 
 Recall-block cleanup for accidentally persisted `<hindsight-memory>` lines remains available as a recovery path through shared memory operations; prefer keeping recall ephemeral so cleanup is not needed.
 

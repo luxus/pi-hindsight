@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isAbortError } from "./client/timeout.js";
 import { registerCommands } from "./tui/commands.js";
 import { createMemoryLifecycle } from "./lifecycle/memory-lifecycle.js";
 import { createOperationCatalog } from "./operations/operation-catalog.js";
@@ -23,7 +24,15 @@ export default function hindsightExtension(pi: ExtensionAPI) {
     await lifecycle.initialize(ctx);
   });
 
-  pi.on("context", async (event, ctx) => lifecycle.recall(event, ctx));
+  pi.on("context", async (event, ctx) => {
+    try {
+      return await lifecycle.recall(event, ctx);
+    } catch (error) {
+      // Pi reports uncaught context-hook exceptions as extension errors. Esc is expected.
+      if (isAbortError(error) || ctx.signal?.aborted) return undefined;
+      throw error;
+    }
+  });
 
   pi.on("agent_end", async (event, ctx) => {
     await lifecycle.retain(event, ctx);
