@@ -4,10 +4,8 @@ import {
   type ExtensionAPI,
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import type { MemoryOperationsDeps } from "./memory-operation-service.js";
-import { createMemoryOperations } from "./memory-operation-service.js";
+import type { MemoryOperations, MemoryOperationsDeps } from "./memory-operation-service.js";
 import { formatReflectResult } from "./reflect-presenter.js";
-import { runHindsightSetupTui } from "../tui/setup-tui.js";
 import { renderMemoryToolTextResult, retainToolResponse } from "../tui/tool-presenters.js";
 import { getSessionFile } from "../utils/session.js";
 
@@ -146,7 +144,13 @@ export interface OperationCatalog {
 }
 
 export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCatalog {
-  const operations = createMemoryOperations(deps);
+  let operations: Promise<MemoryOperations> | undefined;
+  const loadOperations = () => {
+    operations ??= import("./memory-operation-service.js").then(({ createMemoryOperations }) =>
+      createMemoryOperations(deps),
+    );
+    return operations;
+  };
   const useCwd = (cwd: string) => deps.reloadConfig?.(cwd);
 
   function defineCatalogTool<TParams extends ToolDefinition["parameters"], TDetails = unknown>(
@@ -268,6 +272,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const operations = await loadOperations();
         const sessionFile = ctx.sessionManager.getSessionFile?.();
         const { bankId, result } = await operations.recall(
           ctx.cwd,
@@ -337,6 +342,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const operations = await loadOperations();
         const sessionFile = ctx.sessionManager.getSessionFile?.();
         const result = await operations.retainExplicit({
           cwd: ctx.cwd,
@@ -370,6 +376,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, _signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const operations = await loadOperations();
         const sessionFile = ctx.sessionManager.getSessionFile?.();
         const result = await operations.retainExplicit({
           cwd: ctx.cwd,
@@ -448,6 +455,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const operations = await loadOperations();
         const { bankId, result } = await operations.reflect(
           ctx.cwd,
           params.query,
@@ -498,6 +506,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       async execute(_id, _params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const operations = await loadOperations();
         const result = await operations.status(ctx.cwd);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -533,6 +542,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const operations = await loadOperations();
         const result = await operations.seedGitLog({
           cwd: ctx.cwd,
           ...(params.limit !== undefined ? { limit: params.limit } : {}),
@@ -555,6 +565,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       async execute(_id, _params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const operations = await loadOperations();
         const result = operations.scopeInfo(ctx.cwd);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -627,6 +638,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const operations = await loadOperations();
         const result = await operations.config({
           action: params.action,
           cwd: ctx.cwd,
@@ -663,6 +675,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       async execute(_id, params, signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
         if (signal?.aborted) throw new Error("Aborted");
+        const operations = await loadOperations();
         if (params.action === "get") {
           const result = await operations.bankGet({
             ...(params.bank ? { bank: params.bank } : {}),
@@ -725,6 +738,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           params.action === "update" ||
           params.action === "refresh" ||
           params.action === "delete";
+        const operations = await loadOperations();
         const result = await operations.mentalModel({
           action: params.action,
           cwd: ctx.cwd,
@@ -802,6 +816,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
           params.action === "update" ||
           params.action === "delete" ||
           params.action === "seed_taxonomy";
+        const operations = await loadOperations();
         const result = await operations.knowledge({
           action: params.action,
           cwd: ctx.cwd,
@@ -848,6 +863,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       }),
       async execute(_id, params, _signal, _onUpdate, ctx) {
         useCwd(ctx.cwd);
+        const operations = await loadOperations();
         const result = await operations.scopeMigrateDryRun(ctx.cwd, {
           ...(params.bankTags ? { bankTags: params.bankTags } : {}),
           ...(params.writeReceipt !== undefined ? { writeReceipt: params.writeReceipt } : {}),
@@ -870,6 +886,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
         description:
           "Open Hindsight memory hub (status, mode, next-opt-out, mental models, import, flush, doctor, setup).",
         handler: async (_args, ctx) => {
+          const { runHindsightSetupTui } = await import("../tui/setup-tui.js");
           await runHindsightSetupTui(ctx, deps);
         },
       },
@@ -879,6 +896,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       spec: {
         description: "Skip automatic retain for the next agent run in this session.",
         handler: async (_args, ctx) => {
+          const operations = await loadOperations();
           const result = await operations.setNextRetainOff(ctx.cwd, getSessionFile(ctx));
           ctx.ui.notify(
             `Hindsight will skip automatic retain for the next agent run in this session. nextRetain=${result.meta.nextRetainMode}`,
