@@ -39,6 +39,23 @@ describe("resolveConfig", () => {
     expect(config.banks.project.retainMission).toBe("Project retain mission");
   });
 
+  it("accepts opt-in basename derive without changing the default", () => {
+    const cwd = tmp();
+    const defaults = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(defaults.banks.project.derive).toBe("repo");
+    expect(defaults.scope.mode).toBe("domain-tagged");
+
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ banks: { project: { derive: "basename" } } }),
+    );
+    const configured = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });
+    expect(configured.banks.project.derive).toBe("basename");
+    expect(configured.banks.project.bankId).toBeUndefined();
+    expect(configured.scope.mode).toBe("domain-tagged");
+  });
+
   it("defaults to conservative source-facts recall and normalizes overrides", () => {
     const cwd = tmp();
     const defaults = resolveConfig(cwd, { HINDSIGHT_BASE_URL: "http://h" });

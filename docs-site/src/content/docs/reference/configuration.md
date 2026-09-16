@@ -55,6 +55,16 @@ Project config SecretRef shape:
 
 When a profile uses user memory, guided setup asks for a user bank ID and writes it to global Pi config. Override it later with `PI_HINDSIGHT_USER_BANK_ID`, `~/.pi/agent/hindsight.json` `banks.user.bankId`, or the setup TUI if you prefer a different shared bank. Legacy `PI_HINDSIGHT_GLOBAL_BANK_ID`, `banks.global`, and `global-only` config names are migrated/supported during transition.
 
+## Isolated bank naming
+
+`banks.project.bankId` always wins. If it is unset, `banks.project.derive` chooses the name:
+
+- `repo` / `cwd` (default): hashed `pi-project-<slug>-<pathHash>`
+- `basename`: git-root folder name as-is (opt-in; share isolated banks with folder-named clients)
+- `manual`: set `bankId` explicitly
+
+Domain-tagged mode still requires an explicit coding bank id. See [Project identity](/pi-hindsight/concepts/project-identity/).
+
 ## Bank settings display
 
 Pi Hindsight distinguishes local Pi behavior from bank-owned Hindsight settings. Setup and status surfaces show both:
