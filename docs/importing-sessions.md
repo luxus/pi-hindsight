@@ -61,6 +61,8 @@ Imports run through the `/hindsight` TUI hub and guided setup; there are no impo
 
 Pi session dry-run shows document count, import mode/profile, raw and projected message counts, dropped successful tool output, kept tool errors, estimated chunks, byte counts, target bank, checkpoint path, and manifest path.
 
+Approved-root summaries also aggregate delegated document statuses and any retain-admission outcomes from the existing import path, including skipped, failed, and quarantined results when a before-enqueue scanner gate is configured. The aggregate reports counts only; it does not expose scanner command output.
+
 Chat dry-run shows kept event count, retained user-turn count, dropped event totals, malformed lines, target User Bank, content hash, and byte count.
 
 Use these numbers to catch noisy imports before writing memory.

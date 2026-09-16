@@ -334,6 +334,27 @@ function parseApprovedRootMappingsInput(input: string): MultiRootProjectImportPl
     .filter((mapping) => mapping.cwd);
 }
 
+function formatCountMap(counts: Record<string, number> | undefined): string {
+  return Object.entries(counts ?? {})
+    .filter(([, count]) => count > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, count]) => `${key}=${count}`)
+    .join(",");
+}
+
+function formatApprovedRootDocumentOutcomes(
+  result: Awaited<ReturnType<MemoryOperations["importMultiRootProjectSessions"]>>,
+): string {
+  const statuses = formatCountMap(result.summary.documentStatusCounts);
+  const admissions = formatCountMap(result.summary.queueAdmissionCounts);
+  const parts = [
+    `documents=${result.summary.documentCount}`,
+    ...(statuses ? [`documentStatus=${statuses}`] : []),
+    ...(admissions ? [`admission=${admissions}`] : []),
+  ];
+  return parts.join("; ");
+}
+
 function formatApprovedRootDiscoverySummary(
   result: Awaited<ReturnType<MemoryOperations["importMultiRootProjectSessions"]>>,
 ): string {
@@ -346,7 +367,7 @@ function formatApprovedRootDiscoverySummary(
       return `${group.cwd} [${group.classification}${reasons}; sessions=${group.sessionCount}; default=skip]`;
     })
     .join(" | ");
-  return `Dry run: roots=${result.summary.approvedRootCount}; groups=${result.summary.groupCount}; sessions=${result.summary.validSessionCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; invalid=${result.summary.invalidSessionCount} (invalid-header=${invalid["invalid-header"]}, unreadable=${invalid.unreadable}); malformed=${result.summary.malformedLineCount}; ${groups}`;
+  return `Dry run: roots=${result.summary.approvedRootCount}; groups=${result.summary.groupCount}; sessions=${result.summary.validSessionCount}; ${formatApprovedRootDocumentOutcomes(result)}; messages=${result.summary.messageCount}; invalid=${result.summary.invalidSessionCount} (invalid-header=${invalid["invalid-header"]}, unreadable=${invalid.unreadable}); malformed=${result.summary.malformedLineCount}; ${groups}`;
 }
 
 function formatApprovedRootPlanSummary(
@@ -359,7 +380,7 @@ function formatApprovedRootPlanSummary(
         : `${group.cwd} -> ${group.targetBankIds.join(", ")}${group.fanOut ? " [fan-out]" : ""}`,
     )
     .join(" | ");
-  return `Plan: pairs=${result.plan.summary.mappingPairCount}; fan-out groups=${result.plan.summary.fanOutGroupCount}; skipped=${result.plan.summary.skippedGroupCount}; transient/stale=${result.plan.summary.transientGroupCount}; ${mapped}`;
+  return `Plan: pairs=${result.plan.summary.mappingPairCount}; fan-out groups=${result.plan.summary.fanOutGroupCount}; skipped=${result.plan.summary.skippedGroupCount}; transient/stale=${result.plan.summary.transientGroupCount}; ${formatApprovedRootDocumentOutcomes(result)}; ${mapped}`;
 }
 
 function isNotFoundError(error: unknown): boolean {
@@ -756,7 +777,7 @@ export async function maybeOfferHistoricalImportForSetup(args: {
       onProgress,
     });
     args.ctx.ui.notify(
-      `Imported approved Pi session roots: pairs=${result.summary.importedPairCount}/${result.summary.mappingPairCount}; documents=${result.summary.documentCount}; messages=${result.summary.messageCount}; failed=${result.summary.failedPairCount}`,
+      `Imported approved Pi session roots: pairs=${result.summary.importedPairCount}/${result.summary.mappingPairCount}; ${formatApprovedRootDocumentOutcomes(result)}; messages=${result.summary.messageCount}; failed=${result.summary.failedPairCount}`,
       "info",
     );
     return;

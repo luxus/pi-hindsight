@@ -324,17 +324,18 @@ describe("guided setup", () => {
   });
 
   it("reviews user-approved session root mappings before writing with dryRunFirst", async () => {
+    const ui = {
+      confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
+      select: vi.fn().mockResolvedValueOnce("Preview approved Pi session roots"),
+      input: vi
+        .fn()
+        .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c")
+        .mockResolvedValueOnce("/repo-a=coding-bank, archive-bank\n/repo-b=skip"),
+      notify: vi.fn(),
+    };
     const ctx = {
       cwd: "/repo",
-      ui: {
-        confirm: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(true),
-        select: vi.fn().mockResolvedValueOnce("Preview approved Pi session roots"),
-        input: vi
-          .fn()
-          .mockResolvedValueOnce("/sessions/root-a, /sessions/root-b\n/sessions/root-c")
-          .mockResolvedValueOnce("/repo-a=coding-bank, archive-bank\n/repo-b=skip"),
-        notify: vi.fn(),
-      },
+      ui,
     } as never;
     const importMultiRootProjectSessions = vi
       .fn()
@@ -418,6 +419,8 @@ describe("guided setup", () => {
           failedGroupCount: 0,
           documentCount: 5,
           messageCount: 10,
+          documentStatusCounts: { completed: 3, quarantined: 1, skipped: 1 },
+          queueAdmissionCounts: { quarantined: 1, "would-enqueue": 3 },
         },
       })
       .mockResolvedValueOnce({
@@ -436,6 +439,8 @@ describe("guided setup", () => {
           failedPairCount: 0,
           documentCount: 5,
           messageCount: 10,
+          documentStatusCounts: { completed: 4, skipped: 1 },
+          queueAdmissionCounts: { "would-enqueue": 4 },
         },
       });
     const operations = {
@@ -480,6 +485,19 @@ describe("guided setup", () => {
       dryRunFirst: true,
       onProgress: expect.any(Function),
     });
+    expect(ui.confirm).toHaveBeenNthCalledWith(
+      2,
+      "Import approved Pi session roots with reviewed bank mapping?",
+      expect.stringContaining(
+        "documents=5; documentStatus=completed=3,quarantined=1,skipped=1; admission=quarantined=1,would-enqueue=3",
+      ),
+    );
+    expect(ui.notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "documents=5; documentStatus=completed=4,skipped=1; admission=would-enqueue=4",
+      ),
+      "info",
+    );
   });
 
   it("previews chat transcript import after user setup before writing", async () => {

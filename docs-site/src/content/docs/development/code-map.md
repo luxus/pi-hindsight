@@ -72,6 +72,7 @@ Related hand-authored docs: [Historical import](/pi-hindsight/guides/importing-s
 - `extensions/imports/import-execute.ts` — Curates messages and delivers import retain payloads through the queue.
 - `extensions/imports/import-presentation.ts` — Renders import preview and result messages.
 - `extensions/imports/import-sessions.ts` — Orchestrates session and chat-transcript imports and exposes the public import API.
+- `extensions/imports/import-multi-root.ts` — Plans and executes reviewed multi-root Pi session imports grouped by canonical cwd.
 
 ## Diagnostics, status, and safety
 

@@ -84,6 +84,8 @@ export interface MultiRootProjectImportResult {
     messageCount: number;
     malformedLineCount: number;
     categoryCounts: MultiRootImportCategoryCounts;
+    documentStatusCounts: Record<string, number>;
+    queueAdmissionCounts: Record<string, number>;
   };
 }
 
@@ -462,27 +464,70 @@ function sessionFilesForSearchRoot(group: MultiRootSessionGroup, searchRoot: str
     .sort();
 }
 
+function selectedImportResults(
+  group: MultiRootProjectImportGroupResult,
+): ImportProjectSessionsResult[] {
+  return group.importResults.length ? group.importResults : group.dryRuns;
+}
+
 function aggregateDocumentCount(groups: MultiRootProjectImportGroupResult[]): number {
   return groups.reduce((count, group) => {
-    const results = group.importResults.length ? group.importResults : group.dryRuns;
+    const results = selectedImportResults(group);
     return count + results.reduce((innerCount, result) => innerCount + result.documentCount, 0);
   }, 0);
 }
 
 function aggregateMessageCount(groups: MultiRootProjectImportGroupResult[]): number {
   return groups.reduce((count, group) => {
-    const results = group.importResults.length ? group.importResults : group.dryRuns;
+    const results = selectedImportResults(group);
     return count + results.reduce((innerCount, result) => innerCount + result.messageCount, 0);
   }, 0);
 }
 
 function aggregateMalformedLineCount(groups: MultiRootProjectImportGroupResult[]): number {
   return groups.reduce((count, group) => {
-    const results = group.importResults.length ? group.importResults : group.dryRuns;
+    const results = selectedImportResults(group);
     return (
       count + results.reduce((innerCount, result) => innerCount + result.malformedLineCount, 0)
     );
   }, 0);
+}
+
+function incrementCount(counts: Record<string, number>, key: string): void {
+  counts[key] = (counts[key] ?? 0) + 1;
+}
+
+function documentQueueAdmission(document: object): string | undefined {
+  if (!("queueAdmission" in document)) return undefined;
+  const admission = document.queueAdmission;
+  return typeof admission === "string" && admission.length > 0 ? admission : undefined;
+}
+
+function delegatedDocuments(groups: MultiRootProjectImportGroupResult[]) {
+  return groups.flatMap((group) =>
+    selectedImportResults(group).flatMap((result) =>
+      result.imported.flatMap((session) => session.documents),
+    ),
+  );
+}
+
+function aggregateDocumentStatusCounts(
+  groups: MultiRootProjectImportGroupResult[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const document of delegatedDocuments(groups)) incrementCount(counts, document.status);
+  return counts;
+}
+
+function aggregateQueueAdmissionCounts(
+  groups: MultiRootProjectImportGroupResult[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const document of delegatedDocuments(groups)) {
+    const admission = documentQueueAdmission(document);
+    if (admission) incrementCount(counts, admission);
+  }
+  return counts;
 }
 
 function multiRootImportCategoryCounts(
@@ -526,6 +571,8 @@ function multiRootImportSummary(
     messageCount: aggregateMessageCount(groups),
     malformedLineCount: aggregateMalformedLineCount(groups),
     categoryCounts: multiRootImportCategoryCounts(discovery, groups),
+    documentStatusCounts: aggregateDocumentStatusCounts(groups),
+    queueAdmissionCounts: aggregateQueueAdmissionCounts(groups),
   };
 }
 

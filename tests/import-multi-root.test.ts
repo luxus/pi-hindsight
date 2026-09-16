@@ -35,11 +35,12 @@ function projectResult(args: {
   dryRun: boolean;
   documentCount?: number;
   messageCount?: number;
+  imported?: ImportProjectSessionsResult["imported"];
 }): ImportProjectSessionsResult {
   return {
     sessionFiles: args.sessionFiles ?? [args.sessionFile ?? ""],
     scanned: args.sessionFiles?.length ?? 1,
-    imported: [],
+    imported: args.imported ?? [],
     messageCount: args.messageCount ?? 1,
     documentCount: args.documentCount ?? 1,
     dryRun: args.dryRun,
@@ -832,6 +833,55 @@ describe("multi-root Pi session import orchestration", () => {
     });
     expect(delegate).toHaveBeenCalledTimes(2);
     expect(JSON.stringify(result)).not.toContain("sk-live-secret-normal");
+  });
+
+  it("aggregates delegated document statuses and retain-admission outcomes without scanner output", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({
+        sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"),
+        dryRun: true,
+        documentCount: 3,
+        imported: [
+          {
+            documents: [
+              { status: "completed", queueAdmission: "would-enqueue" },
+              {
+                status: "quarantined",
+                queueAdmission: "quarantined",
+                error: "retain.beforeEnqueue blocked sk-live-secret-scanner",
+              },
+              { status: "skipped" },
+            ],
+          } as unknown as ImportProjectSessionsResult["imported"][number],
+        ],
+      }),
+    );
+
+    const result = await importMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        bankId: "bank",
+        config: DEFAULT_CONFIG,
+        client: memoryClient({ getBankProfile: async (bankId: string) => ({ id: bankId }) }),
+        dryRun: true,
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(result.summary.documentStatusCounts).toEqual({
+      completed: 1,
+      quarantined: 1,
+      skipped: 1,
+    });
+    expect(result.summary.queueAdmissionCounts).toEqual({
+      "would-enqueue": 1,
+      quarantined: 1,
+    });
+    expect(JSON.stringify(result.summary)).not.toContain("sk-live-secret-scanner");
+    expect(JSON.stringify(result.summary)).not.toContain("retain.beforeEnqueue");
   });
 
   it("deduplicates sessions found through overlapping approved roots by canonical file path", async () => {
