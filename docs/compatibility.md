@@ -26,6 +26,8 @@ The automatic memory path requires:
 
 If append retain is unavailable, live automatic retain is not considered supported for 1.0. Upgrade to Hindsight 0.8+; `/hindsight:doctor` documents the server floor and remediation action.
 
+Hindsight 0.10 retired `GET /banks/{id}/profile` (HTTP 410 Gone). Bank ensure uses `GET /v1/default/banks?q=` with an exact `bank_id` match for existence. That is not a public `list_banks` tool. `GET /banks/{id}/config` is not an existence check: it can 200 for a missing bank.
+
 ## Capability-gated surfaces
 
 These surfaces are part of the 1.0 Pi surface, but the exact fields and behavior can depend on the connected Hindsight server version:

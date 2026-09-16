@@ -83,30 +83,88 @@ export function resolveBankMissions(
   };
 }
 
-function isNotFoundError(error: unknown): boolean {
-  if (typeof error !== "object" || !error) return false;
-  const fields = error as {
+function errorFields(error: unknown): {
+  status?: unknown;
+  statusCode?: unknown;
+  code?: unknown;
+  message?: unknown;
+} {
+  if (typeof error !== "object" || !error) return {};
+  return error as {
     status?: unknown;
     statusCode?: unknown;
     code?: unknown;
     message?: unknown;
   };
+}
+
+function isHttpStatus(error: unknown, status: number): boolean {
+  const fields = errorFields(error);
   return (
-    fields.status === 404 ||
-    fields.statusCode === 404 ||
-    fields.code === 404 ||
-    fields.code === "404" ||
-    (typeof fields.message === "string" && /\b404\b|not found/i.test(fields.message))
+    fields.status === status ||
+    fields.statusCode === status ||
+    fields.code === status ||
+    fields.code === String(status)
   );
 }
 
+function isNotFoundError(error: unknown): boolean {
+  if (isHttpStatus(error, 404)) return true;
+  const message = errorFields(error).message;
+  return typeof message === "string" && /\b404\b|not found/i.test(message);
+}
+
+function isGoneError(error: unknown): boolean {
+  if (isHttpStatus(error, 410)) return true;
+  const message = errorFields(error).message;
+  return (
+    typeof message === "string" &&
+    (/\b410\b/.test(message) || /bank profile endpoints have been removed/i.test(message))
+  );
+}
+
+function listedBankIds(result: unknown): string[] | undefined {
+  if (typeof result !== "object" || !result) return undefined;
+  const banks = (result as { banks?: unknown }).banks;
+  if (!Array.isArray(banks)) return undefined;
+  return banks.flatMap((item) => {
+    if (typeof item !== "object" || !item) return [];
+    const record = item as { bank_id?: unknown; bankId?: unknown };
+    const id = record.bank_id ?? record.bankId;
+    return typeof id === "string" ? [id] : [];
+  });
+}
+
+/** Official v0.10 existence check: GET /banks?q= plus exact bank_id match (Hindsight #4127). */
+async function bankExistsViaList(
+  client: HindsightLikeClient,
+  bankId: string,
+): Promise<boolean | undefined> {
+  if (!client.listBanks) return undefined;
+  try {
+    const listed = await client.listBanks({ q: bankId, limit: 100 });
+    const ids = listedBankIds(listed);
+    if (!ids) return undefined;
+    return ids.includes(bankId);
+  } catch {
+    return undefined;
+  }
+}
+
 async function bankNeedsCreate(client: HindsightLikeClient, bankId: string): Promise<boolean> {
+  const listed = await bankExistsViaList(client, bankId);
+  if (listed === true) return false;
+  if (listed === false) return true;
+
   if (!client.getBankProfile) return false;
   try {
     await client.getBankProfile(bankId);
     return false;
   } catch (error) {
     if (isNotFoundError(error)) return true;
+    // Profile retired in Hindsight v0.10.0 (#4127). Without a list result, do not create
+    // (avoids create-or-update overwriting missions on an existing bank).
+    if (isGoneError(error)) return false;
     throw error;
   }
 }

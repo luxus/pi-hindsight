@@ -397,6 +397,16 @@ export interface HindsightLikeClient {
   getBankProfile?(bankId: string): Promise<unknown>;
   getBankStats?(bankId: string): Promise<unknown>;
   getBankConfig?(bankId: string): Promise<unknown>;
+  /**
+   * Internal bank existence helper for Hindsight 0.10+ (retired `/profile`).
+   * Not a public cross-bank `list_banks` tool.
+   */
+  listBanks?(options?: {
+    q?: string;
+    limit?: number;
+    offset?: number;
+    signal?: AbortSignal;
+  }): Promise<unknown>;
   importBankTemplate?(
     bankId: string,
     manifest: BankTemplateManifest,
