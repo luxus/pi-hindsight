@@ -1,4 +1,5 @@
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import type { ResolvedConfig } from "../types.js";
@@ -101,9 +102,9 @@ export function migrateUserMemoryConfigFiles(
   env: NodeJS.ProcessEnv = process.env,
 ): ConfigMigrationResult[] {
   const results: ConfigMigrationResult[] = [];
-  const home = env.HOME;
+  const home = env.HOME || homedir();
   const paths = [
-    home ? configPath(join(home, ".pi", "agent", "hindsight")) : undefined,
+    configPath(join(home, ".pi", "agent", "hindsight")),
     configPath(join(cwd, ".pi", "hindsight")),
   ].filter((path): path is string => Boolean(path));
   const now = new Date();
@@ -119,8 +120,8 @@ export function resolveConfig(cwd: string, env: NodeJS.ProcessEnv = process.env)
   migrateUserMemoryConfigFiles(cwd, env);
   let rawConfig: Record<string, unknown> = {};
   let config = DEFAULT_CONFIG;
-  const home = env.HOME;
-  const homeConfig = home ? readConfigFile(join(home, ".pi", "agent", "hindsight")) : undefined;
+  const home = env.HOME || homedir();
+  const homeConfig = readConfigFile(join(home, ".pi", "agent", "hindsight"));
   rawConfig = merge(rawConfig, homeConfig);
   config = merge(config, homeConfig);
   const projectConfig = readConfigFile(join(cwd, ".pi", "hindsight"));
