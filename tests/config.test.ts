@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   existsSync,
   mkdtempSync,
@@ -7,15 +7,70 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveConfig } from "../extensions/config/config.js";
+
+vi.mock("node:os", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:os")>()),
+  homedir: vi.fn(),
+}));
 
 function tmp() {
   return mkdtempSync(join(tmpdir(), "pi-hindsight-"));
 }
 
+beforeEach(() => {
+  const home = tmp();
+  vi.stubEnv("HOME", home);
+  vi.mocked(homedir).mockReturnValue(home);
+});
+
+afterEach(() => vi.unstubAllEnvs());
+
 describe("resolveConfig", () => {
+  it.each([undefined, ""])("loads and migrates global config when HOME is %s", (HOME) => {
+    const cwd = tmp();
+    const agentDir = join(homedir(), ".pi", "agent");
+    mkdirSync(agentDir, { recursive: true });
+    const path = join(agentDir, "hindsight.json");
+    const original = JSON.stringify({
+      banks: {
+        project: { enabled: true, bankId: "pi-coding" },
+        global: { enabled: true, bankId: "pi-user" },
+      },
+      recall: { maxTokens: 321 },
+    });
+    writeFileSync(path, original);
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({ recall: { maxTokens: 123 } }),
+    );
+
+    const config = resolveConfig(cwd, { HOME });
+    expect(config.banks.project.bankId).toBe("pi-coding");
+    expect(config.banks.user.bankId).toBe("pi-user");
+    expect(config.recall.maxTokens).toBe(123);
+    expect(JSON.parse(readFileSync(path, "utf8"))).not.toHaveProperty("banks.global");
+    const backups = readdirSync(agentDir).filter((name) => name.startsWith("hindsight.json.bak-"));
+    expect(backups).toHaveLength(1);
+    expect(readFileSync(join(agentDir, backups[0]!), "utf8")).toBe(original);
+  });
+
+  it("prefers explicit HOME over the system home and lets env override its bank", () => {
+    const cwd = tmp();
+    const HOME = tmp();
+    mkdirSync(join(HOME, ".pi", "agent"), { recursive: true });
+    writeFileSync(
+      join(HOME, ".pi", "agent", "hindsight.jsonc"),
+      '{ "banks": { "project": { "bankId": "explicit-home" } } }',
+    );
+    expect(resolveConfig(cwd, { HOME }).banks.project.bankId).toBe("explicit-home");
+    expect(
+      resolveConfig(cwd, { HOME, PI_HINDSIGHT_PROJECT_BANK_ID: "env-bank" }).banks.project.bankId,
+    ).toBe("env-bank");
+  });
   it("applies project config then env overrides", () => {
     const cwd = tmp();
     mkdirSync(join(cwd, ".pi"));
