@@ -18,6 +18,7 @@ export type ImportDocumentSummaryResult = {
     estimatedChunkCount?: number;
     importMode?: "curated" | "raw" | "forensic";
     importQualityProfile?: "compatible" | "strict";
+    queueAdmission?: "would-enqueue" | "quarantined";
     skipReason?: "already-imported" | "empty-curated-projection";
   }[];
   malformedLineCount?: number;
@@ -40,6 +41,18 @@ export type ImportProjectPresentationResult = {
   malformedLineCount: number;
   imported?: Array<{ documents: ImportDocumentSummaryResult["documents"] }>;
 };
+
+function compareCodePoints(left: string, right: string): number {
+  const leftPoints = Array.from(left);
+  const rightPoints = Array.from(right);
+  const length = Math.min(leftPoints.length, rightPoints.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPoint = leftPoints[index]!.codePointAt(0)!;
+    const rightPoint = rightPoints[index]!.codePointAt(0)!;
+    if (leftPoint !== rightPoint) return leftPoint - rightPoint;
+  }
+  return leftPoints.length - rightPoints.length;
+}
 
 function sumReasonCounts(
   documents: ImportDocumentSummaryResult["documents"],
@@ -164,12 +177,27 @@ function importDocumentQualitySummary(result: ImportDocumentSummaryResult): stri
   const skipReasons = [
     ...new Set(result.documents.map((document) => document.skipReason).filter(Boolean)),
   ].join(",");
+  const admissionCounts = result.documents.reduce((counts, document) => {
+    if (document.queueAdmission) {
+      counts.set(document.queueAdmission, (counts.get(document.queueAdmission) ?? 0) + 1);
+    }
+    return counts;
+  }, new Map<string, number>());
+  const admissions = Array.from(admissionCounts)
+    .sort(([left], [right]) => compareCodePoints(left, right))
+    .map(([admission, count]) => `${admission}:${count}`)
+    .join(",");
   const forensicWarning = importModes.includes("forensic")
     ? "; WARNING forensic mode preserves recalled memory blocks for audit-only use"
     : "";
   const qualityDetails = `${keptSignals ? `; keptSignals=${keptSignals}` : ""}${droppedNoise ? `; droppedNoise=${droppedNoise}` : ""}${reasonCounts ? `; reasons=${reasonCounts}` : ""}${topDroppedTools ? `; topDroppedTools=${topDroppedTools}` : ""}`;
-  return rawMessages || droppedToolResults || rawBytes || projectedBytes || skipReasons
-    ? `; mode=${importModes || "unknown"}${importProfiles ? `; profile=${importProfiles}` : ""}; projected=${projectedMessages}/${rawMessages || projectedMessages} messages; droppedToolResults=${droppedToolResults}; keptToolErrors=${keptErrors}; estimatedChunks=${estimatedChunks}; bytes=${projectedBytes}/${rawBytes}${qualityDetails}${skipReasons ? `; skipReasons=${skipReasons}` : ""}${forensicWarning}`
+  return rawMessages ||
+    droppedToolResults ||
+    rawBytes ||
+    projectedBytes ||
+    admissions ||
+    skipReasons
+    ? `; mode=${importModes || "unknown"}${importProfiles ? `; profile=${importProfiles}` : ""}; projected=${projectedMessages}/${rawMessages || projectedMessages} messages; droppedToolResults=${droppedToolResults}; keptToolErrors=${keptErrors}; estimatedChunks=${estimatedChunks}; bytes=${projectedBytes}/${rawBytes}${qualityDetails}${admissions ? `; admission=${admissions}` : ""}${skipReasons ? `; skipReasons=${skipReasons}` : ""}${forensicWarning}`
     : "";
 }
 

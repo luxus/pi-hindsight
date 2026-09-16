@@ -17,6 +17,11 @@ export type UpdateMode = "append" | "replace";
 //   This collapses many small per-run retain operations into few larger ones, cutting
 //   Hindsight extraction/consolidation and Postgres WAL/write amplification.
 export type RetainDelivery = "immediate" | "coalesced";
+export interface RetainBeforeEnqueueConfig {
+  command: string[];
+  timeoutMs: number;
+  malformed?: boolean;
+}
 export type RetainUserContent = "text";
 export type RetainAssistantContent = "text" | "toolCall" | "thinking";
 export type RetainToolResultContent = "error" | "summary" | "content";
@@ -86,6 +91,12 @@ export interface ScopeConfig {
    * Not cross-bank; only untagged observations inside the same coding bank.
    */
   includeSharedObservations: boolean;
+  /**
+   * User/life bank recall tags (`any_strict`) for automatic inject and tools.
+   * Default `["source:pi", "harness:pi"]`: source memories carry `source:pi`,
+   * while observations inherit observation-scope tags such as `harness:pi`.
+   */
+  userScopeTags: string[];
 }
 
 export interface ResolvedConfig {
@@ -189,6 +200,7 @@ export interface ResolvedConfig {
     shutdownFlushMaxJobs: number;
     shutdownFlushTimeoutMs: number;
     postRetainReflect: boolean;
+    beforeEnqueue?: RetainBeforeEnqueueConfig;
   };
   import: {
     mode: ImportMode;

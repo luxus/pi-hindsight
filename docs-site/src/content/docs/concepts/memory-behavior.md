@@ -16,11 +16,14 @@ Defaults:
 - `recall.budget: "mid"`
 - `recall.injectionPosition: "append"`
 - project recall is scoped by stable `project:<id>` tags (plus dual-tag legacy `repo:<path-hash>`; see [project identity](/pi-hindsight/concepts/project-identity/))
-- global recall uses explicit non-repo `source:pi` scope
+- global recall uses `scope.userScopeTags` (`any_strict`; default `["source:pi", "harness:pi"]`) so source memories and observations both match
+- automatic retain tags include `source:pi` and `harness:pi` (coding-agents-style host provenance; observation scopes already default to `harness:pi`)
 
 Set `recall.types` to include `world` or `experience`, or to an empty list, only when you explicitly want lower-level memory types.
 
 Each recall scope is enforced with a strict Hindsight `tag_groups` filter (`any_strict`), so project and user memory stay isolated. The `hindsight_recall` and `hindsight_reflect` tools accept an optional `tagGroups` filter that is AND-ed with the automatic scope.
+
+User/life bank recall must include observation-scope tags, not only `source:pi`. Observations inherit default scopes such as `harness:pi` rather than the full source-memory tag set, so a `source:pi`-only filter excludes them. Automatic inject and tool recall both read `scope.userScopeTags`.
 
 Set `recall.includeSourceFacts: true` (bounded by `recall.maxSourceFactsTokens`) to attach supporting evidence lines to recalled observations. It is off by default to keep recall conservative.
 
