@@ -1,4 +1,5 @@
 import { resolveProjectIdentity } from "../banks/banking.js";
+import { resolveBankExistence } from "../banks/bank-operations.js";
 import { resolveOperationBank } from "../banks/bank-selection.js";
 import { buildStatusFields } from "../utils/status-fields.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
@@ -278,12 +279,14 @@ export function createControlOperations(deps: MemoryOperationsDeps) {
         projectBankId: deps.getProjectBankId(),
       });
       const client = deps.getClient();
-      const [profile, stats, bankConfig] = await Promise.all([
-        client.getBankProfile?.(bankId),
+      // Existence via list-banks (profile fallback). Isolate so a retired /profile 410
+      // cannot fail stats/config. Do not treat GET /config as existence (Hindsight #4127).
+      const [exists, stats, bankConfig] = await Promise.all([
+        resolveBankExistence(client, bankId),
         client.getBankStats?.(bankId),
         client.getBankConfig?.(bankId),
       ]);
-      return { bankId, profile, stats, config: bankConfig };
+      return { bankId, exists: exists ?? null, stats, config: bankConfig };
     },
 
     async bankUpdateMission(args: {

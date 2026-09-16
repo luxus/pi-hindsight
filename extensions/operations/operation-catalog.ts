@@ -657,7 +657,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_bank",
       label: "Hindsight Bank",
       description:
-        "Inspect or update the selected coding/life bank. action=get returns profile/stats/config. action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).",
+        "Inspect or update the selected coding/life bank. action=get returns exists/stats/config (list-banks existence; retired /profile is not a hard failure). action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).",
       parameters: Type.Object({
         action: Type.Union([Type.Literal("get"), Type.Literal("update_mission")]),
         bank: Type.Optional(

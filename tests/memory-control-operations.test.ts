@@ -508,4 +508,135 @@ describe("memory control operations", () => {
     expect(created).toMatchObject({ dryRun: true });
     expect(createMentalModel).not.toHaveBeenCalled();
   });
+
+  it("bankGet uses list-banks existence and still returns stats/config when profile is 410", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const getBankStats = vi.fn(async () => ({ document_count: 4 }));
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "From config" },
+      overrides: {},
+    }));
+    const listBanks = vi.fn(async () => ({ banks: [{ bank_id: "coding" }] }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile,
+        getBankStats,
+        getBankConfig,
+        listBanks,
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        setupComplete: true,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "coding", derive: "manual" as const },
+        },
+      }),
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).resolves.toEqual({
+      bankId: "coding",
+      exists: true,
+      stats: { document_count: 4 },
+      config: { config: { retain_mission: "From config" }, overrides: {} },
+    });
+    expect(listBanks).toHaveBeenCalledWith(expect.objectContaining({ q: "coding" }));
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(getBankStats).toHaveBeenCalledWith("coding");
+    expect(getBankConfig).toHaveBeenCalledWith("coding");
+  });
+
+  it("bankGet reports exists false on list miss and still returns stats/config", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const getBankStats = vi.fn(async () => ({ document_count: 0 }));
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "Config 200s for missing banks" },
+      overrides: {},
+    }));
+    const listBanks = vi.fn(async () => ({ banks: [{ bank_id: "coding-extra" }] }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile,
+        getBankStats,
+        getBankConfig,
+        listBanks,
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        setupComplete: true,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "coding", derive: "manual" as const },
+        },
+      }),
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).resolves.toEqual({
+      bankId: "coding",
+      exists: false,
+      stats: { document_count: 0 },
+      config: { config: { retain_mission: "Config 200s for missing banks" }, overrides: {} },
+    });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(getBankStats).toHaveBeenCalledWith("coding");
+    expect(getBankConfig).toHaveBeenCalledWith("coding");
+  });
+
+  it("bankGet still returns stats/config when profile is retired and list-banks is unavailable", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        statusCode: 410,
+      });
+    });
+    const getBankStats = vi.fn(async () => ({ document_count: 9 }));
+    const getBankConfig = vi.fn(async () => ({
+      config: { reflect_mission: "Still readable" },
+      overrides: {},
+    }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile,
+        getBankStats,
+        getBankConfig,
+      }),
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        setupComplete: true,
+        banks: {
+          ...DEFAULT_CONFIG.banks,
+          project: { enabled: true, bankId: "coding", derive: "manual" as const },
+        },
+      }),
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).resolves.toEqual({
+      bankId: "coding",
+      exists: null,
+      stats: { document_count: 9 },
+      config: { config: { reflect_mission: "Still readable" }, overrides: {} },
+    });
+    expect(getBankProfile).toHaveBeenCalledWith("coding");
+    expect(getBankStats).toHaveBeenCalledWith("coding");
+    expect(getBankConfig).toHaveBeenCalledWith("coding");
+  });
 });
