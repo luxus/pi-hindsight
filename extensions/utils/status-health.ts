@@ -2,6 +2,7 @@ import {
   bankConfigOverrideSummaryLines,
   bankSettingsTargetDisplay,
 } from "../banks/bank-settings-presenter.js";
+import { resolveBankExistence } from "../banks/bank-operations.js";
 import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { redactError } from "./sanitize.js";
 
@@ -115,14 +116,20 @@ function formatStats(stats: unknown): string | undefined {
 }
 
 async function bankFact(client: HindsightLikeClient, route: BankRoute): Promise<StatusHealthFacts> {
+  const target = bankSettingsTargetDisplay({ location: route.location, bankId: route.bankId });
   try {
-    const profile = client.getBankProfile
-      ? await withStatusTimeout(client.getBankProfile(route.bankId), `${route.label} profile`)
-      : undefined;
-    const name =
-      isRecord(profile) && typeof profile.name === "string" ? profile.name : route.bankId;
-    const target = bankSettingsTargetDisplay({ location: route.location, bankId: route.bankId });
-    const facts: StatusHealthFacts = [[route.label, `reachable · ${name} · ${target.reviewLine}`]];
+    // List-banks exact id, then profile fallback. Do not treat profile 410 as unreachable
+    // and do not use GET /config as existence (Hindsight #4127).
+    const exists = await withStatusTimeout(
+      resolveBankExistence(client, route.bankId),
+      `${route.label} existence`,
+    );
+    if (exists === false) {
+      return [[route.label, `unreachable · not found · ${target.reviewLine}`]];
+    }
+    const facts: StatusHealthFacts = [
+      [route.label, `reachable · ${route.bankId} · ${target.reviewLine}`],
+    ];
     if (client.getBankConfig) {
       try {
         const config = await withStatusTimeout(
