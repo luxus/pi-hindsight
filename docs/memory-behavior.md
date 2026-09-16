@@ -8,6 +8,8 @@ Automatic recall runs in Pi's `context` hook. The extension composes a determini
 
 The injected block is not written to the Pi transcript by this extension and is not retained back into Hindsight.
 
+Automatic recall caches that block for `recall.cacheTtlMs` (default 60s). The cache key is the active bank IDs plus the last user message's content identity, not transcript length, so auto-continue retries that append an identical nudge reuse the first-seen result and timestamp. A new last user message, a bank-id change, or TTL expiry fetches again.
+
 Defaults:
 
 - `recall.types: ["observation"]`
