@@ -1,4 +1,5 @@
 import { resolveProjectIdentity } from "../banks/banking.js";
+import { isGoneError } from "../banks/bank-operations.js";
 import { resolveOperationBank } from "../banks/bank-selection.js";
 import { buildStatusFields } from "../utils/status-fields.js";
 import type { MemoryOperationsDeps } from "./memory-operation-types.js";
@@ -230,6 +231,17 @@ export function projectMentalModelListMetadata(response: unknown): {
   return { items };
 }
 
+/** Profile payload when the endpoint exists; undefined when retired (410) or unimplemented. */
+async function readBankProfile(client: HindsightLikeClient, bankId: string): Promise<unknown> {
+  if (!client.getBankProfile) return undefined;
+  try {
+    return await client.getBankProfile(bankId);
+  } catch (error) {
+    if (isGoneError(error)) return undefined;
+    throw error;
+  }
+}
+
 export function createControlOperations(deps: MemoryOperationsDeps) {
   return {
     async status(cwd: string) {
@@ -279,7 +291,7 @@ export function createControlOperations(deps: MemoryOperationsDeps) {
       });
       const client = deps.getClient();
       const [profile, stats, bankConfig] = await Promise.all([
-        client.getBankProfile?.(bankId),
+        readBankProfile(client, bankId),
         client.getBankStats?.(bankId),
         client.getBankConfig?.(bankId),
       ]);

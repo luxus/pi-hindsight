@@ -316,7 +316,7 @@ describe("multi-root Pi session import orchestration", () => {
     expect(delegate).not.toHaveBeenCalled();
   });
 
-  it("fails closed for explicit multi-bank plans when bank profile validation is unavailable", async () => {
+  it("fails closed for explicit multi-bank plans when bank existence checks are unavailable", async () => {
     const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
     const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
     writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
@@ -337,9 +337,137 @@ describe("multi-root Pi session import orchestration", () => {
         },
         { importProjectSessions: delegate },
       ),
-    ).rejects.toThrow("Cannot validate target Hindsight banks: getBankProfile unavailable.");
+    ).rejects.toThrow("Cannot validate target Hindsight banks: bank existence check unavailable.");
 
     expect(delegate).not.toHaveBeenCalled();
+  });
+
+  it("prefers list-banks exact bank_id over retired profile for import targets", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const listBanks = vi.fn(async () => ({ banks: [{ bank_id: "existing-bank" }] }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await importMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        importPlan: {
+          mappings: [{ cwd: project, targetBankIds: ["existing-bank"] }],
+        },
+        config: DEFAULT_CONFIG,
+        client: memoryClient({ getBankProfile, listBanks }),
+        dryRun: true,
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(listBanks).toHaveBeenCalledWith({ q: "existing-bank", limit: 100 });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(delegate).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats retired profile without list-banks as an unavailable existence check", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [{ cwd: project, targetBankIds: ["existing-bank"] }],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({
+            getBankProfile: async () => {
+              throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+                status: 410,
+              });
+            },
+          }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow("Cannot validate target Hindsight banks: bank existence check unavailable.");
+
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
+  it("does not treat GET /config 200 as import target existence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "Config 200s for missing banks" },
+    }));
+    const listBanks = vi.fn(async () => ({ banks: [{ bank_id: "existing-bank-extra" }] }));
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await expect(
+      importMultiRootProjectSessions(
+        {
+          approvedRoots: [root],
+          importPlan: {
+            mappings: [{ cwd: project, targetBankIds: ["existing-bank"] }],
+          },
+          config: DEFAULT_CONFIG,
+          client: memoryClient({ getBankProfile, listBanks, getBankConfig }),
+          dryRun: true,
+        },
+        { importProjectSessions: delegate },
+      ),
+    ).rejects.toThrow("Target Hindsight bank is unavailable: existing-bank");
+
+    expect(listBanks).toHaveBeenCalledWith({ q: "existing-bank", limit: 100 });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(getBankConfig).not.toHaveBeenCalled();
+    expect(delegate).not.toHaveBeenCalled();
+  });
+
+  it("validates import targets from list-banks without getBankProfile", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pi-hindsight-import-root-"));
+    const project = mkdtempSync(join(tmpdir(), "pi-hindsight-project-"));
+    writeFileSync(join(root, "session.jsonl"), sessionJsonl({ id: "session", cwd: project }));
+    const listBanks = vi.fn(async () => ({ banks: [{ bank_id: "existing-bank" }] }));
+    const delegate = vi.fn(async (args: ImportProjectSessionsArgs) =>
+      projectResult({ sessionFile: join(args.searchDir ?? "", "placeholder.jsonl"), dryRun: true }),
+    );
+
+    await importMultiRootProjectSessions(
+      {
+        approvedRoots: [root],
+        importPlan: {
+          mappings: [{ cwd: project, targetBankIds: ["existing-bank"] }],
+        },
+        config: DEFAULT_CONFIG,
+        client: memoryClient({ listBanks }),
+        dryRun: true,
+      },
+      { importProjectSessions: delegate },
+    );
+
+    expect(listBanks).toHaveBeenCalledWith({ q: "existing-bank", limit: 100 });
+    expect(delegate).toHaveBeenCalledTimes(1);
   });
 
   it("resolves project/global/user aliases before validating mapped target banks", async () => {

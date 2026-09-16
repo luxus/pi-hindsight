@@ -508,4 +508,82 @@ describe("memory control operations", () => {
     expect(created).toMatchObject({ dryRun: true });
     expect(createMentalModel).not.toHaveBeenCalled();
   });
+
+  it("returns stats and config when bank profile is retired", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const getBankStats = vi.fn(async () => ({ total_documents: 4 }));
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "From config" },
+    }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile,
+        getBankStats,
+        getBankConfig,
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).resolves.toEqual({
+      bankId: "coding",
+      profile: undefined,
+      stats: { total_documents: 4 },
+      config: { config: { retain_mission: "From config" } },
+    });
+    expect(getBankProfile).toHaveBeenCalledWith("coding");
+    expect(getBankStats).toHaveBeenCalledWith("coding");
+    expect(getBankConfig).toHaveBeenCalledWith("coding");
+  });
+
+  it("still returns profile on bankGet when the profile endpoint exists", async () => {
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile: async (bankId: string) => ({ bank_id: bankId, name: bankId }),
+        getBankStats: async () => ({ total_documents: 1 }),
+        getBankConfig: async () => ({ config: { reflect_mission: "ok" } }),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).resolves.toEqual({
+      bankId: "coding",
+      profile: { bank_id: "coding", name: "coding" },
+      stats: { total_documents: 1 },
+      config: { config: { reflect_mission: "ok" } },
+    });
+  });
+
+  it("still fails bankGet on non-410 profile errors", async () => {
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "Config 200s for missing banks" },
+    }));
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        getBankProfile: async () => {
+          throw Object.assign(new Error("not found"), { status: 404 });
+        },
+        getBankStats: async () => ({ total_documents: 0 }),
+        getBankConfig,
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(ops.bankGet({})).rejects.toMatchObject({ status: 404 });
+  });
 });
