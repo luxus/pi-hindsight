@@ -188,6 +188,18 @@ describe("domain coding bank roles", () => {
     expect(deriveProjectBankId("/other/repo", config)).toBe("kai-coding");
   });
 
+  it("lets explicit bankId win over basename derive", () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      scope: { ...DEFAULT_CONFIG.scope, mode: "domain-tagged" as const },
+      banks: {
+        ...DEFAULT_CONFIG.banks,
+        project: { enabled: true, bankId: "kai-coding", derive: "basename" as const },
+      },
+    };
+    expect(deriveProjectBankId("/any/my_websites", config)).toBe("kai-coding");
+  });
+
   it("uses the git-root folder name when derive is basename", () => {
     const parent = mkdtempSync(join(tmpdir(), "pi-hindsight-basename-"));
     const root = join(parent, "my_websites");

@@ -64,7 +64,7 @@ When `banks.project.bankId` is unset, `banks.project.derive` picks the isolated 
 | `basename`               | git-root folder name as-is (`my_websites`) |
 | `manual`                 | requires `bankId`                          |
 
-`basename` is opt-in interoperability with clients that already use folder-named banks (for example Claude Code / Grok `dynamicBankId` + project granularity). It is not the recommended Coding profile. Two different repos with the same folder name share that bank.
+`basename` is opt-in interoperability with clients that already use folder-named banks (for example Claude Code / Grok `dynamicBankId` + project granularity). It is not the recommended Coding profile. Two different repos with the same folder name share that bank. `scope.projectIdStrategy: "basename"` still only sets the `project:<id>` tag; isolated bank naming is `banks.project.derive`.
 
 `banks.coding` aliases `banks.project`. `banks.life` aliases `banks.user`.
 
