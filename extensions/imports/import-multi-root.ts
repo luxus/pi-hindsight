@@ -5,6 +5,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { redactError, redactSecrets } from "../utils/sanitize.js";
+import { resolveBankExistence } from "../banks/bank-operations.js";
 import { resolveOperationBank } from "../banks/bank-selection.js";
 import {
   importProjectSessions as defaultImportProjectSessions,
@@ -209,44 +210,30 @@ function uniqueTargetBankIds(targetBankIds: string[]): string[] {
     .filter((targetBankId, index, ids) => ids.indexOf(targetBankId) === index);
 }
 
-function isNotFoundError(error: unknown): boolean {
-  if (typeof error !== "object" || !error) return false;
-  const fields = error as {
-    status?: unknown;
-    statusCode?: unknown;
-    code?: unknown;
-    message?: unknown;
-  };
-  return (
-    fields.status === 404 ||
-    fields.statusCode === 404 ||
-    fields.code === 404 ||
-    fields.code === "404" ||
-    (typeof fields.message === "string" && /\b404\b|not found/i.test(fields.message))
-  );
-}
-
 async function validateTargetBankIds(
   client: HindsightLikeClient,
   targetBankIds: string[],
 ): Promise<void> {
   const uniqueBankIds = uniqueTargetBankIds(targetBankIds);
   if (uniqueBankIds.length === 0) return;
-  if (!client.getBankProfile)
-    throw new Error("Cannot validate target Hindsight banks: getBankProfile unavailable.");
   for (const bankId of uniqueBankIds) {
+    let exists: boolean | undefined;
     try {
-      const profile = await client.getBankProfile(bankId);
-      if (profile == null) throw new Error("empty bank profile response");
+      exists = await resolveBankExistence(client, bankId);
     } catch (error) {
-      if (isNotFoundError(error))
-        throw new Error(`Target Hindsight bank is unavailable: ${redactSecrets(bankId)}`);
       throw new Error(
         `Failed to validate target Hindsight bank ${redactSecrets(bankId)}: ${redactImportError(
           error,
         )}`,
       );
     }
+    if (exists === true) continue;
+    if (exists === false) {
+      throw new Error(`Target Hindsight bank is unavailable: ${redactSecrets(bankId)}`);
+    }
+    throw new Error(
+      `Cannot validate target Hindsight bank ${redactSecrets(bankId)}: existence check unavailable.`,
+    );
   }
 }
 

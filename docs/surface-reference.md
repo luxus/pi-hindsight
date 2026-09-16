@@ -154,7 +154,7 @@ Get or patch allowlisted Pi Hindsight config (project or global file). action=ge
 
 ### `hindsight_bank`
 
-Inspect or update the selected coding/life bank. action=get returns profile/stats/config. action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).
+Inspect or update the selected coding/life bank. action=get returns exists/stats/config (list-banks existence; retired /profile is not a hard failure). action=update_mission patches retain/reflect/observations mission (dryRun default true for safety).
 
 | Parameter             | Type                  | Required | Description                                                              |
 | --------------------- | --------------------- | -------- | ------------------------------------------------------------------------ |

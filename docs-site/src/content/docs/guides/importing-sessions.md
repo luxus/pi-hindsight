@@ -47,7 +47,7 @@ For broader backfills, choose the approved-roots import option and enter only ro
 /private/tmp/old-worktree=skip
 ```
 
-Mapping CWDs are canonicalized with the same rules as discovery and must exactly match a discovered source group; typo or unknown groups reject the whole plan before confirmation. Target aliases `project`, `global`, and `user` resolve to configured bank IDs before planning. Every unique selected target bank is verified with Hindsight bank-profile lookup before any session-pair dry run or write. Missing banks, unavailable profile lookup, or validation errors reject the import without creating banks. When a group maps to multiple banks, the final plan marks that intentional fan-out. The write path preflights every selected `(source cwd, target bank)` pair again and starts real imports only if all preflights succeed.
+Mapping CWDs are canonicalized with the same rules as discovery and must exactly match a discovered source group; typo or unknown groups reject the whole plan before confirmation. Target aliases `project`, `global`, and `user` resolve to configured bank IDs before planning. Every unique selected target bank is verified with Hindsight list-banks existence (exact `bank_id`; older servers fall back to `/profile`) before any session-pair dry run or write. Missing banks, unavailable existence check, or validation errors reject the import without creating banks. When a group maps to multiple banks, the final plan marks that intentional fan-out. The write path preflights every selected `(source cwd, target bank)` pair again and starts real imports only if all preflights succeed.
 
 ## Preview output
 
