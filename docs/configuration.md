@@ -173,6 +173,8 @@ Behavior, why defaults stay off, and a suggested starting floor: [Memory behavio
 Runs a local argv command immediately before Retain Queue admission. The command is spawned without
 a shell and receives canonical, sanitized Retain Job JSON on stdin. Exit `0` allows the job into the
 queue; nonzero exit, timeout, spawn failure, or malformed config blocks before queue/Hindsight calls.
+Stdout and stderr are discarded so checker output cannot leak into Pi logs. Absent by default; not
+writable through `hindsight_config`.
 
 ```json
 {

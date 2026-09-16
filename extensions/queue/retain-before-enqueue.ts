@@ -73,14 +73,14 @@ export async function runRetainBeforeEnqueueCheck(
         finish();
         return;
       }
+      const reason = signal ? `signal ${signal}` : `exit ${code ?? "unknown"}`;
       finish(
         new RetainBeforeEnqueueError(
-          signal
-            ? "retain.beforeEnqueue blocked retain job before queue admission"
-            : "retain.beforeEnqueue blocked retain job before queue admission",
+          `retain.beforeEnqueue blocked retain job before queue admission (${reason})`,
         ),
       );
     });
-    child.stdin.end(canonicalRetainJobJson(job), "utf8");
+    child.stdin?.on("error", () => {});
+    child.stdin?.end(canonicalRetainJobJson(job), "utf8");
   });
 }

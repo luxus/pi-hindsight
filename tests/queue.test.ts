@@ -313,8 +313,40 @@ process.stdin.on("end", async () => {
     };
 
     await expect(enqueueRetain(cwd, config, job)).rejects.toThrow(
-      "retain.beforeEnqueue blocked retain job before queue admission",
+      "retain.beforeEnqueue blocked retain job before queue admission (exit 42)",
     );
+    expect(existsSync(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
+  });
+
+  it("omits retain.beforeEnqueue stdout and stderr from admission errors", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-before-enqueue-"));
+    const checker = writeChecker(
+      cwd,
+      `
+process.stdout.write("sk-stdout-secret");
+process.stderr.write("sk-stderr-secret");
+process.exit(7);
+`,
+    );
+    const config = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+
+    const error = await enqueueRetain(cwd, config, job).then(
+      () => {
+        throw new Error("expected retain.beforeEnqueue to reject");
+      },
+      (reason: unknown) => reason,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(
+      "retain.beforeEnqueue blocked retain job before queue admission (exit 7)",
+    );
+    expect((error as Error).message).not.toMatch(/sk-(stdout|stderr)-secret/);
     expect(existsSync(join(cwd, DEFAULT_CONFIG.retain.queuePath))).toBe(false);
   });
 

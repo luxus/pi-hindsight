@@ -183,6 +183,7 @@ export async function deliverImportRetain(
     ...(args.metadata ? { metadata: args.metadata } : {}),
     ...(args.observationScopes?.length ? { observationScopes: args.observationScopes } : {}),
   });
+  await runRetainBeforeEnqueueCheck(args.config, job);
   await removeQueuedRetains(args.cwd, args.config, (queued) =>
     staleImportRetainJobForReference(queued, job),
   );

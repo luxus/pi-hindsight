@@ -14,6 +14,7 @@ import {
 } from "../extensions/imports/import-sessions.js";
 import { readImportCheckpoint } from "../extensions/imports/import-plan.js";
 import { hashImportContent, readImportManifest } from "../extensions/imports/import-plan.js";
+import { deliverImportRetain } from "../extensions/imports/import-execute.js";
 import { enqueueRetainJob, readRetainQueue, resolveQueuePath } from "../extensions/queue/queue.js";
 import { stableSessionId } from "../extensions/utils/session.js";
 import { setNextSessionRetainMode } from "../extensions/utils/session-memory-meta.js";
@@ -1413,13 +1414,62 @@ process.stdin.on("end", () => {
       queueAdmission: "quarantined",
       status: "quarantined",
       wouldWrite: false,
-      error: "retain.beforeEnqueue blocked retain job before queue admission",
+      error: "retain.beforeEnqueue blocked retain job before queue admission (exit 1)",
     });
     expect(retain).not.toHaveBeenCalled();
     await expect(readImportCheckpoint(blocked.checkpointPath)).resolves.toBeUndefined();
     await expect(readRetainQueue(resolveQueuePath(dir, config.retain.queuePath))).resolves.toEqual(
       [],
     );
+  });
+
+  it("does not drop a stale queued import job when retain.beforeEnqueue fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-before-enqueue-"));
+    const checker = join(dir, "checker.mjs");
+    writeFileSync(checker, "process.exit(1);\n");
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+    const queuePath = resolveQueuePath(dir, config.retain.queuePath);
+    const staleJob = queuedImportRetainJob({
+      id: "stale",
+      documentId: "doc",
+      sourceFile: join(dir, "session.jsonl"),
+      cwd: dir,
+      sessionId: "session-stale-check",
+      leafId: "root",
+      contentHash: "old-hash",
+      content: "stale content",
+    });
+    await enqueueRetainJob(queuePath, staleJob);
+
+    await expect(
+      deliverImportRetain({
+        cwd: dir,
+        config,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+        bankId: "bank",
+        content: "replacement content",
+        context: "replacement context",
+        documentId: "doc",
+        updateMode: "replace",
+        tags: ["source:pi"],
+        metadata: {
+          source: "pi-hindsight",
+          retainSource: "import",
+          imported: "true",
+        },
+      }),
+    ).rejects.toThrow("retain.beforeEnqueue blocked retain job before queue admission (exit 1)");
+    expect(await readRetainQueue(queuePath)).toEqual([staleJob]);
   });
 
   it("historical import ignores pending next opt-out session state", async () => {
