@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.13.0](https://github.com/luxus/pi-hindsight/compare/v0.12.0...v0.13.0) (2026-09-16)
+
+
+### Features
+
+* **banks:** opt-in basename isolated-bank ids ([7686c9e](https://github.com/luxus/pi-hindsight/commit/7686c9e7a114720f074b12a2ef3589f92e76d1d4))
+* **config:** treat empty userScopeTags as no recall filter ([#617](https://github.com/luxus/pi-hindsight/issues/617)) ([5b91537](https://github.com/luxus/pi-hindsight/commit/5b9153735846f38e841c4c248f82cdd96e6b1492)), closes [#592](https://github.com/luxus/pi-hindsight/issues/592)
+* emit retrieval telemetry ([96d6ffe](https://github.com/luxus/pi-hindsight/commit/96d6ffedd75ee3c0bbfbd7a1719574696df42e04))
+* **import:** add multi-root session orchestration ([#624](https://github.com/luxus/pi-hindsight/issues/624)) ([a517abf](https://github.com/luxus/pi-hindsight/commit/a517abf4be8868616c40daefe9426aa99cd903ef))
+* **retain:** gate jobs before queue admission ([e7858a0](https://github.com/luxus/pi-hindsight/commit/e7858a06adf073e56d516a2682b5c02c3e068cb1))
+
+
+### Bug Fixes
+
+* **banks:** page list-banks until exact bank_id match ([87f8888](https://github.com/luxus/pi-hindsight/commit/87f8888ff4de2b74a34e583597fa7cdfb0d6f761))
+* **banks:** replace remaining getBankProfile 410 call sites ([2676a3c](https://github.com/luxus/pi-hindsight/commit/2676a3cedae978b72992543747d185f2055b04c8))
+* **banks:** use list-banks existence check after profile 410 ([efc63f0](https://github.com/luxus/pi-hindsight/commit/efc63f0e1fe6f3217f354cbd140f94edd36982dc)), closes [#612](https://github.com/luxus/pi-hindsight/issues/612)
+* **banks:** use list-banks existence check after profile 410 ([#619](https://github.com/luxus/pi-hindsight/issues/619)) ([e7e60ca](https://github.com/luxus/pi-hindsight/commit/e7e60ca4457b9237ed37f8f78dcee16d3310e2f3)), closes [#612](https://github.com/luxus/pi-hindsight/issues/612)
+* cancel automatic recall cleanly on Esc ([#621](https://github.com/luxus/pi-hindsight/issues/621)) ([1013e5c](https://github.com/luxus/pi-hindsight/commit/1013e5cc78e139a1abc1151ada5859d96391778b))
+* **lifecycle:** reuse recall cache across auto-continue retries ([#620](https://github.com/luxus/pi-hindsight/issues/620)) ([fdacf2d](https://github.com/luxus/pi-hindsight/commit/fdacf2d3f2fccf4645df95333f763fcb5ade4455)), closes [#593](https://github.com/luxus/pi-hindsight/issues/593)
+* **recall:** include observation tags in user-bank filter ([#610](https://github.com/luxus/pi-hindsight/issues/610)) ([3ca51fe](https://github.com/luxus/pi-hindsight/commit/3ca51fe6502505270a87a6e6bcc0f48ec7d08df2)), closes [#603](https://github.com/luxus/pi-hindsight/issues/603)
+* **recall:** parallel scope recalls + abort fetch on timeout ([#623](https://github.com/luxus/pi-hindsight/issues/623)) ([53963a2](https://github.com/luxus/pi-hindsight/commit/53963a2c69345f68522ff8157ab6f1d2eaf81b44))
+
+
+### Performance Improvements
+
+* lazy-load memory operation services ([#625](https://github.com/luxus/pi-hindsight/issues/625)) ([1b1b328](https://github.com/luxus/pi-hindsight/commit/1b1b328afaa790c61ccbb9b6f99fd4f8bd3ce1fd))
+
 ## [0.12.0](https://github.com/luxus/pi-hindsight/compare/v0.11.1...v0.12.0) (2026-08-13)
 
 
