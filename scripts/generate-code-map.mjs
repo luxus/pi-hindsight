@@ -90,6 +90,10 @@ const sections = [
         "extensions/imports/import-sessions.ts",
         "Orchestrates session and chat-transcript imports and exposes the public import API.",
       ],
+      [
+        "extensions/imports/import-multi-root.ts",
+        "Plans and executes reviewed multi-root Pi session imports grouped by canonical cwd.",
+      ],
     ],
   },
   {
