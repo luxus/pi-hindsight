@@ -95,6 +95,7 @@ export interface ScopeConfig {
    * User/life bank recall tags (`any_strict`) for automatic inject and tools.
    * Default `["source:pi", "harness:pi"]`: source memories carry `source:pi`,
    * while observations inherit observation-scope tags such as `harness:pi`.
+   * Empty array means no tag filter (bank-level isolation only).
    */
   userScopeTags: string[];
 }

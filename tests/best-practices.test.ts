@@ -360,4 +360,22 @@ describe("Hindsight best-practice invariants", () => {
       selectMemoryScopes(cwd, custom).find((scope) => scope.kind === "global")?.tagGroups,
     ).toEqual([{ tags: ["harness:pi", "source:custom"], match: "any_strict" }]);
   });
+
+  it("omits the User Bank tag filter when userScopeTags is empty", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-empty-user-scope-"));
+    mkdirSync(join(cwd, ".git"));
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      scope: { ...DEFAULT_CONFIG.scope, userScopeTags: [] },
+      banks: { ...DEFAULT_CONFIG.banks, user: { enabled: true, bankId: "pi-global" } },
+    };
+
+    expect(scopeTagsForBank(cwd, config, "pi-global")).toEqual([]);
+    expect(selectMemoryScopes(cwd, config).find((scope) => scope.kind === "global")).toEqual({
+      kind: "global",
+      bankId: "pi-global",
+      tagGroups: [],
+    });
+    expect(composeScopedTagFilter([])).toEqual({});
+  });
 });

@@ -21,7 +21,7 @@ Set `recall.types` to include `world` or `experience`, or to an empty list, only
 
 Each recall scope is enforced with a strict Hindsight `tag_groups` filter (`any_strict`), so project and user memory stay isolated. The `hindsight_recall` and `hindsight_reflect` tools accept an optional `tagGroups` filter that is AND-ed with the automatic scope.
 
-User/life bank recall must include observation-scope tags, not only `source:pi`. Observations inherit default scopes such as `harness:pi` rather than the full source-memory tag set, so a `source:pi`-only filter excludes them. Automatic inject and tool recall both read `scope.userScopeTags`.
+User/life bank recall must include observation-scope tags, not only `source:pi`. Observations inherit default scopes such as `harness:pi` rather than the full source-memory tag set, so a `source:pi`-only filter excludes them. Automatic inject and tool recall both read `scope.userScopeTags`. Set `scope.userScopeTags` to `[]` to drop the tag filter (bank-level isolation only).
 
 ### Shared / untagged observations (opt-in)
 

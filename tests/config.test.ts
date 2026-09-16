@@ -578,7 +578,7 @@ describe("resolveConfig", () => {
       join(cwd, ".pi", "hindsight.json"),
       JSON.stringify({ scope: { userScopeTags: [] } }),
     );
-    expect(resolveConfig(cwd).scope.userScopeTags).toEqual(["source:pi", "harness:pi"]);
+    expect(resolveConfig(cwd).scope.userScopeTags).toEqual([]);
 
     writeFileSync(
       join(cwd, ".pi", "hindsight.json"),

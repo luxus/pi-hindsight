@@ -62,6 +62,7 @@ Tags are soft scope inside a bank. Pi and other clients should stay interoperabl
 - Pi automatic retain stamps `source:pi` and dual-tags `project:` + legacy `repo:`.
 - Optional life/user bank is separate; automatic retain never writes life memory (ADR-004).
 - Shared/untagged observations inside one bank are opt-in (`scope.includeSharedObservations`); they are **not** cross-bank sharing.
+- User/Life bank recall defaults to `scope.userScopeTags: ["source:pi", "harness:pi"]`. Set `[]` to recall the whole bank without a tag filter (other clients’ memories included).
 
 ## Checklist for a second client
 

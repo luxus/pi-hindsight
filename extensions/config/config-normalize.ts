@@ -266,7 +266,8 @@ export function normalizeConfig(
         scopeRaw?.includeSharedObservations,
         DEFAULT_CONFIG.scope.includeSharedObservations,
       ),
-      userScopeTags: userScopeTags.length ? userScopeTags : DEFAULT_CONFIG.scope.userScopeTags,
+      // Empty array is intentional: no tag filter on user-bank recall (#592).
+      userScopeTags,
     },
     hindsight: {
       baseUrl: stringValue(config.hindsight?.baseUrl, DEFAULT_CONFIG.hindsight.baseUrl),
