@@ -6,6 +6,7 @@ function client(
   args: {
     createBank?: HindsightLikeClient["createBank"];
     getBankProfile?: HindsightLikeClient["getBankProfile"];
+    listBanks?: HindsightLikeClient["listBanks"];
   } = {},
 ): HindsightLikeClient {
   return {
@@ -18,6 +19,7 @@ function client(
       vi.fn(async () => {
         throw new Error("not found");
       }),
+    ...(args.listBanks !== undefined ? { listBanks: args.listBanks } : {}),
   };
 }
 
@@ -205,5 +207,118 @@ describe("bank operations", () => {
     await ensureProjectBank(noProfileClient, "project-bank");
 
     expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("does not create bank when listBanks reports an exact bank_id match", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      throw new Error("profile should not run when listBanks hits");
+    });
+    const listBanks = vi.fn(async () => ({
+      banks: [{ bank_id: "project-bank", name: "project-bank" }],
+    }));
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(listBanks).toHaveBeenCalledWith({ q: "project-bank", limit: 100 });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("creates bank when listBanks has no exact bank_id match", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      throw new Error("profile should not run when listBanks misses");
+    });
+    const listBanks = vi.fn(async () => ({
+      banks: [{ bank_id: "project-bank-extra" }],
+    }));
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(listBanks).toHaveBeenCalledWith({ q: "project-bank", limit: 100 });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(createBank).toHaveBeenCalledWith("project-bank", expect.any(Object));
+  });
+
+  it("does not create bank when profile returns 410 and listBanks is unavailable", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      const err = Object.assign(
+        new Error('getBankProfile failed: "The bank profile endpoints have been removed."'),
+        { statusCode: 410 },
+      );
+      throw err;
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile }), "project-bank");
+
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("falls back to profile 404 create when listBanks errors", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      throw new Error("Hindsight request failed with status 404");
+    });
+    const listBanks = vi.fn(async () => {
+      throw new Error("Hindsight request failed with status 503");
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(getBankProfile).toHaveBeenCalledWith("project-bank");
+    expect(createBank).toHaveBeenCalledWith("project-bank", expect.any(Object));
+  });
+
+  it("does not create bank when listBanks errors and profile returns 410", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn(async () => {
+      const err = Object.assign(new Error("Gone"), { status: 410 });
+      throw err;
+    });
+    const listBanks = vi.fn(async () => {
+      throw new Error("Hindsight request failed with status 503");
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(getBankProfile).toHaveBeenCalledWith("project-bank");
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("does not create bank when exact bank_id is on a later listBanks page", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn();
+    const firstPage = Array.from({ length: 100 }, (_, i) => ({ bank_id: `other-${i}` }));
+    const listBanks = vi.fn(async (options?: { offset?: number }) => {
+      if (!options?.offset) return { banks: firstPage };
+      return { banks: [{ bank_id: "project-bank" }] };
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(listBanks).toHaveBeenNthCalledWith(1, { q: "project-bank", limit: 100 });
+    expect(listBanks).toHaveBeenNthCalledWith(2, {
+      q: "project-bank",
+      limit: 100,
+      offset: 100,
+    });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("creates bank after a full miss page then a short miss page", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn();
+    const firstPage = Array.from({ length: 100 }, (_, i) => ({ bank_id: `other-${i}` }));
+    const listBanks = vi.fn(async (options?: { offset?: number }) => {
+      if (!options?.offset) return { banks: firstPage };
+      return { banks: [{ bank_id: "project-bank-extra" }] };
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(createBank).toHaveBeenCalledWith("project-bank", expect.any(Object));
   });
 });

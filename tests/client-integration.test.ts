@@ -39,6 +39,16 @@ describe("Hindsight client adapter integration", () => {
       const body = await readBody(req);
       requests.push({ method: req.method, url: req.url, headers: req.headers, body });
 
+      if (req.method === "GET" && req.url) {
+        const url = new URL(req.url, "http://127.0.0.1");
+        if (url.pathname === "/v1/default/banks") {
+          const q = url.searchParams.get("q");
+          sendJson(res, 200, {
+            banks: q === "existing-bank" ? [{ bank_id: "existing-bank" }] : [],
+          });
+          return;
+        }
+      }
       if (req.method === "GET" && req.url === "/v1/default/banks/test-bank/profile") {
         sendJson(res, 404, { detail: "not found" });
         return;
@@ -100,7 +110,7 @@ describe("Hindsight client adapter integration", () => {
     }
 
     expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET /v1/default/banks/test-bank/profile",
+      "GET /v1/default/banks?q=test-bank&limit=100",
       "PUT /v1/default/banks/test-bank",
       "POST /v1/default/banks/test-bank/memories/recall",
     ]);
@@ -154,7 +164,7 @@ describe("Hindsight client adapter integration", () => {
     expect(bankConfig).toEqual({ config: { retain_custom_instructions: "Read from db" } });
 
     expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
-      "GET /v1/default/banks/test-bank/profile",
+      "GET /v1/default/banks?q=test-bank&limit=100",
       "PUT /v1/default/banks/test-bank",
       "POST /v1/default/banks/test-bank/memories",
       "POST /v1/default/banks/test-bank/memories",
@@ -209,5 +219,18 @@ describe("Hindsight client adapter integration", () => {
       include: { facts: {}, tool_calls: null },
       tag_groups: [{ tags: ["source:pi"], match: "any_strict" }],
     });
+  });
+
+  it("does not create a bank when listBanks reports an exact bank_id match", async () => {
+    const client = createHindsightClient({
+      ...DEFAULT_CONFIG,
+      hindsight: { ...DEFAULT_CONFIG.hindsight, baseUrl },
+    });
+
+    await ensureProjectBank(client, "existing-bank");
+
+    expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
+      "GET /v1/default/banks?q=existing-bank&limit=100",
+    ]);
   });
 });

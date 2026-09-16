@@ -237,6 +237,28 @@ export function createHindsightClient(config: ResolvedConfig): HindsightLikeClie
       withTimeout("hindsight getBankConfig", timeoutMs, (signal) =>
         withRetry("getBankConfig", () => raw.getBankConfig(bankId, { signal })),
       ),
+    listBanks: (options) =>
+      withTimeout(
+        "hindsight listBanks",
+        timeoutMs,
+        (signal) =>
+          withRetry("listBanks", async () => {
+            // Hindsight 0.10 list-banks accepts q/limit/offset. The 0.9 generated
+            // client types still declare query as never; the HTTP query is documented.
+            const query = {
+              ...(options?.q ? { q: options.q } : {}),
+              ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+              ...(options?.offset !== undefined ? { offset: options.offset } : {}),
+            };
+            const response = await sdk.listBanks({
+              client: lowLevel,
+              ...(Object.keys(query).length > 0 ? { query: query as never } : {}),
+              signal,
+            });
+            return unwrapSdkResponse(response, "listBanks");
+          }),
+        options?.signal,
+      ),
     importBankTemplate: (bankId, manifest, options) =>
       withTimeout(
         "hindsight importBankTemplate",
