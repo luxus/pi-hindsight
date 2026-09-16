@@ -578,7 +578,7 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
       name: "hindsight_config",
       label: "Hindsight Config",
       description:
-        "Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only typed allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Domain-tagged setupComplete requires projectBankId. Never pass raw API keys — use apiKeyEnvVar.",
+        "Get or patch allowlisted Pi Hindsight config (project or global file). action=get returns effective values (no secrets) and the allowlist. action=patch updates only typed allowlisted keys (setupComplete, scopeMode, projectId, projectIdStrategy, includeSharedObservations, userScopeTags, projectBankId, enableGlobalBank, globalBankId, agentUse, mentalModelsInject, memoryProfile, recall/retain knobs, baseUrl, apiKeyEnvVar, timeoutMs). dryRun defaults true for patch. Domain-tagged setupComplete requires projectBankId. Never pass raw API keys — use apiKeyEnvVar.",
       parameters: Type.Object({
         action: Type.Union([Type.Literal("get"), Type.Literal("patch")]),
         patch: Type.Optional(
@@ -593,6 +593,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
                 Type.Union([Type.Literal("remote"), Type.Literal("basename")]),
               ),
               includeSharedObservations: Type.Optional(Type.Boolean()),
+              userScopeTags: Type.Optional(
+                Type.Array(Type.String(), {
+                  description:
+                    "User/life bank recall tags (any_strict). Empty array disables the tag filter. Writes scope.userScopeTags.",
+                }),
+              ),
               projectBankId: Type.Optional(Type.String({ minLength: 1 })),
               enableGlobalBank: Type.Optional(Type.Boolean()),
               globalBankId: Type.Optional(Type.String({ minLength: 1 })),

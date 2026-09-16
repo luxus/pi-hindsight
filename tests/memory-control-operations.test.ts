@@ -248,7 +248,12 @@ describe("memory control operations", () => {
     });
     const got = await ops.config({ action: "get", cwd });
     expect(got.allowlist).toContain("projectBankId");
+    expect(got.allowlist).toContain("userScopeTags");
     expect((got as { values: { projectBankId?: string } }).values.projectBankId).toBe("kai-coding");
+    expect((got as { values: { userScopeTags?: string[] } }).values.userScopeTags).toEqual([
+      "source:pi",
+      "harness:pi",
+    ]);
     expect(JSON.stringify(got)).not.toContain("sk-secret");
     expect((got as { values: { apiKeyEnvVar?: string } }).values.apiKeyEnvVar).toBe(
       "HINDSIGHT_API_KEY",
@@ -315,6 +320,67 @@ describe("memory control operations", () => {
     };
     expect(disk.setupComplete).toBe(true);
     expect(disk.banks?.project?.bankId).toBe("kai-coding");
+  });
+
+  it("config get/patch allowlists userScopeTags including empty arrays", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-cfg-user-tags-"));
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(join(cwd, ".pi", "hindsight.json"), "{}\n");
+    const ops = createControlOperations({
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+      }),
+      getConfig: () => DEFAULT_CONFIG,
+      getProjectBankId: () => "coding",
+    });
+
+    await expect(
+      ops.config({
+        action: "patch",
+        cwd,
+        patch: { userScopeTags: "source:pi" },
+      }),
+    ).rejects.toThrow(/array of strings/i);
+
+    await expect(
+      ops.config({
+        action: "patch",
+        cwd,
+        patch: { userScopeTags: [1] as unknown as string[] },
+      }),
+    ).rejects.toThrow(/array of strings/i);
+
+    const dry = await ops.config({
+      action: "patch",
+      cwd,
+      patch: { userScopeTags: [] },
+    });
+    expect(dry).toMatchObject({ dryRun: true, wouldPatch: { userScopeTags: [] } });
+
+    const written = await ops.config({
+      action: "patch",
+      cwd,
+      patch: { userScopeTags: [] },
+      dryRun: false,
+    });
+    expect(written).toMatchObject({ dryRun: false });
+    const emptyDisk = JSON.parse(readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")) as {
+      scope?: { userScopeTags?: string[] };
+    };
+    expect(emptyDisk.scope?.userScopeTags).toEqual([]);
+
+    await ops.config({
+      action: "patch",
+      cwd,
+      patch: { userScopeTags: ["harness:pi", "source:pi"] },
+      dryRun: false,
+    });
+    const taggedDisk = JSON.parse(readFileSync(join(cwd, ".pi", "hindsight.json"), "utf8")) as {
+      scope?: { userScopeTags?: string[] };
+    };
+    expect(taggedDisk.scope?.userScopeTags).toEqual(["harness:pi", "source:pi"]);
   });
 
   it("knowledge create_page defaults project tags and dry-runs by default", async () => {

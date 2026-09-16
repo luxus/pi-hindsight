@@ -169,6 +169,8 @@ User/life bank recall filter (`any_strict`) for automatic inject and `hindsight_
 
 An empty array (`[]`) disables the tag filter so anything in that bank can be recalled (bank-level isolation only). Invalid values fall back to the default. Do not remove `harness:pi` if you still want observation recall from the user bank under a tag filter.
 
+Agents can get and patch this field through `hindsight_config` as `userScopeTags` (string array; empty array allowed). Patches write `scope.userScopeTags`. There is no TUI field.
+
 ```json
 {
   "scope": {
