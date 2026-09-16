@@ -1,4 +1,5 @@
 import type { HindsightLikeClient, MentalModelSummary, ResolvedConfig } from "../types.js";
+import { isAbortError, throwIfAborted } from "../client/timeout.js";
 import { redactError } from "../utils/sanitize.js";
 
 export const MENTAL_MODELS_OPEN = "<hindsight-mental-models>";
@@ -121,14 +122,18 @@ async function listModelsCached(args: {
   client: HindsightLikeClient;
   bankId: string;
   config: ResolvedConfig;
+  signal?: AbortSignal;
 }): Promise<{ models: MentalModelSummary[]; error?: string }> {
+  throwIfAborted(args.signal, "hindsight mental-model list");
   if (!args.client.listMentalModels) return { models: [] };
   const key = listCacheKey(args.config.hindsight.baseUrl, args.bankId);
   const ttlMs = args.config.mentalModels.cacheTtlMs;
   const cached = mentalModelListCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return { models: cached.models };
   try {
-    const response = await args.client.listMentalModels(args.bankId);
+    const response = args.signal
+      ? await args.client.listMentalModels(args.bankId, { signal: args.signal })
+      : await args.client.listMentalModels(args.bankId);
     const models = normalizeListResponse(response).filter(
       (model) => typeof model.content === "string" && model.content.trim().length > 0,
     );
@@ -137,6 +142,7 @@ async function listModelsCached(args: {
     }
     return { models };
   } catch (error) {
+    if (isAbortError(error) || args.signal?.aborted) throw error;
     return { models: [], error: redactError(error) };
   }
 }
@@ -173,7 +179,9 @@ export async function loadMentalModelsBlock(args: {
   config: ResolvedConfig;
   bankKind?: "project" | "user";
   projectId?: string;
+  signal?: AbortSignal;
 }): Promise<{ rendered: string; modelCount: number; error?: string }> {
+  throwIfAborted(args.signal, "hindsight mental-model list");
   if (!args.config.mentalModels.inject) {
     return { rendered: "", modelCount: 0 };
   }
@@ -199,10 +207,12 @@ export async function loadMentalModelsForScopes(args: {
   /** Parallel to bankIds when known; defaults to project for every bank. */
   bankKinds?: Array<"project" | "user">;
   projectId?: string;
+  signal?: AbortSignal;
 }): Promise<{ rendered: string; modelCount: number; failures: number }> {
   if (!args.config.mentalModels.inject || args.bankIds.length === 0) {
     return { rendered: "", modelCount: 0, failures: 0 };
   }
+  throwIfAborted(args.signal, "hindsight mental-model list");
   const totalBudget = args.config.mentalModels.maxChars;
   const minBudget = minMentalModelRenderBudgetChars();
   // Equal split when each bank can still render; never multiply minBudget past totalBudget.
@@ -213,6 +223,7 @@ export async function loadMentalModelsForScopes(args: {
   let remaining = totalBudget;
 
   for (let i = 0; i < args.bankIds.length; i++) {
+    throwIfAborted(args.signal, "hindsight mental-model list");
     const bankId = args.bankIds[i]!;
     if (remaining < minBudget) break;
     const budget = equalShare >= minBudget ? Math.min(equalShare, remaining) : remaining;
@@ -222,6 +233,7 @@ export async function loadMentalModelsForScopes(args: {
       bankId,
       bankKind,
       ...(args.projectId ? { projectId: args.projectId } : {}),
+      ...(args.signal ? { signal: args.signal } : {}),
       config: {
         ...args.config,
         mentalModels: { ...args.config.mentalModels, maxChars: budget },

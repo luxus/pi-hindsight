@@ -1,7 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { createServer } from "node:http";
+import { abortError, isAbortError, throwIfAborted } from "../extensions/client/timeout.js";
 import { createHindsightClient } from "../extensions/client/client.js";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
+
+describe("abort helpers", () => {
+  it("detects AbortError names and aborted messages, not timeouts", () => {
+    const named = new Error("stopped");
+    named.name = "AbortError";
+    expect(isAbortError(named)).toBe(true);
+    expect(isAbortError(abortError("hindsight recall"))).toBe(true);
+    expect(isAbortError(new Error("hindsight recall aborted"))).toBe(true);
+    expect(isAbortError(new Error("hindsight recall timed out after 20ms"))).toBe(false);
+    expect(isAbortError(new Error("server unavailable"))).toBe(false);
+    expect(isAbortError(undefined)).toBe(false);
+  });
+
+  it("throwIfAborted throws only when the signal is aborted", () => {
+    const controller = new AbortController();
+    expect(() => throwIfAborted(undefined, "hindsight recall")).not.toThrow();
+    expect(() => throwIfAborted(controller.signal, "hindsight recall")).not.toThrow();
+    controller.abort();
+    expect(() => throwIfAborted(controller.signal, "hindsight recall")).toThrow(/aborted/);
+  });
+});
 
 describe("Hindsight client timeout", () => {
   it("rejects slow calls using configured timeout", async () => {

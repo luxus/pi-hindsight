@@ -7,7 +7,7 @@ Pi Hindsight maps documented Pi extension hooks to Hindsight memory operations.
 ## Hook flow
 
 - `session_start`: load config, initialize runtime, ensure bank settings when appropriate, update status.
-- `context`: build recall query, fetch memories, inject an ephemeral Recall Block.
+- `context`: build recall query, fetch memories, inject an ephemeral Recall Block. Esc cancels in-flight recall cleanly (no inject, no last-recall sidecar, idle status, no extension error).
 - `agent_end`: filter new transcript content, build a Retain Job, sanitize, enqueue, and attempt delivery.
 - `session_shutdown`: best-effort Retain Queue flush within configured bounds.
 

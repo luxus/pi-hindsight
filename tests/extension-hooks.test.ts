@@ -756,6 +756,123 @@ describe("extension hooks", () => {
     expect(existsSync(join(cwd, ".pi", "hindsight", "last-recall.json"))).toBe(false);
   });
 
+  it("cancels automatic recall on Esc without error, inject, or sidecar", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    mkdirSync(join(cwd, ".pi"));
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        setupComplete: true,
+        banks: { project: { enabled: true, bankId: "test-coding", derive: "manual" } },
+        recall: { storeLastRecall: true, storeLastRecallFailures: true },
+      }),
+    );
+    const snapshotPath = join(cwd, ".pi", "hindsight", "last-recall.json");
+    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(
+      snapshotPath,
+      JSON.stringify({ query: "keep-me", rendered: "previous", blocks: [], failed: 0 }),
+    );
+    let recallStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      recallStarted = resolve;
+    });
+    mocked.client.recall.mockImplementation(async (...args: unknown[]) => {
+      recallStarted();
+      const options = args[2] as { signal?: AbortSignal } | undefined;
+      const signal = options?.signal;
+      return await new Promise<never>((_resolve, reject) => {
+        const fail = () => {
+          const error = new Error("hindsight recall aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        if (signal?.aborted) {
+          fail();
+          return;
+        }
+        signal?.addEventListener("abort", fail, { once: true });
+      });
+    });
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const controller = new AbortController();
+    const ctx = {
+      cwd,
+      signal: controller.signal,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    const pending = handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "What did we decide?", timestamp: 1 }] },
+      ctx,
+    );
+    await started;
+    controller.abort();
+    await expect(pending).resolves.toBeUndefined();
+
+    expect(JSON.parse(readFileSync(snapshotPath, "utf8")).query).toBe("keep-me");
+    expect(ctx.ui.setStatus).toHaveBeenLastCalledWith("hindsight", expect.stringContaining("idle"));
+  });
+
+  it("swallows abort from the registered context hook instead of throwing", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
+    mkdirSync(join(cwd, ".git"));
+    writeSetupCompleteConfig(cwd);
+    mocked.client.recall.mockImplementation(async (...args: unknown[]) => {
+      const options = args[2] as { signal?: AbortSignal } | undefined;
+      const signal = options?.signal;
+      return await new Promise<never>((_resolve, reject) => {
+        const fail = () => {
+          const error = new Error("hindsight recall aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        if (signal?.aborted) {
+          fail();
+          return;
+        }
+        signal?.addEventListener("abort", fail, { once: true });
+      });
+    });
+    const handlers: Record<string, Array<(event: any, ctx: any) => Promise<any>>> = {};
+    const pi = {
+      on: vi.fn((name: string, handler: (event: any, ctx: any) => Promise<any>) => {
+        handlers[name] = [...(handlers[name] ?? []), handler];
+      }),
+      registerTool: vi.fn(),
+      registerCommand: vi.fn(),
+    };
+    const controller = new AbortController();
+    const ctx = {
+      cwd,
+      signal: controller.signal,
+      ui: { setStatus: vi.fn(), notify: vi.fn() },
+      sessionManager: { getSessionFile: () => join(cwd, "session.jsonl") },
+    };
+
+    const { default: hindsightExtension } = await import("../extensions/index.js");
+    hindsightExtension(pi as any);
+    await handlers.session_start?.[0]?.({}, ctx);
+    const pending = handlers.context?.[0]?.(
+      { messages: [{ role: "user", content: "cancel me", timestamp: 1 }] },
+      ctx,
+    );
+    controller.abort();
+    await expect(pending).resolves.toBeUndefined();
+  });
+
   it("uses repo scope for project recall and source scope for global recall", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-hooks-"));
     mkdirSync(join(cwd, ".git"));

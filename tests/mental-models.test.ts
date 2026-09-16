@@ -272,4 +272,63 @@ describe("mental model injection and retain safety", () => {
     expect(result.rendered.length).toBeLessThanOrEqual(maxChars);
     expect(result.rendered.length).toBeLessThan(minBudget * 2);
   });
+
+  it("passes abort signal into listMentalModels", async () => {
+    clearMentalModelListCache();
+    const controller = new AbortController();
+    const listMentalModels = vi.fn(async () => ({
+      items: [{ id: "m1", name: "M1", content: "model content" }],
+    }));
+    await loadMentalModelsForScopes({
+      client: {
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        listMentalModels,
+      },
+      config: {
+        ...DEFAULT_CONFIG,
+        mentalModels: { inject: true, maxChars: 12_000, cacheTtlMs: 0 },
+      },
+      bankIds: ["bank"],
+      signal: controller.signal,
+    });
+    expect(listMentalModels).toHaveBeenCalledWith("bank", { signal: controller.signal });
+  });
+
+  it("rethrows abort from listMentalModels instead of treating it as a load failure", async () => {
+    clearMentalModelListCache();
+    const controller = new AbortController();
+    const listMentalModels = vi.fn(async (_bankId: string, options?: { signal?: AbortSignal }) => {
+      const signal = options?.signal;
+      await new Promise<never>((_resolve, reject) => {
+        const fail = () => {
+          const error = new Error("hindsight mental-model list aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        if (signal?.aborted) {
+          fail();
+          return;
+        }
+        signal?.addEventListener("abort", fail, { once: true });
+      });
+    });
+    const pending = loadMentalModelsForScopes({
+      client: {
+        retain: async () => undefined,
+        recall: async () => [],
+        reflect: async () => ({}),
+        listMentalModels,
+      },
+      config: {
+        ...DEFAULT_CONFIG,
+        mentalModels: { inject: true, maxChars: 12_000, cacheTtlMs: 0 },
+      },
+      bankIds: ["bank"],
+      signal: controller.signal,
+    });
+    controller.abort();
+    await expect(pending).rejects.toThrow(/aborted/);
+  });
 });

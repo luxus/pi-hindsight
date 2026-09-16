@@ -32,6 +32,7 @@ Responsibilities:
 - fetch Hindsight memory candidates
 - format an ephemeral Recall Block
 - inject that block into provider context
+- propagate Pi's abort signal; on Esc, skip injection, skip last-recall sidecars, and reset status to idle without a false extension error
 
 Recall Blocks must not be persisted into Pi transcript history or retained back into Hindsight.
 

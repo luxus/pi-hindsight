@@ -3,7 +3,10 @@ import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRecallTurnPolicy } from "../extensions/lifecycle/memory-lifecycle-recall.js";
-import { readLastRecallSnapshot } from "../extensions/lifecycle/recall-visibility.js";
+import {
+  readLastRecallSnapshot,
+  writeLastRecallSnapshot,
+} from "../extensions/lifecycle/recall-visibility.js";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import type { HindsightLikeClient, ResolvedConfig } from "../extensions/types.js";
 import type { RuntimeSnapshot } from "../extensions/lifecycle/memory-lifecycle-runtime.js";
@@ -67,6 +70,102 @@ describe("createRecallTurnPolicy unexpected failure", () => {
 
     const snapshot = await readLastRecallSnapshot(cwd, config.recall.lastRecallPath);
     expect(snapshot).toBeUndefined();
+  });
+
+  it("treats abort as idle cancel without inject or sidecar", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-recall-turn-"));
+    const runtime = runtimeFor(cwd);
+    const statuses: string[] = [];
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      recall: { ...DEFAULT_CONFIG.recall, storeLastRecall: true, storeLastRecallFailures: true },
+    };
+    await writeLastRecallSnapshot(cwd, config.recall.lastRecallPath, {
+      query: "keep-me",
+      rendered: "previous",
+      blocks: [],
+      failed: 0,
+    });
+    const controller = new AbortController();
+    let recallStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      recallStarted = resolve;
+    });
+    const policy = createRecallTurnPolicy({
+      getConfig: () => config,
+      getClient: () => ({
+        retain: async () => undefined,
+        recall: async (_bankId, _query, options) => {
+          recallStarted();
+          const signal = options && typeof options === "object" ? options.signal : undefined;
+          return new Promise((_, reject) => {
+            const fail = () => {
+              const error = new Error("hindsight recall aborted");
+              error.name = "AbortError";
+              reject(error);
+            };
+            if (signal?.aborted) {
+              fail();
+              return;
+            }
+            signal?.addEventListener("abort", fail, { once: true });
+          });
+        },
+        reflect: async () => ({}),
+      }),
+      setMemoryStatus: (_runtime, activity) => {
+        statuses.push(activity);
+      },
+      notify: () => undefined,
+    });
+
+    const pending = policy.recall(
+      { messages: [{ role: "user", content: "hello", timestamp: 1 }] } as never,
+      { ...runtime, signal: controller.signal },
+    );
+    await started;
+    controller.abort();
+    const result = await pending;
+
+    expect(result).toBeUndefined();
+    expect(statuses).toEqual(["recalling", "idle"]);
+    const snapshot = await readLastRecallSnapshot(cwd, config.recall.lastRecallPath);
+    expect(snapshot?.query).toBe("keep-me");
+    expect(snapshot?.rendered).toBe("previous");
+  });
+
+  it("resets to idle without recalling when the turn is already aborted", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-recall-turn-"));
+    const runtime = runtimeFor(cwd);
+    const statuses: string[] = [];
+    const controller = new AbortController();
+    controller.abort();
+    const recall = vi.fn(async () => ({ results: [{ text: "should not run" }] }));
+    const policy = createRecallTurnPolicy({
+      getConfig: () => ({
+        ...DEFAULT_CONFIG,
+        recall: { ...DEFAULT_CONFIG.recall, storeLastRecall: true, storeLastRecallFailures: true },
+      }),
+      getClient: () => ({
+        retain: async () => undefined,
+        recall,
+        reflect: async () => ({}),
+      }),
+      setMemoryStatus: (_runtime, activity) => {
+        statuses.push(activity);
+      },
+      notify: () => undefined,
+    });
+
+    const result = await policy.recall(
+      { messages: [{ role: "user", content: "hello", timestamp: 1 }] } as never,
+      { ...runtime, signal: controller.signal },
+    );
+
+    expect(result).toBeUndefined();
+    expect(recall).not.toHaveBeenCalled();
+    expect(statuses).toEqual(["idle"]);
+    expect(await readLastRecallSnapshot(cwd, DEFAULT_CONFIG.recall.lastRecallPath)).toBeUndefined();
   });
 });
 

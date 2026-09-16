@@ -434,4 +434,101 @@ describe("recall formatting", () => {
 
     expect(result).toMatchObject({ rendered: "", blocks: [], failed: 1 });
   });
+
+  it("rethrows abort instead of recording a bank failure", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      recallForContext({
+        client: {
+          retain: async () => undefined,
+          recall: async () => ({ results: [{ text: "should not run" }] }),
+          reflect: async () => ({}),
+        },
+        config: DEFAULT_CONFIG,
+        scopes: [{ bankId: "project-bank" }, { bankId: "global-bank" }],
+        cwd: "/repo/project",
+        messages: [{ role: "user", content: "q", timestamp: 1 }] as unknown as AgentMessage[],
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow(/aborted/);
+  });
+
+  it("forwards abort into in-flight parallel scope recalls", async () => {
+    const controller = new AbortController();
+    const banks: string[] = [];
+    const pending = recallForContext({
+      client: {
+        retain: async () => undefined,
+        recall: async (bankId, _query, options) => {
+          banks.push(bankId);
+          const signal = options?.signal;
+          await new Promise<never>((_resolve, reject) => {
+            const fail = () => {
+              const error = new Error("hindsight recall aborted");
+              error.name = "AbortError";
+              reject(error);
+            };
+            if (signal?.aborted) {
+              fail();
+              return;
+            }
+            signal?.addEventListener("abort", fail, { once: true });
+          });
+        },
+        reflect: async () => ({}),
+      },
+      config: DEFAULT_CONFIG,
+      scopes: [
+        { kind: "project", bankId: "project-bank" },
+        { kind: "global", bankId: "global-bank" },
+      ],
+      cwd: "/repo/project",
+      messages: [{ role: "user", content: "q", timestamp: 1 }] as unknown as AgentMessage[],
+      signal: controller.signal,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    controller.abort();
+    await expect(pending).rejects.toThrow(/aborted/);
+    expect(banks.sort()).toEqual(["global-bank", "project-bank"]);
+  });
+
+  it("does not return rendered memory when mental-model loading is aborted", async () => {
+    const controller = new AbortController();
+    let listed!: () => void;
+    const started = new Promise<void>((resolve) => {
+      listed = resolve;
+    });
+    const pending = recallForContext({
+      client: {
+        retain: async () => undefined,
+        recall: async () => ({ results: [{ text: "repo memory" }] }),
+        reflect: async () => ({}),
+        listMentalModels: async (_bankId, options) => {
+          listed();
+          const signal = options?.signal;
+          await new Promise<never>((_resolve, reject) => {
+            const fail = () => {
+              const error = new Error("hindsight mental-model list aborted");
+              error.name = "AbortError";
+              reject(error);
+            };
+            if (signal?.aborted) {
+              fail();
+              return;
+            }
+            signal?.addEventListener("abort", fail, { once: true });
+          });
+        },
+      },
+      config: DEFAULT_CONFIG,
+      scopes: [{ kind: "project", bankId: "project-bank" }],
+      cwd: "/repo/project",
+      messages: [{ role: "user", content: "q", timestamp: 1 }] as unknown as AgentMessage[],
+      signal: controller.signal,
+    });
+    await started;
+    controller.abort();
+    await expect(pending).rejects.toThrow(/aborted/);
+  });
 });
