@@ -199,7 +199,7 @@ describe("retain/import to recall roundtrip quality", () => {
       options: {
         includeChunks: true,
         tagGroups: [
-          { tags: ["source:pi"], match: "any_strict" },
+          { tags: ["source:pi", "harness:pi"], match: "any_strict" },
           { tags: ["topic:preferences"], match: "all_strict" },
         ],
       },

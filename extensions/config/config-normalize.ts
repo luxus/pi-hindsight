@@ -137,6 +137,20 @@ function toolNameFilter(
   };
 }
 
+function retainBeforeEnqueue(
+  value: unknown,
+): NonNullable<ResolvedConfig["retain"]["beforeEnqueue"]> {
+  if (!isRecord(value)) return { command: [], timeoutMs: 5_000, malformed: true };
+  const command =
+    Array.isArray(value.command) &&
+    value.command.length > 0 &&
+    value.command.every((item) => typeof item === "string" && item.length > 0)
+      ? value.command
+      : undefined;
+  const timeoutMs = positiveInt(value.timeoutMs, 5_000);
+  return command ? { command, timeoutMs } : { command: [], timeoutMs, malformed: true };
+}
+
 function scoreFloors(value: unknown): RecallMinScores | undefined {
   if (!isRecord(value)) return undefined;
   const floors: RecallMinScores = {};
@@ -220,10 +234,16 @@ export function normalizeConfig(
         projectId?: unknown;
         projectIdStrategy?: unknown;
         includeSharedObservations?: unknown;
+        userScopeTags?: unknown;
       };
     }
   ).scope;
   const projectIdPin = optionalString(scopeRaw?.projectId, DEFAULT_CONFIG.scope.projectId);
+  const userScopeTags = [
+    ...new Set(
+      stringArray(scopeRaw?.userScopeTags, DEFAULT_CONFIG.scope.userScopeTags).filter(Boolean),
+    ),
+  ];
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
     setupComplete: bool(
@@ -246,6 +266,7 @@ export function normalizeConfig(
         scopeRaw?.includeSharedObservations,
         DEFAULT_CONFIG.scope.includeSharedObservations,
       ),
+      userScopeTags: userScopeTags.length ? userScopeTags : DEFAULT_CONFIG.scope.userScopeTags,
     },
     hindsight: {
       baseUrl: stringValue(config.hindsight?.baseUrl, DEFAULT_CONFIG.hindsight.baseUrl),
@@ -278,7 +299,7 @@ export function normalizeConfig(
         ...(projectBankId ? { bankId: projectBankId } : {}),
         derive: enumValue(
           config.banks?.project?.derive,
-          ["repo", "cwd", "manual"],
+          ["repo", "cwd", "manual", "basename"],
           DEFAULT_CONFIG.banks.project.derive,
         ),
         ...missionFields(config.banks?.project),
@@ -479,6 +500,9 @@ export function normalizeConfig(
         config.retain?.postRetainReflect,
         DEFAULT_CONFIG.retain.postRetainReflect,
       ),
+      ...(config.retain?.beforeEnqueue !== undefined
+        ? { beforeEnqueue: retainBeforeEnqueue(config.retain.beforeEnqueue) }
+        : {}),
     },
     import: {
       mode: enumValue(

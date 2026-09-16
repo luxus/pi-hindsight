@@ -1,3 +1,12 @@
+import { createHash } from "node:crypto";
+import {
+  emitRetrieval,
+  telemetryEvent,
+  telemetryFailure,
+  retrievalId,
+  type RetrievalObserver,
+  type RetrievalTelemetry,
+} from "./retrieval-telemetry.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { recallForContext } from "./recall.js";
 import { redactError } from "../utils/sanitize.js";
@@ -21,6 +30,7 @@ export interface RecallTurnPolicy {
 }
 
 export interface RecallTurnPolicyDeps {
+  observer?: RetrievalObserver;
   getConfig(): ResolvedConfig;
   getClient(): HindsightLikeClient;
   setMemoryStatus(
@@ -85,26 +95,83 @@ function patchWithRecallMessage(
 
 export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPolicy {
   const cache = createRecallCache(() => deps.getConfig().recall.cacheTtlMs);
+  const origins = new WeakMap<RecallCacheEntry, RetrievalTelemetry[]>();
   return {
     async recall(event: ContextEvent, runtime: RuntimeSnapshot): Promise<ContextPatch | undefined> {
+      const started = Date.now();
+      const contextId = deps.observer ? retrievalId() : undefined;
+      const retrievals: RetrievalTelemetry[] = [];
+      let cacheStatus: "hit" | "miss" | "none" = "none";
+      const observe: RetrievalObserver = (item) => {
+        retrievals.push(structuredClone(item));
+        emitRetrieval(deps.observer, () => item);
+      };
+      const injection = (
+        status: RetrievalTelemetry["status"],
+        rendered = "",
+        extra: Record<string, unknown> = {},
+      ) => {
+        emitRetrieval(deps.observer, () =>
+          telemetryEvent(started, {
+            phase: "injection",
+            mode: "automatic",
+            cache: cacheStatus,
+            status,
+            contextId,
+            injected: Boolean(rendered),
+            retrievalIds: retrievals.flatMap((e) => (e.retrievalId ? [e.retrievalId] : [])),
+            injectedIds: rendered ? retrievals.flatMap((e) => e.injectedIds ?? []) : [],
+            injectedCount: rendered
+              ? retrievals.reduce((n, e) => n + (e.injectedCount ?? 0), 0)
+              : 0,
+            renderedHash: createHash("sha256").update(rendered).digest("hex"),
+            renderedLength: rendered.length,
+            ...extra,
+          }),
+        );
+      };
+      const skip = (reason: string) => {
+        injection("skipped", "", { reason });
+        return undefined;
+      };
       const config = deps.getConfig();
-      if (!config.enabled || !config.recall.enabled) return undefined;
+      if (!config.enabled || !config.recall.enabled) return skip("disabled");
 
       const sessionMemory = getEffectiveSessionMemoryMode(
         await readSessionMemoryMeta(runtime.cwd, runtime.sessionFile),
       );
-      if (!sessionMemory.recall) return undefined;
+      if (!sessionMemory.recall) return skip("session-disabled");
 
       const scopes = selectMemoryScopes(runtime.cwd, config);
-      if (scopes.length === 0) return undefined;
+      if (scopes.length === 0) return skip("no-scopes");
       if (config.recall.injectionPosition === "append" && !canAppendRecallMessage(event)) {
-        return undefined;
+        return skip("append-requires-user");
       }
 
       const cacheKey = scopes.map((s) => s.bankId).join(",") + "|" + event.messages.length;
       let recallResult = cache.get(cacheKey);
+      cacheStatus = recallResult ? "hit" : "miss";
 
       try {
+        if (recallResult && deps.observer) {
+          for (const origin of origins.get(recallResult) ?? []) {
+            emitRetrieval(observe, () =>
+              telemetryEvent(started, {
+                ...origin,
+                phase: "retrieval",
+                mode: "automatic",
+                status: origin.status,
+                cache: "hit",
+                contextId,
+                retrievalId: retrievalId(),
+                cacheOriginId: origin.retrievalId,
+                startedAt: new Date(started).toISOString(),
+                endedAt: new Date().toISOString(),
+                durationMs: Date.now() - started,
+              }),
+            );
+          }
+        }
         if (!recallResult) {
           deps.setMemoryStatus(runtime, "recalling");
           recallResult = await recallForContext({
@@ -113,7 +180,9 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
             scopes,
             messages: event.messages,
             cwd: runtime.cwd,
+            ...(deps.observer ? { observer: observe, contextId } : {}),
           });
+          if (deps.observer) origins.set(recallResult, retrievals.slice());
           cache.set(cacheKey, recallResult);
         }
         const { rendered, blocks, failed, failures } = recallResult;
@@ -154,17 +223,29 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
             );
           }
         }
-        if (!rendered) return undefined;
+        if (!rendered) {
+          injection(
+            failed
+              ? retrievals.some((e) => e.status === "timeout")
+                ? "timeout"
+                : "error"
+              : "empty",
+          );
+          return undefined;
+        }
         const recallMessage = {
           role: "user",
           content: rendered,
           timestamp: Date.now(),
         } as AgentMessage;
-        if (config.recall.injectionPosition === "append") {
-          return patchWithRecallMessage(event, recallMessage);
-        }
-        return { messages: [recallMessage, ...event.messages] };
+        const patch =
+          config.recall.injectionPosition === "append"
+            ? patchWithRecallMessage(event, recallMessage)
+            : { messages: [recallMessage, ...event.messages] };
+        injection(patch ? "success" : "skipped", patch ? rendered : "", { failedScopes: failed });
+        return patch;
       } catch (error) {
+        injection("error", "", telemetryFailure(error));
         deps.setMemoryStatus(runtime, "recall-failed");
         // Recall runs every turn, so this stays debug-gated behind the same opt-in flags that
         // already gate the last-recall sidecar, instead of notifying (which would spam normal

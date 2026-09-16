@@ -1,3 +1,9 @@
+import {
+  emitRetrieval,
+  telemetryEvent,
+  retrievalId,
+  type RetrievalObserver,
+} from "./retrieval-telemetry.js";
 import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 import { resolveConfig } from "../config/config.js";
 import { consumeLastConfigMigrationResults } from "../config/config.js";
@@ -34,6 +40,7 @@ export interface InitHealth {
 }
 
 export interface MemoryLifecycleDeps {
+  observer?: RetrievalObserver;
   getClient(): HindsightLikeClient;
   getConfig(): ResolvedConfig;
   getProjectBankId(): string;
@@ -52,7 +59,10 @@ export interface MemoryLifecycle {
   shutdown(ctx: RuntimeCtx): Promise<void>;
 }
 
-export function createMemoryLifecycle(initialCwd: string = process.cwd()): MemoryLifecycle {
+export function createMemoryLifecycle(
+  initialCwd: string = process.cwd(),
+  observer?: RetrievalObserver,
+): MemoryLifecycle {
   let config: ResolvedConfig = resolveConfig(initialCwd);
   let client: HindsightLikeClient = createHindsightClient(config);
   let projectBankId = deriveProjectBankId(initialCwd, config);
@@ -117,6 +127,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
     });
 
   const deps: MemoryLifecycleDeps = {
+    ...(observer ? { observer } : {}),
     getClient: () => client,
     getConfig: () => config,
     getProjectBankId: () => projectBankId,
@@ -134,6 +145,7 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
   });
 
   const recallPolicy = createRecallTurnPolicy({
+    ...(observer ? { observer } : {}),
     getConfig: () => config,
     getClient: () => client,
     setMemoryStatus: (runtime, activity, memoryCount) =>
@@ -213,10 +225,25 @@ export function createMemoryLifecycle(initialCwd: string = process.cwd()): Memor
     },
 
     async recall(event: ContextEvent, ctx: RuntimeCtx): Promise<ContextPatch | undefined> {
-      if (!config.enabled || !config.recall.enabled) return undefined;
+      const skip = (reason: string) => {
+        emitRetrieval(observer, () =>
+          telemetryEvent(Date.now(), {
+            phase: "injection",
+            mode: "automatic",
+            cache: "none",
+            status: "skipped",
+            contextId: retrievalId(),
+            injected: false,
+            retrievalIds: [],
+            reason,
+          }),
+        );
+        return undefined;
+      };
+      if (!config.enabled || !config.recall.enabled) return skip("disabled");
       const runtime = snapshotRuntime(ctx);
-      if (!runtime) return undefined;
-      if (!isMemorySetupComplete(config, runtime.cwd)) return undefined;
+      if (!runtime) return skip("runtime-unavailable");
+      if (!isMemorySetupComplete(config, runtime.cwd)) return skip("setup-incomplete");
       return recallPolicy.recall(event, runtime);
     },
 
