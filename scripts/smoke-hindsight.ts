@@ -4,6 +4,7 @@ import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HindsightClient } from "@vectorize-io/hindsight-client";
+import { resolveBankExistence } from "../extensions/banks/bank-operations.js";
 import { createHindsightClient } from "../extensions/client/client.js";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
 import { createMemoryOperations } from "../extensions/operations/memory-operation-service.js";
@@ -115,8 +116,8 @@ try {
 
   const adapterHealth = adapter.health;
   const adapterCreateBank = adapter.createBank;
-  const adapterGetBankProfile = adapter.getBankProfile;
-  if (!adapterHealth || !adapterCreateBank || !adapterGetBankProfile) {
+  const adapterListBanks = adapter.listBanks;
+  if (!adapterHealth || !adapterCreateBank || !adapterListBanks) {
     throw new Error("adapter missing required smoke capabilities");
   }
 
@@ -131,8 +132,11 @@ try {
     enableObservations: true,
   });
   recorder.step("adapter_bank_ok");
-  await adapterGetBankProfile(config.bankId);
-  recorder.step("adapter_profile_ok");
+  const listed = await resolveBankExistence(adapter, config.bankId);
+  if (listed !== true) {
+    throw new Error(`adapter listBanks did not confirm exact bank_id ${config.bankId}`);
+  }
+  recorder.step("adapter_list_banks_ok");
 
   await client.retain(config.bankId, `Smoke marker: ${marker}`, {
     context: "Pi Hindsight smoke test",

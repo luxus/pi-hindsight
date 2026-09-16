@@ -7,6 +7,7 @@ import {
   sdk,
 } from "@vectorize-io/hindsight-client";
 import type { BankTemplateManifest, Client, ReflectRequest } from "@vectorize-io/hindsight-client";
+import { isGoneError } from "../banks/bank-operations.js";
 import { redactError } from "../utils/sanitize.js";
 import type { HindsightLikeClient, ResolvedConfig } from "../types.js";
 import { PI_HINDSIGHT_USER_AGENT } from "../version.js";
@@ -397,8 +398,15 @@ export async function checkHindsight(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     if (client.health) await client.health();
-    else if (client.getBankProfile) await client.getBankProfile(bankId);
-    else await client.recall(bankId, "health check", { maxTokens: 1, budget: "low" });
+    else if (client.listBanks) await client.listBanks({ q: bankId, limit: 1 });
+    else if (client.getBankProfile) {
+      try {
+        await client.getBankProfile(bankId);
+      } catch (error) {
+        // Profile retired in Hindsight v0.10; 410 still proves the server responded.
+        if (!isGoneError(error)) throw error;
+      }
+    } else await client.recall(bankId, "health check", { maxTokens: 1, budget: "low" });
     return { ok: true };
   } catch (error) {
     return { ok: false, error: redactError(error) };

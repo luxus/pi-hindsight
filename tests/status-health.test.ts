@@ -53,8 +53,8 @@ describe("status health", () => {
       expect.arrayContaining([
         ["Server", "reachable"],
         ["Server version", "0.8.3 · features: observations, worker"],
-        ["Project bank", "reachable · project-bank name · Project → Bank: project-bank"],
-        ["User bank", "reachable · global-bank name · User → Bank: global-bank"],
+        ["Project bank", "reachable · project-bank · Project → Bank: project-bank"],
+        ["User bank", "reachable · global-bank · User → Bank: global-bank"],
         ["Project bank config", "Bank overrides: 1 · Resolved config fields: 2"],
         ["User bank config", "Bank overrides: 1 · Resolved config fields: 2"],
         ["Project bank missions", "db · retain Override retain from db · reflect Reflect from db"],
@@ -131,5 +131,99 @@ describe("status health", () => {
 
     expect(facts.find(([key]) => key === "Server")?.[1]).toBe("reachable");
     expect(facts.some(([key]) => key === "Server version")).toBe(false);
+  });
+
+  it("uses list-banks exact bank_id and still loads config when profile returns 410", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "From config" },
+      overrides: {},
+    }));
+    const client: HindsightLikeClient = {
+      retain: vi.fn(),
+      retainBatch: vi.fn(),
+      recall: vi.fn(),
+      reflect: vi.fn(),
+      health: vi.fn(async () => ({ ok: true })),
+      getBankProfile,
+      listBanks: vi.fn(async () => ({ banks: [{ bank_id: "bank" }] })),
+      getBankConfig,
+    };
+
+    const facts = await collectStatusHealthFacts({
+      client,
+      config: DEFAULT_CONFIG,
+      projectBankId: "bank",
+    });
+
+    expect(facts.find(([key]) => key === "Project bank")?.[1]).toContain("reachable");
+    expect(facts.find(([key]) => key === "Project bank missions")?.[1]).toContain("From config");
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(getBankConfig).toHaveBeenCalledWith("bank");
+  });
+
+  it("does not treat GET /config as existence when list-banks misses", async () => {
+    const getBankConfig = vi.fn(async () => ({
+      config: { retain_mission: "Config 200s for missing banks" },
+      overrides: {},
+    }));
+    const client: HindsightLikeClient = {
+      retain: vi.fn(),
+      retainBatch: vi.fn(),
+      recall: vi.fn(),
+      reflect: vi.fn(),
+      health: vi.fn(async () => ({ ok: true })),
+      getBankProfile: vi.fn(async () => {
+        throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+          status: 410,
+        });
+      }),
+      listBanks: vi.fn(async () => ({ banks: [{ bank_id: "bank-extra" }] })),
+      getBankConfig,
+    };
+
+    const facts = await collectStatusHealthFacts({
+      client,
+      config: DEFAULT_CONFIG,
+      projectBankId: "bank",
+    });
+
+    expect(facts.find(([key]) => key === "Project bank")?.[1]).toContain("unreachable · not found");
+    expect(facts.some(([key]) => key === "Project bank missions")).toBe(false);
+    expect(getBankConfig).not.toHaveBeenCalled();
+  });
+
+  it("continues to config/stats when profile is retired and list-banks is unavailable", async () => {
+    const getBankConfig = vi.fn(async () => ({
+      config: { reflect_mission: "Still readable" },
+      overrides: {},
+    }));
+    const client: HindsightLikeClient = {
+      retain: vi.fn(),
+      retainBatch: vi.fn(),
+      recall: vi.fn(),
+      reflect: vi.fn(),
+      health: vi.fn(async () => ({ ok: true })),
+      getBankProfile: vi.fn(async () => {
+        throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+          statusCode: 410,
+        });
+      }),
+      getBankConfig,
+    };
+
+    const facts = await collectStatusHealthFacts({
+      client,
+      config: DEFAULT_CONFIG,
+      projectBankId: "bank",
+    });
+
+    expect(facts.find(([key]) => key === "Project bank")?.[1]).toContain("reachable · bank");
+    expect(facts.find(([key]) => key === "Project bank missions")?.[1]).toContain("Still readable");
+    expect(getBankConfig).toHaveBeenCalledWith("bank");
   });
 });

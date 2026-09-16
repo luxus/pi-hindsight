@@ -1,7 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { ensureGlobalBank, ensureProjectBank } from "../banks/bank-operations.js";
+import {
+  ensureGlobalBank,
+  ensureProjectBank,
+  isNotFoundError,
+  resolveBankExistence,
+} from "../banks/bank-operations.js";
 import {
   createMemoryOperations,
   type MemoryOperations,
@@ -138,6 +143,8 @@ export type BankExistence =
   | { status: "missing" }
   | { status: "unknown"; error?: string };
 
+const BANK_EXISTENCE_UNAVAILABLE = "bank existence check unavailable";
+
 /** Check whether a bank ID already exists in Hindsight (typo protection for setup). */
 export async function probeBankExistence(
   client: HindsightLikeClient,
@@ -145,14 +152,12 @@ export async function probeBankExistence(
 ): Promise<BankExistence> {
   const id = bankId.trim();
   if (!id) return { status: "unknown", error: "missing bank id" };
-  if (!client.getBankProfile) {
-    return { status: "unknown", error: "getBankProfile unavailable" };
-  }
   try {
-    await client.getBankProfile(id);
-    return { status: "exists" };
+    const exists = await resolveBankExistence(client, id);
+    if (exists === true) return { status: "exists" };
+    if (exists === false) return { status: "missing" };
+    return { status: "unknown", error: BANK_EXISTENCE_UNAVAILABLE };
   } catch (error) {
-    if (isNotFoundError(error)) return { status: "missing" };
     return {
       status: "unknown",
       error: error instanceof Error ? error.message : String(error),
@@ -266,8 +271,8 @@ export async function resolveSetupBankId(args: {
       }
     }
 
-    // Profile API missing: cannot verify; keep prior behavior.
-    if (existence.error === "getBankProfile unavailable") {
+    // List-banks/profile inconclusive (v0.10 profile retired, or neither API): cannot verify.
+    if (existence.error === BANK_EXISTENCE_UNAVAILABLE) {
       return { bankId: trimmed, state: "unverified" };
     }
 
@@ -383,28 +388,11 @@ function formatApprovedRootPlanSummary(
   return `Plan: pairs=${result.plan.summary.mappingPairCount}; fan-out groups=${result.plan.summary.fanOutGroupCount}; skipped=${result.plan.summary.skippedGroupCount}; transient/stale=${result.plan.summary.transientGroupCount}; ${formatApprovedRootDocumentOutcomes(result)}; ${mapped}`;
 }
 
-function isNotFoundError(error: unknown): boolean {
-  if (typeof error !== "object" || !error) return false;
-  const fields = error as {
-    status?: unknown;
-    statusCode?: unknown;
-    code?: unknown;
-    message?: unknown;
-  };
-  return (
-    fields.status === 404 ||
-    fields.statusCode === 404 ||
-    fields.code === 404 ||
-    fields.code === "404" ||
-    (typeof fields.message === "string" && /\b404\b|not found/i.test(fields.message))
-  );
-}
-
 /** Setup-time snapshot of a bank's mental-model catalog from the API. */
 export interface SetupBankMentalModelProbe {
   target: "project" | "user";
   bankId: string;
-  /** False when getBankProfile reports not found (or no profile API). */
+  /** False when list-banks/profile reports not found. */
   bankExists: boolean;
   modelNames: string[];
   /** Present mental-model ids from listMentalModels (preferred for ensure checks). */
@@ -505,26 +493,22 @@ export async function probeBankMentalModels(args: {
   }
 
   let bankExists = false;
-  if (args.client.getBankProfile) {
-    try {
-      await args.client.getBankProfile(bankId);
-      bankExists = true;
-    } catch (error) {
-      if (isNotFoundError(error)) {
-        return { target: args.target, bankId, bankExists: false, modelNames: [], modelIds: [] };
-      }
-      return {
-        target: args.target,
-        bankId,
-        bankExists: false,
-        modelNames: [],
-        modelIds: [],
-        error: error instanceof Error ? error.message : String(error),
-      };
+  try {
+    const exists = await resolveBankExistence(args.client, bankId);
+    if (exists === false) {
+      return { target: args.target, bankId, bankExists: false, modelNames: [], modelIds: [] };
     }
-  } else {
-    // Without profile API, assume the bank may exist and still list models.
+    // true = confirmed; undefined = profile retired / no existence API — still list models.
     bankExists = true;
+  } catch (error) {
+    return {
+      target: args.target,
+      bankId,
+      bankExists: false,
+      modelNames: [],
+      modelIds: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 
   if (!args.client.listMentalModels) {

@@ -659,6 +659,37 @@ describe("guided setup", () => {
     expect(listMentalModels).toHaveBeenCalledTimes(1);
   });
 
+  it("probes mental models after list-banks existence when profile is retired", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const listMentalModels = vi.fn().mockResolvedValueOnce({
+      items: [{ id: "mm1", name: "Project architecture" }],
+    });
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      getBankProfile,
+      listBanks: vi.fn(async () => ({ banks: [{ bank_id: "pi-coding" }] })),
+      listMentalModels,
+    };
+
+    await expect(
+      probeBankMentalModels({ client, target: "project", bankId: "pi-coding" }),
+    ).resolves.toEqual({
+      target: "project",
+      bankId: "pi-coding",
+      bankExists: true,
+      modelNames: ["Project architecture"],
+      modelIds: ["mm1"],
+    });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(listMentalModels).toHaveBeenCalledWith("pi-coding");
+  });
+
   it("still offers starters when bank has other projects' models but not this project's", async () => {
     await withTempHome(async () => {
       const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-guided-existing-mm-"));
@@ -801,7 +832,47 @@ describe("guided setup", () => {
         { retain: async () => undefined, recall: async () => [], reflect: async () => ({}) },
         "x",
       ),
-    ).resolves.toEqual({ status: "unknown", error: "getBankProfile unavailable" });
+    ).resolves.toEqual({ status: "unknown", error: "bank existence check unavailable" });
+  });
+
+  it("prefers list-banks exact bank_id over retired profile for existence", async () => {
+    const getBankProfile = vi.fn(async () => {
+      throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+        status: 410,
+      });
+    });
+    const listBanks = vi
+      .fn()
+      .mockResolvedValueOnce({ banks: [{ bank_id: "ok" }] })
+      .mockResolvedValueOnce({ banks: [{ bank_id: "ok-extra" }] });
+    const client = {
+      retain: async () => undefined,
+      recall: async () => [],
+      reflect: async () => ({}),
+      getBankProfile,
+      listBanks,
+    };
+    await expect(probeBankExistence(client, "ok")).resolves.toEqual({ status: "exists" });
+    await expect(probeBankExistence(client, "missing")).resolves.toEqual({ status: "missing" });
+    expect(getBankProfile).not.toHaveBeenCalled();
+  });
+
+  it("treats profile 410 without list-banks as unknown existence", async () => {
+    await expect(
+      probeBankExistence(
+        {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+          getBankProfile: async () => {
+            throw Object.assign(new Error("The bank profile endpoints have been removed."), {
+              status: 410,
+            });
+          },
+        },
+        "ok",
+      ),
+    ).resolves.toEqual({ status: "unknown", error: "bank existence check unavailable" });
   });
 
   it("confirms create for missing banks and re-prompts on decline", async () => {
