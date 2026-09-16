@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0](https://github.com/luxus/pi-hindsight/compare/v0.13.0...v0.14.0) (2026-09-16)
+
+
+### Features
+
+* **config:** allowlist userScopeTags on hindsight_config ([#630](https://github.com/luxus/pi-hindsight/issues/630)) ([d5c6f6e](https://github.com/luxus/pi-hindsight/commit/d5c6f6e6dc309830a4dd70b6bef12f029a1c35a8)), closes [#622](https://github.com/luxus/pi-hindsight/issues/622)
+
+
+### Bug Fixes
+
+* **banks:** use list-banks existence for import and bankGet ([#628](https://github.com/luxus/pi-hindsight/issues/628)) ([60b1b93](https://github.com/luxus/pi-hindsight/commit/60b1b931942d91135b464fa55592ad29e351abda))
+
 ## [0.13.0](https://github.com/luxus/pi-hindsight/compare/v0.12.0...v0.13.0) (2026-09-16)
 
 
