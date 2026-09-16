@@ -4,12 +4,20 @@ import { registerCommands } from "./tui/commands.js";
 import { createMemoryLifecycle } from "./lifecycle/memory-lifecycle.js";
 
 export default function hindsightExtension(pi: ExtensionAPI) {
-  const lifecycle = createMemoryLifecycle(process.cwd());
+  let sessionId: string | undefined;
+  const lifecycle = createMemoryLifecycle(process.cwd(), (event) => {
+    pi.events.emit("hindsight:retrieval", { ...event, ...(sessionId ? { sessionId } : {}) });
+  });
 
   registerTools(pi, lifecycle.deps);
   registerCommands(pi, lifecycle.deps);
 
   pi.on("session_start", async (_event, ctx) => {
+    try {
+      sessionId = ctx.sessionManager.getSessionId();
+    } catch {
+      sessionId = undefined;
+    }
     await lifecycle.initialize(ctx);
   });
 
