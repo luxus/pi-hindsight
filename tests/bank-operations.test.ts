@@ -286,4 +286,39 @@ describe("bank operations", () => {
     expect(getBankProfile).toHaveBeenCalledWith("project-bank");
     expect(createBank).not.toHaveBeenCalled();
   });
+
+  it("does not create bank when exact bank_id is on a later listBanks page", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn();
+    const firstPage = Array.from({ length: 100 }, (_, i) => ({ bank_id: `other-${i}` }));
+    const listBanks = vi.fn(async (options?: { offset?: number }) => {
+      if (!options?.offset) return { banks: firstPage };
+      return { banks: [{ bank_id: "project-bank" }] };
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(listBanks).toHaveBeenNthCalledWith(1, { q: "project-bank", limit: 100 });
+    expect(listBanks).toHaveBeenNthCalledWith(2, {
+      q: "project-bank",
+      limit: 100,
+      offset: 100,
+    });
+    expect(getBankProfile).not.toHaveBeenCalled();
+    expect(createBank).not.toHaveBeenCalled();
+  });
+
+  it("creates bank after a full miss page then a short miss page", async () => {
+    const createBank = vi.fn(async () => undefined);
+    const getBankProfile = vi.fn();
+    const firstPage = Array.from({ length: 100 }, (_, i) => ({ bank_id: `other-${i}` }));
+    const listBanks = vi.fn(async (options?: { offset?: number }) => {
+      if (!options?.offset) return { banks: firstPage };
+      return { banks: [{ bank_id: "project-bank-extra" }] };
+    });
+
+    await ensureProjectBank(client({ createBank, getBankProfile, listBanks }), "project-bank");
+
+    expect(createBank).toHaveBeenCalledWith("project-bank", expect.any(Object));
+  });
 });

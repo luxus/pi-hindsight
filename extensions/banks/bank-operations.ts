@@ -123,6 +123,9 @@ function isGoneError(error: unknown): boolean {
   );
 }
 
+const LIST_BANKS_PAGE_SIZE = 100;
+const LIST_BANKS_MAX_OFFSET = 10_000;
+
 function listedBankIds(result: unknown): string[] | undefined {
   if (typeof result !== "object" || !result) return undefined;
   const banks = (result as { banks?: unknown }).banks;
@@ -142,10 +145,19 @@ async function bankExistsViaList(
 ): Promise<boolean | undefined> {
   if (!client.listBanks) return undefined;
   try {
-    const listed = await client.listBanks({ q: bankId, limit: 100 });
-    const ids = listedBankIds(listed);
-    if (!ids) return undefined;
-    return ids.includes(bankId);
+    for (let offset = 0; offset <= LIST_BANKS_MAX_OFFSET; offset += LIST_BANKS_PAGE_SIZE) {
+      const listed = await client.listBanks({
+        q: bankId,
+        limit: LIST_BANKS_PAGE_SIZE,
+        ...(offset > 0 ? { offset } : {}),
+      });
+      const ids = listedBankIds(listed);
+      if (!ids) return undefined;
+      if (ids.includes(bankId)) return true;
+      if (ids.length < LIST_BANKS_PAGE_SIZE) return false;
+    }
+    // Truncated after the scan cap: do not create (avoids mission overwrite).
+    return undefined;
   } catch {
     return undefined;
   }
