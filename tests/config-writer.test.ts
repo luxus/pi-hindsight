@@ -162,6 +162,26 @@ describe("config writer", () => {
     );
   });
 
+  it("builds scope.userScopeTags patches including an empty array", () => {
+    expect(buildProjectConfigPatch({ userScopeTags: ["harness:pi"] })).toEqual({
+      scope: { userScopeTags: ["harness:pi"] },
+    });
+    expect(buildProjectConfigPatch({ userScopeTags: [] })).toEqual({
+      scope: { userScopeTags: [] },
+    });
+  });
+
+  it("replaces scope.userScopeTags on merge including empty arrays", () => {
+    expect(
+      deepMergeConfig(
+        { scope: { mode: "domain-tagged", userScopeTags: ["source:pi", "harness:pi"] } },
+        { scope: { userScopeTags: [] } },
+      ),
+    ).toEqual({
+      scope: { mode: "domain-tagged", userScopeTags: [] },
+    });
+  });
+
   it("deep merges without deleting existing config", () => {
     expect(
       deepMergeConfig(

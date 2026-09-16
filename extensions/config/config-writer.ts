@@ -92,6 +92,8 @@ export interface ProjectConfigPatchInput {
   projectIdStrategy?: "remote" | "basename";
   /** Opt-in shared/untagged observation recall (ADR-005 / #492). */
   includeSharedObservations?: boolean;
+  /** User/life bank recall tags; empty array disables the tag filter (#592 / #622). */
+  userScopeTags?: string[];
   baseUrl?: string;
   timeoutMs?: number;
   apiKeyEnvVar?: string;
@@ -153,7 +155,8 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     input.scopeMode !== undefined ||
     input.projectId !== undefined ||
     input.projectIdStrategy !== undefined ||
-    input.includeSharedObservations !== undefined
+    input.includeSharedObservations !== undefined ||
+    input.userScopeTags !== undefined
   ) {
     patch.scope = {
       ...(input.scopeMode !== undefined ? { mode: input.scopeMode } : {}),
@@ -164,6 +167,7 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
       ...(input.includeSharedObservations !== undefined
         ? { includeSharedObservations: input.includeSharedObservations }
         : {}),
+      ...(input.userScopeTags !== undefined ? { userScopeTags: input.userScopeTags } : {}),
     };
   }
   if (input.apiKeyEnvVar && !validEnvVarName(input.apiKeyEnvVar)) {
