@@ -152,7 +152,11 @@ it("reports outer scope timeout once even if HTTP later succeeds, plus error and
     scopes: ["slow", "bad", "empty"].map((bankId) => ({ bankId })),
   });
   expect(result.failed).toBe(2);
-  expect(f.events.map((e) => e.status)).toEqual(["timeout", "error", "empty"]);
+  expect(Object.fromEntries(f.events.map((e) => [e.bankId, e.status]))).toEqual({
+    slow: "timeout",
+    bad: "error",
+    empty: "empty",
+  });
   resolve({ results: f.results });
   await Promise.resolve();
   expect(f.events).toHaveLength(3);
