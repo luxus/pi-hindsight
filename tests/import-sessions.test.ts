@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { DEFAULT_CONFIG } from "../extensions/config/config.js";
-import type { RetainJob, UpdateMode } from "../extensions/types.js";
+import type { ResolvedConfig, RetainJob, UpdateMode } from "../extensions/types.js";
 import {
   discoverProjectSessionFiles,
   importPiSession,
@@ -14,6 +14,7 @@ import {
 } from "../extensions/imports/import-sessions.js";
 import { readImportCheckpoint } from "../extensions/imports/import-plan.js";
 import { hashImportContent, readImportManifest } from "../extensions/imports/import-plan.js";
+import { deliverImportRetain } from "../extensions/imports/import-execute.js";
 import { enqueueRetainJob, readRetainQueue, resolveQueuePath } from "../extensions/queue/queue.js";
 import { stableSessionId } from "../extensions/utils/session.js";
 import { setNextSessionRetainMode } from "../extensions/utils/session-memory-meta.js";
@@ -1340,6 +1341,135 @@ describe("Pi session import", () => {
       version: 1,
       imports: {},
     });
+  });
+
+  it("runs retain.beforeEnqueue during dry-run import and reports would-enqueue or quarantine", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-before-enqueue-"));
+    mkdirSync(join(dir, ".git"));
+    const sessionFile = join(dir, "session.jsonl");
+    writeFileSync(
+      sessionFile,
+      [
+        JSON.stringify({ type: "session", id: "session-preview-check", cwd: dir }),
+        JSON.stringify({
+          type: "message",
+          id: "root",
+          parentId: null,
+          message: { role: "user", content: "root API_KEY=sk-secret" },
+        }),
+      ].join("\n"),
+    );
+    const checker = join(dir, "checker.mjs");
+    writeFileSync(
+      checker,
+      `
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => input += chunk);
+process.stdin.on("end", () => {
+  const job = JSON.parse(input);
+  if (job.item.content.includes("sk-secret")) process.exit(3);
+  process.exit(job.documentId.includes("session-preview-check") ? 0 : 4);
+});
+`,
+    );
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+    const retain = vi.fn(async () => undefined);
+
+    const passed = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config,
+      dryRun: true,
+      client: { retain, recall: async () => [], reflect: async () => ({}) },
+    });
+
+    expect(passed.documents[0]).toMatchObject({
+      queueAdmission: "would-enqueue",
+      status: "pending",
+      wouldWrite: false,
+    });
+    expect(retain).not.toHaveBeenCalled();
+    await expect(readRetainQueue(resolveQueuePath(dir, config.retain.queuePath))).resolves.toEqual(
+      [],
+    );
+    await expect(readImportCheckpoint(passed.checkpointPath)).resolves.toBeUndefined();
+
+    writeFileSync(checker, "process.exit(1);\n");
+    const blocked = await importPiSession({
+      sessionFile,
+      bankId: "bank",
+      config,
+      dryRun: true,
+      client: { retain, recall: async () => [], reflect: async () => ({}) },
+    });
+
+    expect(blocked.documents[0]).toMatchObject({
+      queueAdmission: "quarantined",
+      status: "quarantined",
+      wouldWrite: false,
+      error: "retain.beforeEnqueue blocked retain job before queue admission (exit 1)",
+    });
+    expect(retain).not.toHaveBeenCalled();
+    await expect(readImportCheckpoint(blocked.checkpointPath)).resolves.toBeUndefined();
+    await expect(readRetainQueue(resolveQueuePath(dir, config.retain.queuePath))).resolves.toEqual(
+      [],
+    );
+  });
+
+  it("does not drop a stale queued import job when retain.beforeEnqueue fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pi-hindsight-import-before-enqueue-"));
+    const checker = join(dir, "checker.mjs");
+    writeFileSync(checker, "process.exit(1);\n");
+    const config: ResolvedConfig = {
+      ...DEFAULT_CONFIG,
+      retain: {
+        ...DEFAULT_CONFIG.retain,
+        beforeEnqueue: { command: [process.execPath, checker], timeoutMs: 2_000 },
+      },
+    };
+    const queuePath = resolveQueuePath(dir, config.retain.queuePath);
+    const staleJob = queuedImportRetainJob({
+      id: "stale",
+      documentId: "doc",
+      sourceFile: join(dir, "session.jsonl"),
+      cwd: dir,
+      sessionId: "session-stale-check",
+      leafId: "root",
+      contentHash: "old-hash",
+      content: "stale content",
+    });
+    await enqueueRetainJob(queuePath, staleJob);
+
+    await expect(
+      deliverImportRetain({
+        cwd: dir,
+        config,
+        client: {
+          retain: async () => undefined,
+          recall: async () => [],
+          reflect: async () => ({}),
+        },
+        bankId: "bank",
+        content: "replacement content",
+        context: "replacement context",
+        documentId: "doc",
+        updateMode: "replace",
+        tags: ["source:pi"],
+        metadata: {
+          source: "pi-hindsight",
+          retainSource: "import",
+          imported: "true",
+        },
+      }),
+    ).rejects.toThrow("retain.beforeEnqueue blocked retain job before queue admission (exit 1)");
+    expect(await readRetainQueue(queuePath)).toEqual([staleJob]);
   });
 
   it("historical import ignores pending next opt-out session state", async () => {

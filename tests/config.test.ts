@@ -444,6 +444,7 @@ describe("resolveConfig", () => {
         globalRetain: { mode: "nonsense" },
         retain: {
           queuePath: "",
+          beforeEnqueue: { command: [], timeoutMs: 0 },
           flushIntervalMs: -1,
           entities: [{ text: "ok" }, { text: 42 }],
           periodicFlushMaxJobs: -1,
@@ -497,6 +498,11 @@ describe("resolveConfig", () => {
     expect(config.retain.toolFilter.toolResult.exclude).toContain("read");
     expect(config.retain.strip.message).toContain("usage");
     expect(config.retain.queuePath).toBe(".pi/hindsight/retain-queue.jsonl");
+    expect(config.retain.beforeEnqueue).toEqual({
+      command: [],
+      timeoutMs: 5_000,
+      malformed: true,
+    });
     expect(config.retain.flushIntervalMs).toBe(0);
     expect(config.retain.entities).toEqual([]);
     expect(config.retain.periodicFlushMaxJobs).toBe(1);
@@ -515,6 +521,24 @@ describe("resolveConfig", () => {
     expect(config.notifications.startup).toBe(true);
     expect(config.notifications.recall).toBe(true);
     expect(config.notifications.retain).toBe(true);
+  });
+
+  it("normalizes retain.beforeEnqueue argv command and timeout", () => {
+    const cwd = tmp();
+    mkdirSync(join(cwd, ".pi"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".pi", "hindsight.json"),
+      JSON.stringify({
+        retain: {
+          beforeEnqueue: { command: ["/usr/bin/env", "node", "checker.mjs"], timeoutMs: 1234 },
+        },
+      }),
+    );
+
+    expect(resolveConfig(cwd).retain.beforeEnqueue).toEqual({
+      command: ["/usr/bin/env", "node", "checker.mjs"],
+      timeoutMs: 1234,
+    });
   });
 
   it("accepts banks.coding and banks.life aliases", () => {

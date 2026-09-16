@@ -164,3 +164,22 @@ top-k without score thresholds). When set, drop candidates whose returned `score
   tool calls).
 
 Behavior, why defaults stay off, and a suggested starting floor: [Memory behavior → Recall quality](/pi-hindsight/concepts/memory-behavior/#recall-quality).
+
+### `retain.beforeEnqueue` (optional)
+
+Runs a local argv command immediately before Retain Queue admission. The command is spawned without
+a shell and receives canonical, sanitized Retain Job JSON on stdin. Exit `0` allows the job into the
+queue; nonzero exit, timeout, spawn failure, or malformed config blocks before queue/Hindsight calls.
+Stdout and stderr are discarded so checker output cannot leak into Pi logs. Absent by default; not
+writable through `hindsight_config`.
+
+```json
+{
+  "retain": {
+    "beforeEnqueue": {
+      "command": ["/usr/local/bin/retain-check"],
+      "timeoutMs": 5000
+    }
+  }
+}
+```
