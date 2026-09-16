@@ -170,7 +170,15 @@ User/life bank recall filter (`any_strict`) for automatic inject and `hindsight_
 - `source:pi` matches source memories (world/experience facts).
 - `harness:pi` matches observations, which inherit observation-scope tags rather than the full source-memory tag set.
 
-Invalid or empty values fall back to the default. Do not remove `harness:pi` if you still want observation recall from the user bank.
+An empty array (`[]`) disables the tag filter so anything in that bank can be recalled (bank-level isolation only). Invalid values fall back to the default. Do not remove `harness:pi` if you still want observation recall from the user bank under a tag filter.
+
+```json
+{
+  "scope": {
+    "userScopeTags": []
+  }
+}
+```
 
 ### `recall.minScores` (optional)
 
