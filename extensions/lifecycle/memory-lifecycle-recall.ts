@@ -46,6 +46,27 @@ interface RecallCacheEntry {
   blocks: RecallBlock[];
   failed: number;
   failures: RecallFailure[];
+  timestamp: number;
+}
+
+type CacheKeyMessage = { role?: string; content?: unknown; timestamp?: number };
+
+export function lastUserMessageContentIdentity(messages: readonly CacheKeyMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message?.role !== "user") continue;
+    const content = message.content;
+    return typeof content === "string" ? content : JSON.stringify(content ?? "");
+  }
+  return "";
+}
+
+/** Bank IDs + last-user content; transcript length is not part of the key (auto-continue retries). */
+export function recallTurnCacheKey(
+  bankIds: readonly string[],
+  messages: readonly CacheKeyMessage[],
+): string {
+  return `${bankIds.join(",")}|${lastUserMessageContentIdentity(messages)}`;
 }
 
 export function createRecallCache(ttlMs: number | (() => number) = 60000) {
@@ -148,7 +169,10 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
         return skip("append-requires-user");
       }
 
-      const cacheKey = scopes.map((s) => s.bankId).join(",") + "|" + event.messages.length;
+      const cacheKey = recallTurnCacheKey(
+        scopes.map((s) => s.bankId),
+        event.messages,
+      );
       let recallResult = cache.get(cacheKey);
       cacheStatus = recallResult ? "hit" : "miss";
 
@@ -174,7 +198,7 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
         }
         if (!recallResult) {
           deps.setMemoryStatus(runtime, "recalling");
-          recallResult = await recallForContext({
+          const fetched = await recallForContext({
             client: deps.getClient(),
             config,
             scopes,
@@ -182,10 +206,11 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
             cwd: runtime.cwd,
             ...(deps.observer ? { observer: observe, contextId } : {}),
           });
+          recallResult = { ...fetched, timestamp: Date.now() };
           if (deps.observer) origins.set(recallResult, retrievals.slice());
           cache.set(cacheKey, recallResult);
         }
-        const { rendered, blocks, failed, failures } = recallResult;
+        const { rendered, blocks, failed, failures, timestamp } = recallResult;
         const memoryCount = blocks.reduce((count, block) => count + block.memoryCount, 0);
         deps.setMemoryStatus(
           runtime,
@@ -236,7 +261,7 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
         const recallMessage = {
           role: "user",
           content: rendered,
-          timestamp: Date.now(),
+          timestamp,
         } as AgentMessage;
         const patch =
           config.recall.injectionPosition === "append"
