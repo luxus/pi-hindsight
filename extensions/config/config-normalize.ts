@@ -234,10 +234,16 @@ export function normalizeConfig(
         projectId?: unknown;
         projectIdStrategy?: unknown;
         includeSharedObservations?: unknown;
+        userScopeTags?: unknown;
       };
     }
   ).scope;
   const projectIdPin = optionalString(scopeRaw?.projectId, DEFAULT_CONFIG.scope.projectId);
+  const userScopeTags = [
+    ...new Set(
+      stringArray(scopeRaw?.userScopeTags, DEFAULT_CONFIG.scope.userScopeTags).filter(Boolean),
+    ),
+  ];
   return {
     enabled: bool(config.enabled, DEFAULT_CONFIG.enabled),
     setupComplete: bool(
@@ -260,6 +266,7 @@ export function normalizeConfig(
         scopeRaw?.includeSharedObservations,
         DEFAULT_CONFIG.scope.includeSharedObservations,
       ),
+      userScopeTags: userScopeTags.length ? userScopeTags : DEFAULT_CONFIG.scope.userScopeTags,
     },
     hindsight: {
       baseUrl: stringValue(config.hindsight?.baseUrl, DEFAULT_CONFIG.hindsight.baseUrl),

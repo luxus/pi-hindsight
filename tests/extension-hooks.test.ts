@@ -826,7 +826,7 @@ describe("extension hooks", () => {
     expect(mocked.client.recall.mock.calls[1]?.[1]).toContain("user: What do I know?");
     expect(mocked.client.recall.mock.calls[1]?.[2]).toMatchObject({
       maxTokens: DEFAULT_CONFIG.recall.userMaxTokens,
-      tagGroups: [{ tags: ["source:pi"], match: "any_strict" }],
+      tagGroups: [{ tags: ["source:pi", "harness:pi"], match: "any_strict" }],
     });
     expect(mocked.ensureGlobalBank).toHaveBeenCalledWith(
       mocked.client,

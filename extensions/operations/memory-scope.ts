@@ -10,7 +10,7 @@ export interface MemoryRecallScope {
 
 export function scopeTagsForBank(cwd: string, config: ResolvedConfig, bankId: string): string[] {
   return config.banks.user.enabled && bankId === config.banks.user.bankId
-    ? ["source:pi"]
+    ? createMemoryIdentity(cwd, config).globalRecallTags
     : recallScopeTags(cwd, config);
 }
 
@@ -81,7 +81,8 @@ export function selectMemoryScopes(cwd: string, config: ResolvedConfig): MemoryR
   const identity = createMemoryIdentity(cwd, config);
   const scopes: MemoryRecallScope[] = [];
   // Shared observations apply only to the coding/project bank (cross-project prefs
-  // inside one bank). Life/user bank keeps source:pi isolation only.
+  // inside one bank). Life/user bank keeps userScopeTags isolation (source:pi +
+  // harness:pi by default so observations match observation-scope tags).
   const includeShared = config.scope.includeSharedObservations === true;
 
   if (config.banks.project.enabled) {
