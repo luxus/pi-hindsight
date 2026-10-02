@@ -34,8 +34,13 @@ export interface RecallScope {
 
 function sourceFactText(value: unknown): string | undefined {
   if (!value || typeof value !== "object") return undefined;
-  const text = (value as { text?: unknown }).text;
-  return typeof text === "string" && text.trim() ? text : undefined;
+  const fact = value as RecallResultItem;
+  const text = fact.text;
+  if (typeof text !== "string" || !text.trim()) return undefined;
+  const path = fact.metadata?.source_path;
+  return path
+    ? `${text} (source: ${JSON.stringify(path)}, document: ${JSON.stringify(fact.document_id ?? "unknown")})`
+    : text;
 }
 
 export function textFromRecallResponse(response: unknown): RecallResultItem[] {
@@ -147,6 +152,13 @@ export function renderRecallBlocks(blocks: RecallBlock[], topK = 12): string {
     block.results.slice(0, topK).forEach((item, index) => {
       const tags = item.tags?.length ? ` [${item.tags.join(", ")}]` : "";
       lines.push(`${index + 1}. ${itemText(item)}${tags}`);
+      const sourcePath = item.metadata?.source_path;
+      if (sourcePath)
+        lines.push(
+          `   - source: ${JSON.stringify(sourcePath)} (document: ${JSON.stringify(item.document_id ?? item.metadata?.document_id ?? "unknown")})`,
+        );
+      if (item.source_fact_ids?.length)
+        lines.push(`   - evidence IDs: ${item.source_fact_ids.join(", ")}`);
       for (const fact of (item.sourceFacts ?? []).slice(0, RECALL_SOURCE_FACT_LINES)) {
         lines.push(`   - evidence: ${fact}`);
       }

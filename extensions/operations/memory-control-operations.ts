@@ -25,6 +25,7 @@ export const AGENT_CONFIG_ALLOWLIST = [
   "recallEnabled",
   "recallBudget",
   "recallMaxTokens",
+  "recallExcludedTags",
   "retainEnabled",
   "baseUrl",
   "apiKeyEnvVar",
@@ -59,6 +60,7 @@ export function agentConfigView(config: ResolvedConfig): Record<AgentConfigKey, 
     recallEnabled: config.recall.enabled,
     recallBudget: config.recall.budget,
     recallMaxTokens: config.recall.maxTokens,
+    recallExcludedTags: config.recall.excludedTags,
     retainEnabled: config.retain.enabled,
     baseUrl: config.hindsight.baseUrl,
     apiKeyEnvVar: config.hindsight.apiKeyRef?.startsWith("env:")
@@ -87,7 +89,7 @@ const BOOLEAN_KEYS = new Set<AgentConfigKey>([
 
 const NUMBER_KEYS = new Set<AgentConfigKey>(["recallMaxTokens", "timeoutMs"]);
 
-const STRING_ARRAY_KEYS = new Set<AgentConfigKey>(["userScopeTags"]);
+const STRING_ARRAY_KEYS = new Set<AgentConfigKey>(["userScopeTags", "recallExcludedTags"]);
 
 function assertAgentConfigValue(key: AgentConfigKey, value: unknown): unknown {
   if (BOOLEAN_KEYS.has(key)) {

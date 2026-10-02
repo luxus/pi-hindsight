@@ -140,6 +140,8 @@ export interface ResolvedConfig {
     maxTokens: number;
     userMaxTokens: number;
     types: string[];
+    /** Tags excluded only from automatic recall; explicit tools remain unrestricted. */
+    excludedTags: string[];
     includeSourceFacts: boolean;
     maxSourceFactsTokens: number;
     contextTurns: number;
@@ -242,6 +244,7 @@ export interface BankSelection {
 
 export interface RecallResultItem {
   id?: string;
+  document_id?: string;
   text?: string;
   content?: string;
   type?: string;

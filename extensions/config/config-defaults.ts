@@ -27,6 +27,7 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
     maxTokens: 800,
     userMaxTokens: 400,
     types: ["observation"],
+    excludedTags: [],
     includeSourceFacts: false,
     maxSourceFactsTokens: 4096,
     contextTurns: 2,

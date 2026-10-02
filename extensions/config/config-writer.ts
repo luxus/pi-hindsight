@@ -118,6 +118,7 @@ export interface ProjectConfigPatchInput {
   recallStoreLast?: boolean;
   recallStoreFailures?: boolean;
   recallPreferObservations?: boolean;
+  recallExcludedTags?: string[];
   retainEnabled?: boolean;
   retainAsync?: boolean;
   retainDelivery?: "immediate" | "coalesced";
@@ -264,9 +265,11 @@ export function buildProjectConfigPatch(input: ProjectConfigPatchInput): Record<
     input.recallUserMaxTokens !== undefined ||
     input.recallStoreLast !== undefined ||
     input.recallStoreFailures !== undefined ||
-    input.recallPreferObservations !== undefined
+    input.recallPreferObservations !== undefined ||
+    input.recallExcludedTags !== undefined
   ) {
     patch.recall = {
+      ...(input.recallExcludedTags !== undefined ? { excludedTags: input.recallExcludedTags } : {}),
       ...(input.recallEnabled !== undefined ? { enabled: input.recallEnabled } : {}),
       ...(input.recallBudget ? { budget: input.recallBudget } : {}),
       ...(input.recallMaxTokens !== undefined ? { maxTokens: input.recallMaxTokens } : {}),

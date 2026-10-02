@@ -101,5 +101,10 @@ export function selectMemoryScopes(cwd: string, config: ResolvedConfig): MemoryR
     });
   }
 
+  if (config.recall.excludedTags.length) {
+    for (const scope of scopes) {
+      scope.tagGroups.push({ not: { tags: config.recall.excludedTags, match: "any_strict" } });
+    }
+  }
   return scopes;
 }

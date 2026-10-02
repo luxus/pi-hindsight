@@ -91,7 +91,9 @@ describe("recallTurnCacheKey", () => {
 
     expect(recallTurnCacheKey(["coding"], first)).toBe(recallTurnCacheKey(["coding"], retry));
     expect(recallTurnCacheKey(["coding"], retry)).toBe(recallTurnCacheKey(["coding"], laterRetry));
-    expect(recallTurnCacheKey(["coding"], retry)).toBe("coding|Please continue.");
+    expect(recallTurnCacheKey(["coding"], retry)).toBe(
+      JSON.stringify([["coding"], [], "Please continue."]),
+    );
   });
 
   it("misses when the last user message content changes", () => {

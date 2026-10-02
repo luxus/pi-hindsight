@@ -62,12 +62,13 @@ export function lastUserMessageContentIdentity(messages: readonly CacheKeyMessag
   return "";
 }
 
-/** Bank IDs + last-user content; transcript length is not part of the key (auto-continue retries). */
+/** Effective scopes/policy + last-user content; transcript length is not part of the key. */
 export function recallTurnCacheKey(
   bankIds: readonly string[],
   messages: readonly CacheKeyMessage[],
+  filters: unknown = [],
 ): string {
-  return `${bankIds.join(",")}|${lastUserMessageContentIdentity(messages)}`;
+  return JSON.stringify([bankIds, filters, lastUserMessageContentIdentity(messages)]);
 }
 
 export function createRecallCache(ttlMs: number | (() => number) = 60000) {
@@ -173,6 +174,7 @@ export function createRecallTurnPolicy(deps: RecallTurnPolicyDeps): RecallTurnPo
       const cacheKey = recallTurnCacheKey(
         scopes.map((s) => s.bankId),
         event.messages,
+        { tagGroups: scopes.map((scope) => scope.tagGroups), recall: config.recall },
       );
       let recallResult = cache.get(cacheKey);
       cacheStatus = recallResult ? "hit" : "miss";

@@ -344,6 +344,7 @@ export function normalizeConfig(
       maxTokens: positiveInt(config.recall?.maxTokens, DEFAULT_CONFIG.recall.maxTokens),
       userMaxTokens: positiveInt(config.recall?.userMaxTokens, DEFAULT_CONFIG.recall.userMaxTokens),
       types: stringArray(config.recall?.types, DEFAULT_CONFIG.recall.types),
+      excludedTags: [...new Set(stringArray(config.recall?.excludedTags, []).filter(Boolean))],
       includeSourceFacts: bool(
         config.recall?.includeSourceFacts,
         DEFAULT_CONFIG.recall.includeSourceFacts,

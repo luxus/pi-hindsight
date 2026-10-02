@@ -179,6 +179,30 @@ Agents can get and patch this field through `hindsight_config` as `userScopeTags
 }
 ```
 
+### `recall.excludedTags` (optional)
+
+Default: `[]`. Exclude memories carrying any listed tag from **automatic recall only**.
+The exclusion is AND-ed with existing project/user visibility, including any shared
+observation opt-in. Source facts and observations carrying the tag are both excluded;
+untagged memories are not excluded merely because this control is enabled.
+
+```json
+{ "recall": { "excludedTags": ["source:example"] } }
+```
+
+Use `hindsight_config` with the typed `recallExcludedTags` array to get/patch this
+setting through the existing operator surface. An empty array restores automatic
+visibility. Explicit `hindsight_recall` and `hindsight_reflect` filters are unchanged.
+Effective compound scopes and recall policy participate in automatic cache identity,
+so a changed filter cannot reuse a result obtained under the old policy. Budgets and
+retain/observation scopes are unchanged. This does not redact transcripts or filter
+independently injected mental models.
+
+Automatic rendering includes `metadata.source_path` and `document_id` when present.
+Observations retain their separate evidence IDs; included source facts carry source
+references when available. The existing last-recall snapshot preserves structured
+provenance for inspection.
+
 ### `recall.minScores` (optional)
 
 Exact fields for automatic-recall score floors. **Defaults: no floors** (inject quality-filtered

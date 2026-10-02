@@ -619,6 +619,12 @@ export function createOperationCatalog(deps: MemoryOperationsDeps): OperationCat
                 Type.Union([Type.Literal("low"), Type.Literal("mid"), Type.Literal("high")]),
               ),
               recallMaxTokens: Type.Optional(Type.Number({ minimum: 0 })),
+              recallExcludedTags: Type.Optional(
+                Type.Array(Type.String(), {
+                  description:
+                    "Tags excluded from automatic recall only. Default empty; explicit recall remains available. Writes recall.excludedTags.",
+                }),
+              ),
               retainEnabled: Type.Optional(Type.Boolean()),
               baseUrl: Type.Optional(Type.String({ minLength: 1 })),
               apiKeyEnvVar: Type.Optional(Type.String({ minLength: 1 })),
