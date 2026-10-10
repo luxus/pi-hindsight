@@ -166,9 +166,56 @@ function readLegacyStore(parsed: RetainCursorStoreV1): Record<string, LegacySess
   return sessions;
 }
 
+function parseFirstJsonDocument(text: string): unknown {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{" || ch === "[") {
+      depth++;
+      continue;
+    }
+    if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(text.slice(0, i + 1));
+        } catch {
+          return undefined;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 async function readRetainCursorStore(path: string): Promise<RetainCursorStoreV3> {
   try {
-    const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
+    const text = await readFile(path, "utf8");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text) as unknown;
+    } catch (error) {
+      // Torn historical writes can leave trailing bytes after the first JSON
+      // document (crashed a whole session with "Unexpected non-whitespace
+      // character after JSON"). Recover the first complete document; the next
+      // atomic write (tmp + rename) rewrites the file cleanly. If even the
+      // first document is unusable, rethrow — same behavior as before.
+      const recovered = parseFirstJsonDocument(text);
+      if (recovered === undefined) throw error;
+      parsed = recovered;
+    }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return { version: RETAIN_CURSOR_VERSION, sessions: {} };
     }

@@ -195,4 +195,34 @@ describe("retain cursor", () => {
     ];
     expect(retainedThroughIndex(messages, [duplicateContent])).toBe(1);
   });
+
+  it("recovers the first JSON document when torn writes leave trailing bytes", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-cursor-"));
+    const sessionId = "torn-tail";
+    const messages = transcript(6);
+
+    await advanceRetainCursor(cwd, sessionId, messages, messages.length - 1);
+    const raw = readFileSync(retainCursorPath(cwd), "utf8");
+    // Simulate a torn non-atomic overwrite: a complete JSON document followed
+    // by trailing bytes from an older, longer store that a shorter write
+    // never truncated away. A strict JSON.parse of the whole file throws
+    // "Unexpected non-whitespace character after JSON" and aborts the run.
+    writeFileSync(
+      retainCursorPath(cwd),
+      `${raw}0ef583dc…trailing garbage from an older store\n`,
+      "utf8",
+    );
+
+    const state = await readSessionRetainState(cwd, sessionId);
+    expect(state?.cursor?.index).toBe(messages.length - 1);
+    expect(filterNewRetainMessages(messages, state)).toEqual([]);
+  });
+
+  it("still rejects a store whose first JSON document is unusable", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pi-hindsight-cursor-"));
+    mkdirSync(join(cwd, ".pi", "hindsight"), { recursive: true });
+    writeFileSync(retainCursorPath(cwd), '{"version": 3, "sessions": {"x": {"ind', "utf8");
+
+    await expect(readSessionRetainState(cwd, "x")).rejects.toBeInstanceOf(SyntaxError);
+  });
 });
